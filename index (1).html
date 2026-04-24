@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Advisor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0e1a;--bg2:#0d1424;--bg3:#0a1020;--border:#1e2d40;--text:#e2e8f0;--muted:#64748b;
+  --accent:#60a5fa;--green:#22c55e;--yellow:#f59e0b;--purple:#a78bfa;--red:#ef4444;
+  --input-bg:#111827;--row-border:#111827;
+}
+.light{
+  --bg:#f8fafc;--bg2:#ffffff;--bg3:#f1f5f9;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;
+  --accent:#1d4ed8;--green:#16a34a;--yellow:#d97706;--purple:#7c3aed;--red:#dc2626;
+  --input-bg:#ffffff;--row-border:#f1f5f9;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;transition:background .2s,color .2s;}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:52px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.logo{font-weight:700;font-size:15px;color:var(--accent);}
+.sub{font-size:11px;color:var(--muted);margin-left:4px;}
+nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:4px 0;}
+.tab{padding:5px 10px;font-size:12px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s;}
+.tab.active{background:var(--accent);color:#fff;font-weight:600;}
+.tab:hover:not(.active){background:var(--bg3);}
+.theme-btn{padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit;margin-left:8px;}
+main{padding:16px;max-width:1500px;margin:0 auto;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.card-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg3);}
+.card-title{font-weight:600;font-size:13px;}
+.card-meta{font-size:11px;color:var(--muted);margin-left:auto;}
+.filters{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--bg3);}
+input,select{background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;}
+input{width:180px;}
+.btn{padding:5px 12px;font-size:11px;font-weight:600;border:none;border-radius:6px;cursor:pointer;font-family:inherit;background:var(--bg3);color:var(--muted);}
+.btn-primary{background:var(--accent);color:#fff;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+td{padding:7px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:middle;}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;}
+.pager{display:flex;gap:8px;padding:8px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);align-items:center;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px 20px;text-align:center;}
+.stat-n{font-size:28px;font-weight:700;color:var(--accent);}
+.stat-l{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+.bar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px;}
+.bar-inner{height:100%;border-radius:2px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+a{color:var(--accent);text-decoration:none;cursor:pointer;}
+a:hover{text-decoration:underline;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:24px;}
+.fg{margin-bottom:12px;}
+.lbl{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;}
+.fg input,.fg select,.fg textarea{width:100%;}
+.fg textarea{min-height:60px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;}
+.section{display:none;}
+.section.active{display:block;}
+.loading{padding:32px;text-align:center;color:var(--muted);}
+.row-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--row-border);}
+.pct-cell{min-width:90px;}
+.pct-val{font-size:11px;font-weight:600;margin-bottom:2px;}
+@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:4px 7px;font-size:11px;}}
+</style>
+</head>
+<body>
+<header>
+  <div><span class="logo">Product Advisor</span><span class="sub">CTRM &amp; Risk Management Intelligence</span></div>
+  <nav id="nav"></nav>
+  <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
+</header>
+<main>
+  <div id="section-overview" class="section active"></div>
+  <div id="section-vendors" class="section"></div>
+  <div id="section-products" class="section"></div>
+  <div id="section-ctrm" class="section"></div>
+  <div id="section-risk" class="section"></div>
+  <div id="section-commodities" class="section"></div>
+  <div id="section-geo" class="section"></div>
+  <div id="section-customertype" class="section"></div>
+  <div id="section-contacts" class="section"></div>
+</main>
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;margin-bottom:18px">
+      <strong id="modal-title" style="font-size:14px"></strong>
+      <button class="btn" style="margin-left:auto" onclick="closeModal()">✕ Close</button>
+    </div>
+    <div id="modal-fields"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" onclick="saveModal()">💾 Save</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
+const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
+const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
+const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
+const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
+
+let isDark=true;
+function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
+
+let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],pages:{},filters:{},ctrmLoading:true};
+let modalSaveFn=null;
+
+async function apiFetch(table,opts={}){
+  const{method="GET",body,params={}}=opts;
+  let url=SB_URL+"/rest/v1/"+table;
+  const qp=new URLSearchParams(params);
+  if([...qp].length)url+="?"+qp;
+  const res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+  if(!res.ok)throw new Error(await res.text());
+  const t=await res.text();return t?JSON.parse(t):[];
+}
+async function getAll(table){
+  const all=[];let offset=0;
+  while(true){const b=await apiFetch(table,{params:{limit:1000,offset,order:"id"}});all.push(...b);if(b.length<1000)break;offset+=1000;}
+  return all;
+}
+
+function bdg(label,color){return`<span class="badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${label||""}</span>`;}
+function bar(pct,color){return`<div class="bar-wrap"><div class="bar-inner" style="width:${Math.min(pct,100)}%;background:${color||"var(--accent)"}"></div></div>`;}
+function pagerHtml(id,page,total,per){
+  const pages=Math.ceil(total/per);if(pages<=1)return"";
+  return`<div class="pager"><button class="btn" onclick="changePage('${id}',${page-1})" ${page===0?"disabled":""}>← Prev</button><span>Page ${page+1} / ${pages} · ${total.toLocaleString()} records</span><button class="btn" onclick="changePage('${id}',${page+1})" ${page>=pages-1?"disabled":""}>Next →</button></div>`;
+}
+function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
+
+function navToTab(tab,filterKey,filterVal){
+  if(filterKey)state.filters[filterKey]=filterVal;
+  state.pages={};
+  setTab(tab);
+}
+
+const TABS=[{id:"overview",label:"📊 Overview"},{id:"vendors",label:"🏢 Vendors"},{id:"products",label:"📦 Products"},{id:"ctrm",label:"⚡ CTRM"},{id:"risk",label:"🛡 Risk"},{id:"commodities",label:"🌾 Commodities"},{id:"geo",label:"🌍 Geographic"},{id:"customertype",label:"👥 Customer Types"},{id:"contacts",label:"👤 Contacts"}];
+let activeTab="overview";
+
+function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
+function setTab(id){activeTab=id;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById("section-"+id).classList.add("active");initNav();render();}
+
+function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
+
+function renderOverview(){
+  const{vendors,products,ctrm}=state;
+  const byType={};products.forEach(p=>{byType[p.product_type]=(byType[p.product_type]||0)+1;});
+  const deployed=ctrm.filter(r=>getCode(r.coverage_level)==="D").length;
+  const pct=ctrm.length?Math.round(deployed/ctrm.length*100):0;
+  const regions={};vendors.forEach(v=>{const h=(v.headquarters||"").toLowerCase();let r="Other";if(h.includes("uk")||h.includes("london")||h.includes("united kingdom"))r="United Kingdom";else if(h.includes("usa")||h.includes("houston")||h.includes("florida")||h.includes("texas")||h.includes("new york")||h.includes("arkansas")||h.includes("bentonville"))r="USA";else if(h.includes("singapore"))r="Singapore";else if(h.includes("dubai")||h.includes("uae"))r="UAE";else if(h.includes("netherlands"))r="Netherlands";else if(h.includes("germany")||h.includes("switzerland")||h.includes("france"))r="Europe (Other)";else if(h.includes("india"))r="India";else if(h.includes("australia"))r="Australia";regions[r]=(regions[r]||0)+1;});
+  document.getElementById("section-overview").innerHTML=`
+    <div class="stat-grid">
+      ${[{n:vendors.length,l:"Vendors"},{n:products.length,l:"Products"},{n:products.filter(p=>p.product_type==="CTRM Solutions").length,l:"CTRM Products"},{n:ctrm.length>0?pct+"%":"Loading...",l:"CTRM Deployed Rate"}].map(st=>`<div class="stat"><div class="stat-n">${st.n}</div><div class="stat-l">${st.l}</div></div>`).join("")}
+    </div>
+    <div class="two-col">
+      <div class="card"><div class="card-head"><span class="card-title">Products by Type</span></div><div style="padding:16px">
+        ${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>${t}</span><strong style="color:var(--accent)">${c}</strong></div>${bar(c/products.length*100,"var(--accent)")}</div>`).join("")}
+      </div></div>
+      <div class="card"><div class="card-head"><span class="card-title">Vendors by Region</span></div><div style="padding:16px">
+        ${Object.entries(regions).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<div class="row-item"><span>${r}</span><strong style="color:var(--accent)">${c}</strong></div>`).join("")}
+      </div></div>
+    </div>`;
+}
+
+function renderVendors(){
+  const q=(state.filters.v_q||"").toLowerCase();
+  const rows=state.vendors.filter(v=>!q||(v.vendor_name+v.headquarters+v.industries_served).toLowerCase().includes(q));
+  const page=state.pages.vendors||0;const PER=15;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-vendors").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span></div>
+    <div class="filters"><input value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search vendors..."><button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td style="font-weight:600">${v.vendor_name||""}</td><td style="color:var(--muted);max-width:200px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
+}
+
+function renderProducts(){
+  const q=(state.filters.p_q||"").toLowerCase();
+  const typeF=state.filters.p_type||"";
+  const vendorF=state.filters.p_vendor||"";
+  const deplF=state.filters.p_depl||"";
+  const types=[...new Set(state.products.map(p=>p.product_type).filter(Boolean))].sort();
+  const vendors=[...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
+  const depls=[...new Set(state.products.map(p=>(p.deployment_model||"").split(/[;,\n]/)[0].trim()).filter(Boolean))].sort();
+  const rows=state.products.filter(p=>
+    (!typeF||p.product_type===typeF)&&
+    (!vendorF||p.vendor===vendorF)&&
+    (!deplF||(p.deployment_model||"").includes(deplF))&&
+    (!q||(p.product_name+p.vendor+p.notes).toLowerCase().includes(q)));
+  const page=state.pages.products||0;const PER=15;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-products").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('p_q',this.value)" placeholder="Search products...">
+      <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr>
+      <td style="color:var(--accent);width:40px">${p.id}</td>
+      <td style="font-weight:600">${p.product_name||""}</td>
+      <td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
+      <td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}');return false;" href="#">${p.vendor||""}</a></td>
+      <td style="color:var(--muted);max-width:160px;font-size:11px">${p.deployment_model||""}</td>
+      <td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td>
+      <td style="color:var(--muted);max-width:180px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>
+      <td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td>
+    </tr>`).join("")}
+    </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
+}
+
+function renderCTRM(){
+  const q=(state.filters.ctrm_q||"").toLowerCase();
+  const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
+  const prods=[...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
+  const coms=[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
+  const rows=state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||(r.product+r.function_name).toLowerCase().includes(q)));
+  const page=state.pages.ctrm||0;const PER=50;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  const loading=state.ctrmLoading;
+  document.getElementById("section-ctrm").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span></div>
+    ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
+    <div class="filters">
+      <input value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search function...">
+      <select onchange="sf('ctrm_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
+      <select onchange="sf('ctrm_com',this.value)">${selOpts(coms,cF,"All Commodities")}</select>
+      <select onchange="sf('ctrm_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr>
+      <td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}');return false;" href="#">${r.product||""}</a></td>
+      <td>${r.function_name||""}</td>
+      <td>${bdg(r.commodity,"var(--accent)")}</td>
+      <td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td>
+    </tr>`;}).join("")}
+    </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
+  </div>`;
+}
+
+function renderRisk(){
+  const q=(state.filters.risk_q||"").toLowerCase();
+  const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
+  const prods=[...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
+  const cats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
+  const rows=state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||(r.function_name||"").toLowerCase().includes(q)));
+  const page=state.pages.risk||0;const PER=30;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-risk").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search functions...">
+      <select onchange="sf('risk_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
+      <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
+      <select onchange="sf('risk_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr>
+      <td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}');return false;" href="#">${r.product||""}</a></td>
+      <td>${bdg(r.category,"var(--purple)")}</td>
+      <td>${r.function_name||""}</td>
+      <td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td>
+    </tr>`;}).join("")}
+    </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
+  </div>`;
+}
+
+function renderCommodities(){
+  const q=(state.filters.pcc_q||"").toLowerCase();
+  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";
+  const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
+  const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
+  const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
+  const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  const comF=state.filters.pcc_com||"";
+  const rows=state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||(p.product||"").toLowerCase().includes(q)));
+  const page=state.pages.pcc||0;const PER=30;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search product...">
+      <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
+      <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,covF,"All Coverage")}</select>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th></tr></thead><tbody>
+    ${paged.map(p=>`<tr>
+      <td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}');return false;" href="#">${p.product||""}</a></td>
+      <td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
+      <td>${bdg(p.commodity,"var(--green)")}</td>
+      <td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td>
+    </tr>`).join("")}
+    </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
+  </div>`;
+}
+
+function pctCell(v){
+  if(v===null||v===undefined||v==="")return`<span style="color:var(--border)">—</span>`;
+  const p=Math.round(parseFloat(v)*100);
+  if(isNaN(p))return`<span style="color:var(--muted)">—</span>`;
+  const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";
+  return`<div class="pct-cell"><div class="pct-val" style="color:${col}">${p}%</div>${bar(p,col)}</div>`;
+}
+
+function renderGeo(){
+  const q=(state.filters.geo_q||"").toLowerCase();
+  const typeF=state.filters.geo_type||"";
+  const prodF=state.filters.geo_prod||"";
+  const types=[...new Set(state.geo.map(g=>g.product_type).filter(Boolean))].sort();
+  const prods=[...new Set(state.geo.map(g=>g.product).filter(Boolean))].sort();
+  const rows=state.geo.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||(g.product||"").toLowerCase().includes(q)));
+  const COLS=[{k:"north_america",l:"N. America"},{k:"europe_russia",l:"Europe & Russia"},{k:"south_america",l:"S. America"},{k:"middle_east_africa",l:"ME & Africa"},{k:"asia_australia",l:"Asia & Australia"}];
+  document.getElementById("section-geo").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search product...">
+      <select onchange="sf('geo_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
+      <select onchange="sf('geo_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th>${COLS.map(c=>`<th>${c.l}</th>`).join("")}</tr></thead><tbody>
+    ${rows.map(g=>`<tr>
+      <td><a onclick="navToTab('products','p_q','${(g.product||"").replace(/'/g,"\\'")}');return false;" href="#">${g.product||""}</a></td>
+      <td>${bdg(g.product_type?.includes("Risk")?"Risk":"CTRM",g.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
+      ${COLS.map(c=>`<td style="min-width:110px">${pctCell(g[c.k])}</td>`).join("")}
+    </tr>`).join("")}
+    </tbody></table></div>
+  </div>`;
+}
+
+function renderCustomerType(){
+  const q=(state.filters.ct_q||"").toLowerCase();
+  const typeF=state.filters.ct_type||"";
+  const prodF=state.filters.ct_prod||"";
+  const types=[...new Set(state.ct.map(g=>g.product_type).filter(Boolean))].sort();
+  const prods=[...new Set(state.ct.map(g=>g.product).filter(Boolean))].sort();
+  const rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||(g.product||"").toLowerCase().includes(q)));
+  const CT_COLS=[{k:"utility",l:"Utility"},{k:"energy_retailer",l:"Energy Retailer"},{k:"generator_non_renewables",l:"Generator - Non-Renewables"},{k:"renewables_generator",l:"Renewables Generator"},{k:"trader_broker",l:"Trader/Broker"},{k:"hedge_fund_cta",l:"Hedge Fund/CTA"},{k:"bank_financial_institution",l:"Bank/Financial Institution"},{k:"consultant_analyst",l:"Consultant/Analyst"},{k:"agricultural_producer",l:"Agricultural Producer"},{k:"biofuels",l:"Biofuels"},{k:"producer_marketer",l:"Producer/Producer Marketer"},{k:"refining_petrochemical",l:"Refining/Petrochemical"},{k:"merchant_energy_firm",l:"Merchant Energy Firm"},{k:"industrial_consumer",l:"Industrial Consumer"},{k:"other",l:"Other"}];
+  document.getElementById("section-customertype").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search product...">
+      <select onchange="sf('ct_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
+      <select onchange="sf('ct_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th>${CT_COLS.map(c=>`<th style="font-size:9px">${c.l}</th>`).join("")}</tr></thead><tbody>
+    ${rows.map(g=>`<tr>
+      <td style="white-space:nowrap"><a onclick="navToTab('products','p_q','${(g.product||"").replace(/'/g,"\\'")}');return false;" href="#">${g.product||""}</a></td>
+      <td>${bdg(g.product_type?.includes("Risk")?"Risk":"CTRM",g.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
+      ${CT_COLS.map(c=>`<td style="min-width:90px">${pctCell(g[c.k])}</td>`).join("")}
+    </tr>`).join("")}
+    </tbody></table></div>
+  </div>`;
+}
+
+function renderContacts(){
+  const q=(state.filters.con_q||"").toLowerCase();
+  const prodF=state.filters.con_prod||"";
+  const vendorF=state.filters.con_vendor||"";
+  const prods=[...new Set(state.contacts.map(c=>c.product).filter(Boolean))].sort();
+  const vendors=[...new Set(state.contacts.map(c=>c.vendor).filter(Boolean))].sort();
+  const rows=state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||(c.contact_name+c.product+c.vendor).toLowerCase().includes(q)));
+  document.getElementById("section-contacts").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('con_q',this.value)" placeholder="Search contacts...">
+      <select onchange="sf('con_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
+      <select onchange="sf('con_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="openContactModal(null)">+ Add Contact</button>
+    </div>
+    ${rows.length===0?'<div class="loading">No contacts found</div>':`
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Vendor</th><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Region</th><th></th></tr></thead><tbody>
+    ${rows.map(c=>`<tr>
+      <td><a onclick="navToTab('products','p_q','${(c.product||"").replace(/'/g,"\\'")}');return false;" href="#">${c.product||""}</a></td>
+      <td><a onclick="navToTab('vendors','v_q','${(c.vendor||"").replace(/'/g,"\\'")}');return false;" href="#">${c.vendor||""}</a></td>
+      <td>${c.contact_name||""}</td>
+      <td style="color:var(--muted)">${c.role_title||""}</td>
+      <td><a href="mailto:${c.email}">${c.email||""}</a></td>
+      <td style="color:var(--muted)">${c.phone_number||""}</td>
+      <td style="color:var(--muted)">${c.region||""}</td>
+      <td><button class="btn" onclick="openContactModal(${c.id})">Edit</button></td>
+    </tr>`).join("")}
+    </tbody></table></div>`}
+  </div>`;
+}
+
+function sf(key,val){state.filters[key]=val;state.pages={};render();}
+
+function render(){
+  if(activeTab==="overview")renderOverview();
+  else if(activeTab==="vendors")renderVendors();
+  else if(activeTab==="products")renderProducts();
+  else if(activeTab==="ctrm")renderCTRM();
+  else if(activeTab==="risk")renderRisk();
+  else if(activeTab==="commodities")renderCommodities();
+  else if(activeTab==="geo")renderGeo();
+  else if(activeTab==="customertype")renderCustomerType();
+  else if(activeTab==="contacts")renderContacts();
+}
+
+function openModal(title,fields,saveFn){
+  document.getElementById("modal-title").textContent=title;
+  document.getElementById("modal-fields").innerHTML=fields.map(f=>{
+    if(f.type==="textarea")return`<div class="fg"><label class="lbl">${f.label}</label><textarea ${f.ro?"readonly":""}>${f.value||""}</textarea></div>`;
+    if(f.type==="select")return`<div class="fg"><label class="lbl">${f.label}</label><select style="width:100%"><option value="">— Select —</option>${(f.options||[]).map(o=>`<option ${o===f.value?"selected":""}>${o}</option>`).join("")}</select></div>`;
+    return`<div class="fg"><label class="lbl">${f.label}</label><input type="${f.type||"text"}" value="${f.value||""}" ${f.ro?"readonly":""}></div>`;
+  }).join("");
+  modalSaveFn=saveFn;
+  document.getElementById("modal").classList.add("open");
+}
+function closeModal(){document.getElementById("modal").classList.remove("open");modalSaveFn=null;}
+function saveModal(){if(modalSaveFn)modalSaveFn();}
+function getVals(keys){
+  const els=[...document.getElementById("modal-fields").querySelectorAll("input,select,textarea")];
+  const r={};keys.forEach((k,i)=>{r[k]=els[i]?.value||"";});return r;
+}
+
+function openVendorModal(id){
+  const v=id?state.vendors.find(x=>x.id===id):null;
+  openModal(v?"Edit Vendor":"Add Vendor",[
+    {label:"ID",value:v?.id||"",ro:true},{label:"Vendor Name",value:v?.vendor_name||""},{label:"Headquarters",type:"textarea",value:v?.headquarters||""},{label:"Website",value:v?.website||""},{label:"Industries Served",value:v?.industries_served||""}
+  ],async()=>{
+    const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
+    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
+function openProductModal(id){
+  const p=id?state.products.find(x=>x.id===id):null;
+  const types=[...new Set(state.products.map(x=>x.product_type).filter(Boolean))].sort();
+  const vendors=[...new Set(state.vendors.map(v=>v.vendor_name).filter(Boolean))].sort();
+  openModal(p?"Edit Product":"Add Product",[
+    {label:"ID",value:p?.id||"",ro:true},{label:"Product Name",value:p?.product_name||""},{label:"Product Type",type:"select",value:p?.product_type||"",options:types},{label:"Vendor",type:"select",value:p?.vendor||"",options:vendors},{label:"Deployment Model",type:"textarea",value:p?.deployment_model||""},{label:"Version",value:p?.version_info||""},{label:"Notes",type:"textarea",value:p?.notes||""}
+  ],async()=>{
+    const vals=getVals(["id","product_name","product_type","vendor","deployment_model","version_info","notes"]);
+    try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
+function openContactModal(id){
+  const ct=id?state.contacts.find(x=>x.id===id):null;
+  const prods=state.products.map(p=>p.product_name).filter(Boolean).sort();
+  const vendors=state.vendors.map(v=>v.vendor_name).filter(Boolean).sort();
+  openModal(ct?"Edit Contact":"Add Contact",[
+    {label:"ID",value:ct?.id||"",ro:true},{label:"Product",type:"select",value:ct?.product||"",options:prods},{label:"Vendor",type:"select",value:ct?.vendor||"",options:vendors},{label:"Contact Name",value:ct?.contact_name||""},{label:"Role / Title",value:ct?.role_title||""},{label:"Email",value:ct?.email||""},{label:"Phone",value:ct?.phone_number||""},{label:"Region",value:ct?.region||""}
+  ],async()=>{
+    const vals=getVals(["id","product","vendor","contact_name","role_title","email","phone_number","region"]);
+    try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
+async function init(){
+  document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
+  initNav();
+  try{
+    const[v,p,ct_data,g,pcc,risk,ct]=await Promise.all([
+      getAll("vendors"),getAll("products"),getAll("product_contacts"),
+      getAll("geographic_coverage"),getAll("product_commodities_coverage"),
+      getAll("product_function_risk"),getAll("customer_type_coverage")
+    ]);
+    state.vendors=v;state.products=p;state.contacts=ct_data;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;
+    state.ctrmLoading=true;
+    render();
+    const ctrm=await getAll("product_function_ctrm");
+    state.ctrm=ctrm;state.ctrmLoading=false;
+    if(activeTab==="ctrm"||activeTab==="overview")render();
+  }catch(e){
+    document.getElementById("section-overview").innerHTML=`<div class="loading" style="color:var(--red)">Connection error: ${e.message}</div>`;
+  }
+}
+init();
+</script>
+</body>
+</html>
