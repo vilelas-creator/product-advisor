@@ -384,11 +384,9 @@ function renderProducts(){
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
-  const deplF=state.filters.p_depl||"";
   const types=[...new Set(state.products.map(p=>p.product_type).filter(Boolean))].sort();
   const vendors=[...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
-  const depls=[...new Set(state.products.map(p=>(p.deployment_model||"").split(/[;,\n]/)[0].trim()).filter(Boolean))].sort();
-  const rows=state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!deplF||(p.deployment_model||"").includes(deplF))&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  const rows=state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const page=state.pages.products||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-products").innerHTML=`<div class="card">
@@ -397,7 +395,6 @@ function renderProducts(){
       <input id="search-p_q" value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
-      <select onchange="sf('p_depl',this.value)">${selOpts(depls,deplF,"All Deployments")}</select>
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
