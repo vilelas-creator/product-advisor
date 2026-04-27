@@ -343,7 +343,8 @@ const TABS=[
   {id:"geo",label:"🌍 Geographic"},
   {id:"customertype",label:"👥 Customer Types"},
   {id:"contacts",label:"👤 Contacts"},
-  {id:"import",label:"📥 Import Data"}
+  {id:"import",label:"📥 Import Data"},
+  {id:"logs",label:"📋 Activity Logs"}
 ];
 let activeTab="overview";
 function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
@@ -1111,15 +1112,10 @@ async function sendChat() {
       if (processed.results.length === 0) {
         addMsg("assistant", "No results found for your query. Try a different search term.");
       } else {
-        // Show results as table
+        // Show ALL results as table
         const cols = Object.keys(processed.results[0]).filter(k => !k.startsWith("_") && k !== "id" && k !== "capspire_comments");
         addTableMsg(cols, processed.results);
-        // Ask Groq to summarise
-        const summary = await groqCall([
-          {role:"system", content:"You are a helpful assistant. Summarise these search results in 1-2 sentences in English."},
-          {role:"user", content:`Question: ${msg}\nResults (${processed.results.length} records): ${JSON.stringify(processed.results.slice(0,10))}`}
-        ], 200);
-        addMsg("assistant", summary);
+        addMsg("assistant", `Found ${processed.results.length} results for your query.`);
       }
     } else if (processed.type === "count") {
       const summary = await groqCall([
