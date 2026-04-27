@@ -608,18 +608,63 @@ async function init(){
 }
 init();
 
-// ── CHATBOX ──────────────────────────────────────────────────────────────────
+// ── CHATBOX (Text-to-SQL) ────────────────────────────────────────────────────
 const GROQ_KEY = "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";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 let chatHistory = [];
 let chatOpen = false;
+
+const DB_SCHEMA = `
+Database schema for Product Advisor (CTRM & Risk Management):
+
+TABLE vendors: id, vendor_name, headquarters, website, industries_served
+TABLE products: id, product_name, product_type, vendor, product_type2, deployment_model, version_info, licensing_model, notes
+TABLE commodities: id, commodity_name
+TABLE functional_areas: id, function_name, category
+TABLE product_commodities_coverage: id, product, product_type, commodity, coverage_level
+  -- coverage_level values: 'Covered', 'Partially Covered', 'Not Covered', 'Can be covered'
+TABLE product_function_ctrm: id, product, function_name, commodity, coverage_level
+  -- coverage_level values: 'Functionality is deployed and in production at a client site', 'Not Deployed, but system is capable of providing functionality', 'System is not currently capable of providing that functionality', 'Not Applicable - Functionality not applicable for commodity'
+TABLE product_function_risk: id, product, category, function_name, coverage_level
+TABLE customer_type_coverage: id, product_type, product, utility, energy_retailer, generator_non_renewables, renewables_generator, trader_broker, hedge_fund_cta, bank_financial_institution, consultant_analyst, agricultural_producer, biofuels, producer_marketer, refining_petrochemical, merchant_energy_firm, industrial_consumer, other
+  -- numeric columns are percentages as decimals (0.0 to 1.0)
+TABLE geographic_coverage: id, product_type, product, north_america, europe_russia, south_america, middle_east_africa, asia_australia
+  -- numeric columns are percentages as decimals (0.0 to 1.0)
+TABLE product_contacts: id, product, product_type, vendor, contact_name, role_title, email, phone_number, region, linkedin_profile
+`;
+
+const SYSTEM_PROMPT = `You are an AI assistant for the Product Advisor CTRM database. Always respond in English.
+
+${DB_SCHEMA}
+
+You have two modes:
+1. QUERY MODE: When the user asks a question about the data, generate a SQL query to answer it.
+2. ACTION MODE: When the user wants to add/update data, generate the action.
+
+For QUERY MODE, respond ONLY with:
+SQL_QUERY: <your SQL query here>
+
+For ACTION MODE, respond ONLY with:
+ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
+ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
+ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"","phone_number":"","region":""}
+
+For ANSWER MODE (simple questions that don't need SQL, like "how many vendors are there"), respond normally.
+
+Rules for SQL:
+- Use SELECT only (no INSERT/UPDATE/DELETE unless ACTION mode)
+- Always use ILIKE for text searches (case-insensitive)
+- Limit results to 50 rows maximum
+- Use simple, readable column aliases
+- For percentage columns in customer_type_coverage and geographic_coverage, multiply by 100 to show as %
+`;
 
 function toggleChat() {
   chatOpen = !chatOpen;
   document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
   document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
   if (chatOpen && chatHistory.length === 0) {
-    addChatMessage("assistant", "Hi! I can help you explore and manage the Product Advisor database. You can ask me questions like:\n\n• *Which products cover Power and LNG?*\n• *How many vendors are from the UK?*\n• *Show me all ION Commodities products*\n• *Add a new contact for Allegro*\n\nWhat would you like to know?");
+    addChatMessage("assistant", "Hi! I can query the full Product Advisor database for you.\n\nTry asking:\n• Which products cover FX?\n• How many vendors are from the UK?\n• Which products have deployed Power functionality?\n• Show me all ION Commodities products\n• Add a new contact for Allegro");
   }
   setTimeout(() => { const el = document.getElementById("chat-messages"); if(el) el.scrollTop = el.scrollHeight; }, 100);
 }
@@ -628,33 +673,72 @@ function addChatMessage(role, text) {
   const el = document.getElementById("chat-messages");
   if (!el) return;
   const div = document.createElement("div");
-  div.style.cssText = `margin-bottom:12px;display:flex;flex-direction:column;align-items:${role==="user"?"flex-end":"flex-start"}`;
+  div.style.cssText = "margin-bottom:12px;display:flex;flex-direction:column;align-items:" + (role==="user"?"flex-end":"flex-start");
   const bubble = document.createElement("div");
-  bubble.style.cssText = `max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.6;white-space:pre-wrap;${role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px"}`;
+  bubble.style.cssText = "max-width:90%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.6;white-space:pre-wrap;" + (role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
   bubble.textContent = text;
   div.appendChild(bubble);
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
 }
 
-function buildContext() {
-  const vendorList = state.vendors.slice(0,15).map(v => v.vendor_name).join(", ");
-  const productList = state.products.slice(0,20).map(p => p.product_name + " (" + p.vendor + ")").join(", ");
-  const commodities = [...new Set(state.pcc.map(p => p.commodity).filter(Boolean))].slice(0,20).join(", ");
-  const riskCats = [...new Set(state.risk.map(r => r.category).filter(Boolean))].join(", ");
-  return "You are an assistant for the Product Advisor CTRM database. Always respond in English.\n" +
-    "Vendors (" + state.vendors.length + "): " + vendorList + "\n" +
-    "Products (" + state.products.length + "): " + productList + "\n" +
-    "Commodities: " + commodities + "\n" +
-    "CTRM records: " + state.ctrm.length + "\n" +
-    "Risk categories: " + riskCats + "\n" +
-    "Geographic: " + state.geo.length + " products, Customer Types: " + state.ct.length + " products, Contacts: " + state.contacts.length + "\n\n" +
-    "To add records output exactly:\nACTION:ADD_VENDOR:{json} or ACTION:ADD_PRODUCT:{json} or ACTION:ADD_CONTACT:{json}\n" +
-    "Vendor fields: vendor_name,headquarters,website,industries_served\n" +
-    "Product fields: product_name,product_type,vendor,deployment_model,version_info,notes\n" +
-    "Contact fields: product,vendor,contact_name,role_title,email,phone_number,region\n" +
-    "Be concise. Use bullet points.";
+function addTableMessage(columns, rows) {
+  const el = document.getElementById("chat-messages");
+  if (!el) return;
+  const div = document.createElement("div");
+  div.style.cssText = "margin-bottom:12px;max-width:100%;overflow-x:auto";
+  const table = document.createElement("table");
+  table.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:8px;overflow:hidden";
+  const thead = document.createElement("thead");
+  const hrow = document.createElement("tr");
+  columns.forEach(col => {
+    const th = document.createElement("th");
+    th.style.cssText = "padding:6px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap";
+    th.textContent = col;
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    columns.forEach(col => {
+      const td = document.createElement("td");
+      td.style.cssText = "padding:5px 10px;border-bottom:1px solid var(--row-border);color:var(--text);font-size:11px";
+      const val = row[col];
+      td.textContent = val === null || val === undefined ? "—" : String(val);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  div.appendChild(table);
+  const meta = document.createElement("div");
+  meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:4px;padding-left:4px";
+  meta.textContent = rows.length + " result" + (rows.length !== 1 ? "s" : "");
+  div.appendChild(meta);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
 }
+
+async function runQuery(sql) {
+  // Use Supabase RPC to run raw SQL
+  const res = await fetch(SB_URL + "/rest/v1/rpc/run_query", {
+    method: "POST",
+    headers: {
+      "apikey": SB_KEY,
+      "Authorization": "Bearer " + SB_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ query: sql })
+  });
+  if (!res.ok) {
+    // Fallback: try direct table queries parsed from SQL
+    throw new Error("Query execution failed: " + await res.text());
+  }
+  return await res.json();
+}
+
 async function sendChat() {
   const input = document.getElementById("chat-input");
   const msg = input.value.trim();
@@ -662,73 +746,194 @@ async function sendChat() {
   input.value = "";
   addChatMessage("user", msg);
   chatHistory.push({ role: "user", content: msg });
+
   const typing = document.createElement("div");
   typing.id = "chat-typing";
   typing.style.cssText = "margin-bottom:12px;color:var(--muted);font-size:11px;padding-left:4px";
   typing.textContent = "Thinking...";
   document.getElementById("chat-messages").appendChild(typing);
   document.getElementById("chat-messages").scrollTop = 99999;
+
   try {
+    // Step 1: Ask Groq to generate SQL or action
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + GROQ_KEY },
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [
-          { role: "system", content: buildContext() },
-          ...chatHistory.slice(-8)
+          { role: "system", content: SYSTEM_PROMPT },
+          ...chatHistory.slice(-6)
         ],
-        max_tokens: 800,
-        temperature: 0.3,
+        max_tokens: 500,
+        temperature: 0.1,
       })
     });
+
     const data = await res.json();
     if (!res.ok) {
       document.getElementById("chat-typing")?.remove();
       addChatMessage("assistant", "API Error: " + (data?.error?.message || JSON.stringify(data)));
       return;
     }
-    const reply = data.choices?.[0]?.message?.content || "Sorry, I could not process your request.";
+
+    const reply = data.choices?.[0]?.message?.content?.trim() || "";
     document.getElementById("chat-typing")?.remove();
-    const actionMatch = reply.match(/ACTION:(\w+):(\{.*\})/s);
-    if (actionMatch) {
-      const [, actionType, jsonStr] = actionMatch;
-      const cleanReply = reply.replace(/ACTION:.*$/s, "").trim();
-      if (cleanReply) addChatMessage("assistant", cleanReply);
+
+    // Step 2: Handle the response
+    if (reply.startsWith("SQL_QUERY:")) {
+      // Execute the SQL query
+      const sql = reply.replace("SQL_QUERY:", "").trim();
+      addChatMessage("assistant", "Running query: " + sql);
+
       try {
-        const record = JSON.parse(jsonStr);
-        let table = actionType === "ADD_VENDOR" ? "vendors" : actionType === "ADD_PRODUCT" ? "products" : actionType === "ADD_CONTACT" ? "product_contacts" : "";
-        if (table) {
+        // Parse the SQL to determine which table to query
+        const tableMatch = sql.match(/from\s+(\w+)/i);
+        const table = tableMatch?.[1];
+
+        if (!table) throw new Error("Could not determine table from query");
+
+        // Build Supabase REST query from SQL
+        const results = await executeSmartQuery(sql, table);
+        if (results.length === 0) {
+          addChatMessage("assistant", "No results found for this query.");
+        } else {
+          const columns = Object.keys(results[0]);
+          addTableMessage(columns, results);
+        }
+      } catch(e) {
+        addChatMessage("assistant", "Query error: " + e.message + "\n\nTry rephrasing your question.");
+      }
+
+    } else if (reply.startsWith("ACTION:")) {
+      const actionMatch = reply.match(/ACTION:(\w+):(\{.*\})/s);
+      if (actionMatch) {
+        const [, actionType, jsonStr] = actionMatch;
+        try {
+          const record = JSON.parse(jsonStr);
+          const table = actionType === "ADD_VENDOR" ? "vendors" : actionType === "ADD_PRODUCT" ? "products" : "product_contacts";
           await apiFetch(table, { method: "POST", body: record });
           if (table === "vendors") state.vendors = await getAll("vendors");
           else if (table === "products") state.products = await getAll("products");
-          else if (table === "product_contacts") state.contacts = await getAll("product_contacts");
-          addChatMessage("assistant", "Record added successfully! The new entry is now visible in the " + table.replace(/_/g," ") + " table.");
+          else state.contacts = await getAll("product_contacts");
+          addChatMessage("assistant", "Record added successfully to " + table.replace(/_/g," ") + "!");
           render();
-        }
-      } catch(e) { addChatMessage("assistant", "I tried to add the record but got an error: " + e.message); }
+        } catch(e) { addChatMessage("assistant", "Error adding record: " + e.message); }
+      }
     } else {
       addChatMessage("assistant", reply);
     }
+
     chatHistory.push({ role: "assistant", content: reply });
+
   } catch(e) {
     document.getElementById("chat-typing")?.remove();
     addChatMessage("assistant", "Connection error: " + e.message);
   }
 }
 
+async function executeSmartQuery(sql, table) {
+  // Parse SQL and execute via Supabase REST API
+  const sqlLower = sql.toLowerCase();
+
+  // Build params
+  const params = { limit: 50 };
+
+  // Check for WHERE conditions with ILIKE
+  const ilikeMatch = sql.match(/where\s+([\w.]+)\s+ilike\s+'%([^']+)%'/i);
+  const eqMatch = sql.match(/where\s+([\w.]+)\s*=\s*'([^']+)'/i);
+
+  if (ilikeMatch) {
+    params[ilikeMatch[1] + ".ilike"] = "%" + ilikeMatch[2] + "%";
+  } else if (eqMatch) {
+    params[eqMatch[1] + ".eq"] = eqMatch[2];
+  }
+
+  // Check for SELECT columns
+  const selectMatch = sql.match(/select\s+(.+?)\s+from/i);
+  if (selectMatch && selectMatch[1].trim() !== "*") {
+    const cols = selectMatch[1].split(",").map(c => {
+      const parts = c.trim().split(/\s+as\s+/i);
+      return parts[0].trim().replace(/\w+\./, "");
+    }).filter(c => c !== "count(*)");
+    if (cols.length > 0 && !cols[0].includes("(")) {
+      params.select = cols.join(",");
+    }
+  }
+
+  // Check for ORDER BY
+  const orderMatch = sql.match(/order\s+by\s+([\w.]+)(?:\s+(asc|desc))?/i);
+  if (orderMatch) {
+    params.order = orderMatch[1].replace(/\w+\./, "") + (orderMatch[2]?.toLowerCase() === "desc" ? ".desc" : "");
+  }
+
+  // Handle COUNT queries specially
+  if (sqlLower.includes("count(*)")) {
+    const allData = await getAll(table);
+    let filtered = allData;
+    if (ilikeMatch) {
+      const field = ilikeMatch[1].replace(/\w+\./, "");
+      const val = ilikeMatch[2].toLowerCase();
+      filtered = allData.filter(r => (r[field] || "").toLowerCase().includes(val));
+    } else if (eqMatch) {
+      const field = eqMatch[1].replace(/\w+\./, "");
+      const val = eqMatch[2].toLowerCase();
+      filtered = allData.filter(r => (r[field] || "").toLowerCase() === val);
+    }
+    return [{ count: filtered.length }];
+  }
+
+  // Check for JOINs - if so, load from state
+  if (sqlLower.includes("join")) {
+    return executeJoinQuery(sql);
+  }
+
+  return await apiFetch(table, { params });
+}
+
+function executeJoinQuery(sql) {
+  // Handle common join patterns using in-memory state data
+  const sqlLower = sql.toLowerCase();
+
+  if (sqlLower.includes("product_commodities_coverage") || sqlLower.includes("pcc")) {
+    const commodity = sql.match(/commodity\s+ilike\s+'%([^']+)%'/i)?.[1] ||
+                      sql.match(/commodity\s*=\s*'([^']+)'/i)?.[1];
+    if (commodity) {
+      return state.pcc
+        .filter(r => (r.commodity || "").toLowerCase().includes(commodity.toLowerCase()))
+        .filter(r => r.coverage_level === "Covered" || r.coverage_level === "Partially Covered")
+        .map(r => ({ product: r.product, product_type: r.product_type, commodity: r.commodity, coverage_level: r.coverage_level }))
+        .slice(0, 50);
+    }
+  }
+
+  if (sqlLower.includes("product_function_ctrm")) {
+    const commodity = sql.match(/commodity\s+ilike\s+'%([^']+)%'/i)?.[1];
+    const product = sql.match(/product\s+ilike\s+'%([^']+)%'/i)?.[1];
+    return state.ctrm
+      .filter(r => !commodity || (r.commodity || "").toLowerCase().includes(commodity.toLowerCase()))
+      .filter(r => !product || (r.product || "").toLowerCase().includes(product.toLowerCase()))
+      .filter(r => r.coverage_level?.includes("deployed"))
+      .map(r => ({ product: r.product, function_name: r.function_name, commodity: r.commodity, coverage_level: r.coverage_level }))
+      .slice(0, 50);
+  }
+
+  return [];
+}
+
 document.body.insertAdjacentHTML("beforeend", `
   <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:900">💬</button>
-  <div id="chat-panel" style="display:none;position:fixed;bottom:88px;right:24px;width:380px;height:520px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.5);z-index:900;overflow:hidden">
+  <div id="chat-panel" style="display:none;position:fixed;bottom:88px;right:24px;width:420px;height:560px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.5);z-index:900;overflow:hidden">
     <div style="padding:14px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
       <span style="font-size:18px">🤖</span>
-      <div><div style="font-weight:700;font-size:13px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Ask questions or add data in natural language</div></div>
-      <button onclick="toggleChat()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">✕</button>
+      <div><div style="font-weight:700;font-size:13px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Queries the full database in real-time</div></div>
+      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML='';toggleChat();setTimeout(toggleChat,100)" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid var(--border)">Clear</button>
+      <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">✕</button>
     </div>
-    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column"></div>
-    <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">
-      <input id="chat-input" placeholder="Ask anything about the data..." style="flex:1;border-radius:20px;padding:8px 14px" onkeydown="if(event.key==='Enter')sendChat()">
-      <button onclick="sendChat()" style="background:var(--accent);color:#fff;border:none;border-radius:20px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600">Send</button>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column"></div>
+    <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <input id="chat-input" placeholder="Ask anything about the data..." style="flex:1;border-radius:20px;padding:7px 14px;font-size:12px" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" style="background:var(--accent);color:#fff;border:none;border-radius:20px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600">Send</button>
     </div>
   </div>
 `);
