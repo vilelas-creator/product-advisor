@@ -87,6 +87,7 @@ a:hover{text-decoration:underline;}
   <div id="section-customertype" class="section"></div>
   <div id="section-contacts" class="section"></div>
   <div id="section-import" class="section"></div>
+  <div id="section-logs" class="section"></div>
 </main>
 <div class="modal-bg" id="modal">
   <div class="modal-box">
@@ -349,7 +350,7 @@ const TABS=[
   {id:"geo",label:"🌍 Geographic"},
   {id:"customertype",label:"👥 Customer Types"},
   {id:"contacts",label:"👤 Contacts"},
-  {id:"import",label:"📥 Import Data"}
+  {id:"import",label:"📥 Import Data"},{id:"logs",label:"📋 Activity Logs"}
 ];
 let activeTab="overview";
 function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
@@ -584,7 +585,6 @@ const ALL_TABLES=[
   {id:"geographic_coverage",label:"Geographic Coverage",cols:["id","product_type","product","north_america","europe_russia","south_america","middle_east_africa","asia_australia"]},
   {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
-  {id:"functional_areas",label:"Functional Areas",cols:["id","function_name","category"]},
 ];
 function renderImport(){
   document.getElementById("section-import").innerHTML=`<div class="card">
@@ -688,11 +688,20 @@ async function importFile(event, table) {
     for (const row of rows) {
       try {
         const cleanRow = {...row};
-        if (!cleanRow.id) delete cleanRow.id;
+        // Remove null/empty id - let Supabase assign it
+        if (cleanRow.id === null || cleanRow.id === undefined || cleanRow.id === "" || cleanRow.id === 0) {
+          delete cleanRow.id;
+        }
         if (cleanRow.id) {
+          // ID exists: try update first, insert if not found
           const ex = await apiFetch(table + "?id=eq." + cleanRow.id, {params:{limit:1}});
-          if (ex.length > 0) await apiFetch(table + "?id=eq." + cleanRow.id, {method:"PATCH", body:cleanRow});
-          else await apiFetch(table, {method:"POST", body:cleanRow});
+          if (ex.length > 0) {
+            await apiFetch(table + "?id=eq." + cleanRow.id, {method:"PATCH", body:cleanRow});
+          } else {
+            // ID doesn't exist in DB - insert without ID to avoid conflicts
+            const {id, ...rowWithoutId} = cleanRow;
+            await apiFetch(table, {method:"POST", body:rowWithoutId});
+          }
         } else {
           await apiFetch(table, {method:"POST", body:cleanRow});
         }
@@ -701,6 +710,7 @@ async function importFile(event, table) {
     }
     statusEl.textContent = "✓ " + ok + " imported" + (err > 0 ? ", " + err + " errors (see console)" : "");
     statusEl.style.color = err > 0 ? "var(--yellow)" : "var(--green)";
+    if (ok > 0) logAction("IMPORT", table, null, null, {records_imported: ok, errors: err});
     if (table==="vendors") state.vendors = await getAll("vendors");
     else if (table==="products") state.products = await getAll("products");
     else if (table==="commodities") state.commodities = await getAll("commodities");
@@ -735,8 +745,8 @@ function openVendorModal(id){
     {label:"ID",value:v?.id||"",ro:true},{label:"Vendor Name",value:v?.vendor_name||""},{label:"Headquarters",type:"textarea",value:v?.headquarters||""},{label:"Website",value:v?.website||""},{label:"Industries Served",value:v?.industries_served||""}
   ],async()=>{
     const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
-    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);logAction("UPDATE","vendors",v.id,vals.vendor_name,{});}
+    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];logAction("INSERT","vendors",res[0]?.id,vals.vendor_name,{});}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -748,8 +758,8 @@ function openProductModal(id){
     {label:"ID",value:p?.id||"",ro:true},{label:"Product Name",value:p?.product_name||""},{label:"Product Type",type:"select",value:p?.product_type||"",options:types},{label:"Vendor",type:"select",value:p?.vendor||"",options:vendors},{label:"Deployment Model",type:"textarea",value:p?.deployment_model||""},{label:"Version",value:p?.version_info||""},{label:"Notes",type:"textarea",value:p?.notes||""}
   ],async()=>{
     const vals=getVals(["id","product_name","product_type","vendor","deployment_model","version_info","notes"]);
-    try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","products",p.id,vals.product_name,{vendor:vals.vendor});}
+    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];logAction("INSERT","products",res[0]?.id,vals.product_name,{vendor:vals.vendor});}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -787,8 +797,8 @@ function openContactModal(id){
     {label:"ID",value:ct?.id||"",ro:true},{label:"Product",type:"select",value:ct?.product||"",options:prods},{label:"Vendor",type:"select",value:ct?.vendor||"",options:vendors},{label:"Contact Name",value:ct?.contact_name||""},{label:"Role / Title",value:ct?.role_title||""},{label:"Email",value:ct?.email||""},{label:"Phone",value:ct?.phone_number||""},{label:"Region",value:ct?.region||""}
   ],async()=>{
     const vals=getVals(["id","product","vendor","contact_name","role_title","email","phone_number","region"]);
-    try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);logAction("UPDATE","product_contacts",ct.id,vals.contact_name,{product:vals.product});}
+    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];logAction("INSERT","product_contacts",res[0]?.id,vals.contact_name,{product:vals.product});}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -808,6 +818,7 @@ function render(){
   else if(activeTab==="customertype")renderCustomerType();
   else if(activeTab==="contacts")renderContacts();
   else if(activeTab==="import")renderImport();
+  else if(activeTab==="logs")renderLogs();
 }
 
 function renderCommoditiesView(){
@@ -837,6 +848,79 @@ function renderCommoditiesView(){
 }
 
 // ── INIT ──
+// ── ACTIVITY LOGS ──
+async function logAction(action, tableName, recordId, recordName, details) {
+  try {
+    const user = getUsername() || "Unknown";
+    await apiFetch("activity_logs", {
+      method: "POST",
+      body: {
+        action,
+        table_name: tableName,
+        record_id: recordId || null,
+        record_name: recordName || null,
+        user_name: user,
+        details: details ? JSON.stringify(details) : null
+      }
+    });
+  } catch(e) {
+    console.warn("Could not write log:", e.message);
+  }
+}
+
+async function renderLogs() {
+  document.getElementById("section-logs").innerHTML = '<div class="loading">Loading logs...</div>';
+  try {
+    const logs = await apiFetch("activity_logs", {
+      params: { order: "created_at.desc", limit: 200 }
+    });
+    const actionColor = {
+      INSERT: "var(--green)", UPDATE: "var(--yellow)",
+      DELETE: "var(--red)", IMPORT: "var(--accent)"
+    };
+    document.getElementById("section-logs").innerHTML = `
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">📋 Activity Logs</span>
+          <span class="card-meta">${logs.length} recent entries</span>
+          <button class="btn" style="margin-left:8px" onclick="renderLogs()">↺ Refresh</button>
+        </div>
+        ${logs.length === 0 ? '<div class="loading">No activity yet</div>' : `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr>
+              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;white-space:nowrap">Date & Time</th>
+              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">User</th>
+              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Action</th>
+              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Table</th>
+              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Record</th>
+              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Details</th>
+            </tr></thead>
+            <tbody>
+              ${logs.map(l => {
+                const dt = new Date(l.created_at);
+                const dateStr = dt.toLocaleDateString("en-GB") + " " + dt.toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit"});
+                const col = actionColor[l.action] || "var(--muted)";
+                let details = "";
+                try { const d = JSON.parse(l.details); details = Object.entries(d).map(([k,v]) => k+": "+v).join(", "); } catch {}
+                return `<tr>
+                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);white-space:nowrap;font-size:11px">${dateStr}</td>
+                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);font-weight:600">${l.user_name||""}</td>
+                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border)"><span style="background:${col}22;color:${col};border:1px solid ${col}44;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${l.action}</span></td>
+                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted)">${(l.table_name||"").replace(/_/g," ")}</td>
+                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border)">${l.record_name||l.record_id||""}</td>
+                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);font-size:11px;max-width:300px">${details}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>`}
+      </div>`;
+  } catch(e) {
+    document.getElementById("section-logs").innerHTML = `<div class="loading" style="color:var(--red)">Error loading logs: ${e.message}</div>`;
+  }
+}
+
 async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
