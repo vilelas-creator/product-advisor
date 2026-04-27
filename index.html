@@ -141,25 +141,13 @@ function pagerHtml(id,page,total,per){
 }
 function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
-function sf(key, val) {
-  state.filters[key] = val;
-  state.pages = {};
-  // Save focused element info before render
-  const active = document.activeElement;
-  const activeId = active?.id;
-  const selStart = active?.selectionStart;
-  const selEnd = active?.selectionEnd;
+function sf(key,val){
+  state.filters[key]=val;state.pages={};
+  const aid=document.activeElement?.id;
+  const ss=document.activeElement?.selectionStart;
+  const se=document.activeElement?.selectionEnd;
   render();
-  // Restore focus after render
-  if (activeId) {
-    const el = document.getElementById(activeId);
-    if (el) {
-      el.focus();
-      if (selStart !== undefined && el.setSelectionRange) {
-        try { el.setSelectionRange(selStart, selEnd); } catch(e) {}
-      }
-    }
-  }
+  if(aid){const el=document.getElementById(aid);if(el){el.focus();try{el.setSelectionRange(ss,se);}catch(e){}}}
 }
 function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};render();}
 function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
@@ -200,165 +188,152 @@ function showComments(table,id){
   document.body.appendChild(d);
 }
 
-// ── USER IDENTITY ──
-function getUsername() { return localStorage.getItem("pa_username") || ""; }
+// ── TABS ──
 
-function ensureUsername(callback) {
-  const user = getUsername();
-  if (user) { callback(user); return; }
-  const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
-  const box = document.createElement("div");
-  box.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center";
-  box.innerHTML = "<div style='font-size:28px;margin-bottom:12px'>&#128100;</div><div style='font-weight:700;font-size:16px;margin-bottom:6px'>Welcome to Product Advisor</div><div style='color:var(--muted);font-size:12px;margin-bottom:20px'>Please enter your name to continue.</div>";
-  const inp = document.createElement("input");
-  inp.id = "uname-inp"; inp.placeholder = "Your full name...";
-  inp.style.cssText = "width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box";
-  const btn = document.createElement("button");
-  btn.textContent = "Continue \u2192";
-  btn.style.cssText = "width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600";
-  box.appendChild(inp); box.appendChild(btn); overlay.appendChild(box); document.body.appendChild(overlay);
-  setTimeout(() => inp.focus(), 100);
-  const save = () => {
-    const name = inp.value.trim();
-    if (!name) { inp.style.border = "1px solid var(--red)"; return; }
-    localStorage.setItem("pa_username", name); overlay.remove(); callback(name);
-  };
-  btn.onclick = save; inp.onkeydown = e => { if (e.key === "Enter") save(); };
+// ── USER IDENTITY ──
+function getUsername(){return localStorage.getItem("pa_username")||"";}
+function ensureUsername(callback){
+  const user=getUsername();if(user){callback(user);return;}
+  const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center";
+  bx.innerHTML="<div style='font-size:28px;margin-bottom:12px'>&#128100;</div><div style='font-weight:700;font-size:16px;margin-bottom:6px'>Welcome to Product Advisor</div><div style='color:var(--muted);font-size:12px;margin-bottom:20px'>Please enter your name to continue.</div>";
+  const inp=document.createElement("input");inp.id="uname-inp";inp.placeholder="Your full name...";
+  inp.style.cssText="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box";
+  const btn=document.createElement("button");btn.textContent="Continue →";
+  btn.style.cssText="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600";
+  box: { bx.appendChild(inp);bx.appendChild(btn);ov.appendChild(bx);document.body.appendChild(ov);setTimeout(()=>inp.focus(),100); }
+  const save=()=>{const name=inp.value.trim();if(!name){inp.style.border="1px solid var(--red)";return;}localStorage.setItem("pa_username",name);ov.remove();callback(name);};
+  btn.onclick=save;inp.onkeydown=e=>{if(e.key==="Enter")save();};
 }
 
 // ── COMMENTS ──
-function parseComments(v) { try { return v ? JSON.parse(v) : []; } catch { return []; } }
-function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-
-function saveCommentsToState(table, id, updated) {
-  const str = JSON.stringify(updated);
-  if (table === "vendors") state.vendors = state.vendors.map(v => v.id===id ? {...v,capspire_comments:str} : v);
-  else if (table === "products") state.products = state.products.map(p => p.id===id ? {...p,capspire_comments:str} : p);
-  else if (table === "commodities") state.commodities = state.commodities.map(c => c.id===id ? {...c,capspire_comments:str} : c);
+function parseComments(v){try{return v?JSON.parse(v):[];}catch{return[];}}
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function saveCommentsToState(table,id,updated){
+  const str=JSON.stringify(updated);
+  if(table==="vendors")state.vendors=state.vendors.map(v=>v.id===id?{...v,capspire_comments:str}:v);
+  else if(table==="products")state.products=state.products.map(p=>p.id===id?{...p,capspire_comments:str}:p);
+  else if(table==="commodities")state.commodities=state.commodities.map(c=>c.id===id?{...c,capspire_comments:str}:c);
 }
-
-let cmtTable="", cmtId=null, cmtList=[];
-
-function renderComments(comments) {
-  if (!comments||!comments.length) return "<div style='color:var(--muted);font-size:11px;padding:4px 0'>No comments yet</div>";
-  return comments.map((c,i) =>
-    "<div class='comment-block'>" +
-    "<div style='display:flex;align-items:center;gap:6px;margin-bottom:4px'>" +
-    "<span class='comment-meta'>&#128100; " + escH(c.user) + " &nbsp;&middot;&nbsp; " + escH(c.date) + "</span>" +
-    "<button data-ci='" + i + "' data-ca='edit' style='margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#9998; Edit</button>" +
-    "<button data-ci='" + i + "' data-ca='del' style='background:none;border:1px solid var(--red);color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#128465;</button>" +
-    "</div><div class='comment-text'>" + escH(c.text) + "</div></div>"
+let cmtTable="",cmtId=null,cmtList=[];
+function renderComments(comments){
+  if(!comments||!comments.length)return "<div style='color:var(--muted);font-size:11px;padding:4px 0'>No comments yet</div>";
+  return comments.map((c,i)=>
+    "<div class='comment-block'><div style='display:flex;align-items:center;gap:6px;margin-bottom:4px'>" +
+    "<span class='comment-meta'>&#128100; "+escH(c.user)+" &nbsp;&middot;&nbsp; "+escH(c.date)+"</span>" +
+    "<button data-ci='"+i+"' data-ca='edit' style='margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#9998; Edit</button>" +
+    "<button data-ci='"+i+"' data-ca='del' style='background:none;border:1px solid var(--red);color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#128465;</button>" +
+    "</div><div class='comment-text'>"+escH(c.text)+"</div></div>"
   ).join("");
 }
-
-function refreshCmtModal() {
-  const el = document.getElementById("cmt-list");
-  if (el) el.innerHTML = renderComments(cmtList);
+function refreshCmtModal(){const el=document.getElementById("cmt-list");if(el)el.innerHTML=renderComments(cmtList);}
+function editCmt(idx){
+  const c=cmtList[idx];
+  const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
+  const t=document.createElement("div");t.style.cssText="font-weight:700;font-size:14px;margin-bottom:14px";t.textContent="Edit Comment";
+  const ta=document.createElement("textarea");ta.style.cssText="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";ta.value=c.text;
+  const row=document.createElement("div");row.style.cssText="display:flex;gap:8px;margin-top:12px";
+  const sb=document.createElement("button");sb.style.cssText="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";sb.textContent="Save";
+  const cb=document.createElement("button");cb.style.cssText="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit";cb.textContent="Cancel";
+  cb.onclick=()=>ov.remove();row.appendChild(sb);row.appendChild(cb);bx.appendChild(t);bx.appendChild(ta);bx.appendChild(row);ov.appendChild(bx);
+  document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>ta.focus(),100);
+  sb.onclick=async()=>{const txt=ta.value.trim();if(!txt)return;cmtList[idx]={...c,text:txt};ov.remove();
+    try{await apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}});saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();render();}catch(e){alert("Error: "+e.message);}};
 }
-
-function editCmt(idx) {
-  const c = cmtList[idx];
-  const ov = document.createElement("div");
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
-  const bx = document.createElement("div");
-  bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
-  const t = document.createElement("div"); t.style.cssText = "font-weight:700;font-size:14px;margin-bottom:14px"; t.textContent = "\u270F Edit Comment";
-  const ta = document.createElement("textarea");
-  ta.style.cssText = "width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
-  ta.value = c.text;
-  const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;margin-top:12px";
-  const sb = document.createElement("button"); sb.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; sb.textContent = "\uD83D\uDCBE Save";
-  const cb = document.createElement("button"); cb.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit"; cb.textContent = "Cancel";
-  cb.onclick = () => ov.remove();
-  row.appendChild(sb); row.appendChild(cb); bx.appendChild(t); bx.appendChild(ta); bx.appendChild(row); ov.appendChild(bx);
-  document.body.appendChild(ov); ov.onclick = e => { if(e.target===ov) ov.remove(); }; setTimeout(() => ta.focus(), 100);
-  sb.onclick = async () => {
-    const txt = ta.value.trim(); if (!txt) return;
-    cmtList[idx] = {...c, text: txt}; ov.remove();
-    try { await apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}}); saveCommentsToState(cmtTable, cmtId, cmtList); logAction("UPDATE","comments",cmtId,null,{table:cmtTable,text:txt.slice(0,50)}); refreshCmtModal(); render(); } catch(e) { logAction("ERROR","comments",cmtId,null,{error:e.message}); alert("Error: "+e.message); }
-  };
-}
-
-function delCmt(idx) {
-  if (!confirm("Delete this comment?")) return;
+function delCmt(idx){
+  if(!confirm("Delete this comment?"))return;
   cmtList.splice(idx,1);
-  apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}})
-    .then(() => { saveCommentsToState(cmtTable,cmtId,cmtList); logAction("DELETE","comments",cmtId,null,{table:cmtTable}); refreshCmtModal(); render(); })
-    .catch(e => { logAction("ERROR","comments",cmtId,null,{error:e.message}); alert("Error: "+e.message); });
+  apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}})
+    .then(()=>{saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();render();})
+    .catch(e=>alert("Error: "+e.message));
 }
-
-function openAddComment(table, id) {
-  const sk = table==="vendors"?"vendors":table==="products"?"products":"commodities";
-  const row = state[sk].find(r=>r.id===id);
-  const existing = parseComments(row?.capspire_comments);
-  ensureUsername(user => {
-    const ov = document.createElement("div");
-    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
-    const bx = document.createElement("div"); bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
-    const t1 = document.createElement("div"); t1.style.cssText = "font-weight:700;font-size:14px;margin-bottom:4px"; t1.textContent = "\uD83D\uDCAC Add Comment";
-    const t2 = document.createElement("div"); t2.style.cssText = "font-size:11px;color:var(--muted);margin-bottom:14px"; t2.textContent = "Commenting as " + user;
-    const ta = document.createElement("textarea"); ta.id = "cmt-inp"; ta.placeholder = "Write your comment here...";
-    ta.style.cssText = "width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
-    const btns = document.createElement("div"); btns.style.cssText = "display:flex;gap:8px;margin-top:12px";
-    const sb = document.createElement("button"); sb.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; sb.textContent = "\uD83D\uDCBE Save";
-    const cb = document.createElement("button"); cb.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit"; cb.textContent = "Cancel";
-    cb.onclick = () => ov.remove(); btns.appendChild(sb); btns.appendChild(cb);
-    bx.appendChild(t1); bx.appendChild(t2); bx.appendChild(ta); bx.appendChild(btns); ov.appendChild(bx);
-    document.body.appendChild(ov); ov.onclick = e => { if(e.target===ov) ov.remove(); }; setTimeout(() => ta.focus(), 100);
-    sb.onclick = async () => {
-      const txt = ta.value.trim(); if (!txt) { alert("Please write a comment first."); return; }
-      const now = new Date();
-      const ds = now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
-      const updated = [...existing, {user, date:ds, text:txt}]; ov.remove();
-      try { await apiFetch(table+"?id=eq."+id, {method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}}); saveCommentsToState(table, id, updated); logAction("INSERT","comments",id,user,{table,text:txt.slice(0,50)}); render(); } catch(e) { logAction("ERROR","comments",id,null,{error:e.message}); alert("Error: "+e.message); }
+function openAddComment(table,id){
+  const sk=table==="vendors"?"vendors":table==="products"?"products":"commodities";
+  const row=state[sk].find(r=>r.id===id);
+  const existing=parseComments(row?.capspire_comments);
+  ensureUsername(user=>{
+    const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
+    const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
+    const t1=document.createElement("div");t1.style.cssText="font-weight:700;font-size:14px;margin-bottom:4px";t1.textContent="Add Comment";
+    const t2=document.createElement("div");t2.style.cssText="font-size:11px;color:var(--muted);margin-bottom:14px";t2.textContent="Commenting as "+user;
+    const ta=document.createElement("textarea");ta.placeholder="Write your comment here...";
+    ta.style.cssText="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
+    const btns=document.createElement("div");btns.style.cssText="display:flex;gap:8px;margin-top:12px";
+    const sb=document.createElement("button");sb.style.cssText="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";sb.textContent="Save";
+    const cb=document.createElement("button");cb.style.cssText="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit";cb.textContent="Cancel";
+    cb.onclick=()=>ov.remove();btns.appendChild(sb);btns.appendChild(cb);
+    bx.appendChild(t1);bx.appendChild(t2);bx.appendChild(ta);bx.appendChild(btns);ov.appendChild(bx);
+    document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>ta.focus(),100);
+    sb.onclick=async()=>{
+      const txt=ta.value.trim();if(!txt){alert("Please write a comment first.");return;}
+      const now=new Date();const ds=now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+      const updated=[...existing,{user,date:ds,text:txt}];ov.remove();
+      try{await apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}});saveCommentsToState(table,id,updated);render();}
+      catch(e){alert("Error: "+e.message);}
     };
   });
 }
-
-function showComments(table, id) {
-  const sk = table==="vendors"?"vendors":table==="products"?"products":"commodities";
-  const row = state[sk].find(r=>r.id===id);
-  cmtTable=table; cmtId=id; cmtList=parseComments(row?.capspire_comments);
-  const d = document.createElement("div"); d.id = "cmt-overlay";
-  d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
-  const bx = document.createElement("div"); bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px";
-  const hd = document.createElement("div"); hd.style.cssText = "display:flex;align-items:center;margin-bottom:14px";
-  const ht = document.createElement("strong"); ht.textContent = "\uD83D\uDCAC capSpire Comments";
-  const hc = document.createElement("button"); hc.style.cssText = "margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer"; hc.textContent = "\u2715"; hc.onclick = () => d.remove();
-  hd.appendChild(ht); hd.appendChild(hc);
-  const lst = document.createElement("div"); lst.id = "cmt-list"; lst.innerHTML = renderComments(cmtList);
-  const ab = document.createElement("button"); ab.style.cssText = "margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; ab.textContent = "+ Add Comment";
-  ab.onclick = () => { d.remove(); openAddComment(table, id); };
-  bx.appendChild(hd); bx.appendChild(lst); bx.appendChild(ab); d.appendChild(bx); document.body.appendChild(d);
-  d.onclick = e => { if(e.target===d) d.remove(); };
-  lst.addEventListener("click", e => {
-    const btn = e.target.closest("[data-ca]"); if (!btn) return;
-    const idx = parseInt(btn.dataset.ci);
-    if (btn.dataset.ca === "edit") editCmt(idx);
-    else if (btn.dataset.ca === "del") delCmt(idx);
-  });
+function showComments(table,id){
+  const sk=table==="vendors"?"vendors":table==="products"?"products":"commodities";
+  const row=state[sk].find(r=>r.id===id);
+  cmtTable=table;cmtId=id;cmtList=parseComments(row?.capspire_comments);
+  const d=document.createElement("div");d.id="cmt-overlay";
+  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px";
+  const hd=document.createElement("div");hd.style.cssText="display:flex;align-items:center;margin-bottom:14px";
+  const ht=document.createElement("strong");ht.textContent="capSpire Comments";
+  const hc=document.createElement("button");hc.style.cssText="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer";hc.textContent="x";hc.onclick=()=>d.remove();
+  hd.appendChild(ht);hd.appendChild(hc);
+  const lst=document.createElement("div");lst.id="cmt-list";lst.innerHTML=renderComments(cmtList);
+  const ab=document.createElement("button");ab.style.cssText="margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";ab.textContent="+ Add Comment";
+  ab.onclick=()=>{d.remove();openAddComment(table,id);};
+  bx.appendChild(hd);bx.appendChild(lst);bx.appendChild(ab);d.appendChild(bx);document.body.appendChild(d);
+  d.onclick=e=>{if(e.target===d)d.remove();};
+  lst.addEventListener("click",e=>{const btn=e.target.closest("[data-ca]");if(!btn)return;const idx=parseInt(btn.dataset.ci);if(btn.dataset.ca==="edit")editCmt(idx);else if(btn.dataset.ca==="del")delCmt(idx);});
 }
-
-function commentCell(table, row) {
-  const comments = parseComments(row.capspire_comments);
-  const count = comments.length;
+function commentCell(table,row){
+  const comments=parseComments(row.capspire_comments);const count=comments.length;
   return "<td style='min-width:180px'><div style='display:flex;align-items:center;gap:6px'>" +
-    "<span style='font-size:11px;color:var(--muted)'>" + (count ? count+" comment"+(count>1?"s":"") : "No comments") + "</span>" +
-    "<button data-ct='" + table + "' data-cid='" + row.id + "' data-ca='view' class='btn' style='font-size:10px;padding:2px 7px'>&#128172; View</button>" +
-    "<button data-ct='" + table + "' data-cid='" + row.id + "' data-ca='add' class='btn btn-primary' style='font-size:10px;padding:2px 7px'>+ Add</button>" +
+    "<span style='font-size:11px;color:var(--muted)'>"+(count?count+" comment"+(count>1?"s":""):"No comments")+"</span>" +
+    "<button data-ct='"+table+"' data-cid='"+row.id+"' data-ca='view' class='btn' style='font-size:10px;padding:2px 7px'>View</button>" +
+    "<button data-ct='"+table+"' data-cid='"+row.id+"' data-ca='add' class='btn btn-primary' style='font-size:10px;padding:2px 7px'>+ Add</button>" +
     "</div></td>";
 }
-
-document.addEventListener("click", e => {
-  const btn = e.target.closest("[data-ca]");
-  if (!btn || !btn.dataset.ct) return;
-  const action = btn.dataset.ca, table = btn.dataset.ct, id = parseInt(btn.dataset.cid);
-  if (action === "view") showComments(table, id);
-  else if (action === "add") openAddComment(table, id);
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-ca]");if(!btn||!btn.dataset.ct)return;
+  const action=btn.dataset.ca,table=btn.dataset.ct,id=parseInt(btn.dataset.cid);
+  if(action==="view")showComments(table,id);else if(action==="add")openAddComment(table,id);
 });
 
-// ── TABS ──
+// ── ACTIVITY LOGS ──
+async function logAction(action,tableName,recordId,recordName,details){
+  try{await apiFetch("activity_logs",{method:"POST",body:{action,table_name:tableName,record_id:recordId||null,record_name:recordName||null,user_name:getUsername()||"Unknown",details:details?JSON.stringify(details):null}});}
+  catch(e){console.warn("Log:",e.message);}
+}
+async function renderLogs(){
+  document.getElementById("section-logs").innerHTML='<div class="loading">Loading logs...</div>';
+  try{
+    const logs=await apiFetch("activity_logs",{params:{order:"created_at.desc",limit:200}});
+    const ac={INSERT:"var(--green)",UPDATE:"var(--yellow)",DELETE:"var(--red)",IMPORT:"var(--accent)",ERROR:"var(--red)"};
+    const rows=logs.map(l=>{
+      const dt=new Date(l.created_at);
+      const ds=dt.toLocaleDateString("en-GB")+" "+dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+      const col=ac[l.action]||"var(--muted)";
+      let det="";try{const d=JSON.parse(l.details);det=Object.entries(d).map(([k,v])=>k+": "+v).join(", ");}catch{}
+      return "<tr>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);white-space:nowrap;font-size:11px'>"+ds+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);font-weight:600'>"+escH(l.user_name||"")+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border)'><span style='background:"+col+"22;color:"+col+";border:1px solid "+col+"44;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600'>"+l.action+"</span></td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted)'>"+escH((l.table_name||"").replace(/_/g," "))+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border)'>"+escH(String(l.record_name||l.record_id||""))+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);font-size:11px;max-width:300px'>"+escH(det)+"</td>" +
+        "</tr>";
+    }).join("");
+    document.getElementById("section-logs").innerHTML='<div class="card"><div class="card-head"><span class="card-title">Activity Logs</span><span class="card-meta">'+logs.length+' entries</span><button class="btn" style="margin-left:8px" onclick="renderLogs()">Refresh</button></div>'+(logs.length===0?'<div class="loading">No activity yet</div>':'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;white-space:nowrap">Date & Time</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">User</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Action</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Table</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Record</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Details</th></tr></thead><tbody>'+rows+'</tbody></table></div>')+'</div>';
+  }catch(e){document.getElementById("section-logs").innerHTML='<div class="loading" style="color:var(--red)">Error: '+e.message+'</div>';}
+}
+
 const TABS=[
   {id:"overview",label:"📊 Overview"},
   {id:"vendors",label:"🏢 Vendors"},
@@ -369,7 +344,7 @@ const TABS=[
   {id:"geo",label:"🌍 Geographic"},
   {id:"customertype",label:"👥 Customer Types"},
   {id:"contacts",label:"👤 Contacts"},
-  {id:"import",label:"📥 Import Data"},{id:"logs",label:"📋 Activity Logs"}
+  {id:"import",label:"📥 Import Data"}
 ];
 let activeTab="overview";
 function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
@@ -398,7 +373,7 @@ function renderVendors(){
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-vendors").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span></div>
-    <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
+    <div class="filters"><input value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
     ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${commentCell("vendors",v)}<td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
@@ -417,7 +392,7 @@ function renderProducts(){
   document.getElementById("section-products").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span></div>
     <div class="filters">
-      <input id="search-p_q" value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
@@ -435,7 +410,7 @@ function renderCommodities(){
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
-    <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
+    <div class="filters"><input value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
     ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td>${commentCell("commodities",c)}<td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
@@ -455,7 +430,7 @@ function renderCommCoverage(){
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
     <div class="filters">
-      <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
@@ -481,7 +456,7 @@ function renderCTRM(){
     <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span></div>
     ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
     <div class="filters">
-      <input id="search-ctrm_q" value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ctrm_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('ctrm_com',this.value)">${selOpts(coms,cF,"All Commodities")}</select>
       <select onchange="sf('ctrm_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
@@ -505,7 +480,7 @@ function renderRisk(){
   document.getElementById("section-risk").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span></div>
     <div class="filters">
-      <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('risk_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
       <select onchange="sf('risk_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
@@ -529,7 +504,7 @@ function renderGeo(){
   document.getElementById("section-geo").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span></div>
     <div class="filters">
-      <input id="search-geo_q" value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('geo_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
       <select onchange="sf('geo_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${resetBtn('geo_')}
@@ -552,7 +527,7 @@ function renderCustomerType(){
   document.getElementById("section-customertype").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span></div>
     <div class="filters">
-      <input id="search-ct_q" value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ct_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
       <select onchange="sf('ct_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${resetBtn('ct_')}
@@ -573,7 +548,7 @@ function renderContacts(){
   document.getElementById("section-contacts").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span></div>
     <div class="filters">
-      <input id="search-con_q" value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('con_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
       <select onchange="sf('con_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('con_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openContactModal(null)">+ Add Contact</button>
@@ -611,8 +586,8 @@ function renderImport(){
       <div style="background:var(--bg3);border:1px solid var(--yellow)44;border-radius:8px;padding:14px;margin-bottom:20px">
         <div style="font-weight:700;color:var(--yellow);margin-bottom:8px">⚠ Important — Read before importing</div>
         <ul style="color:var(--muted);font-size:12px;line-height:2.2;padding-left:18px">
-          <li>Upload <strong style="color:var(--text)">Excel (.xlsx)</strong> or CSV files — Excel is recommended</li>
-          <li>Download the template to get the correct column format for each table</li>
+          <li>Files must be in <strong style="color:var(--text)">CSV format (.csv)</strong> — NOT Excel (.xlsx or .xls)</li>
+          <li>To save as CSV from Excel: <strong style="color:var(--text)">File → Save As → CSV (Comma delimited)</strong></li>
           <li>The first row must be the column headers — do not change them</li>
           <li>Leave the ID column empty for new records (it will be assigned automatically)</li>
           <li>Records with an existing ID will be updated; new IDs will be inserted</li>
@@ -626,7 +601,7 @@ function renderImport(){
           <div style="padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-success" onclick="downloadTemplate('${t.id}','${t.label}',[${t.cols.map(c=>`'${c}'`).join(",")}])">⬇ Template</button>
             <label class="btn btn-primary" style="cursor:pointer">
-              ⬆ Upload Excel / CSV
+              ⬆ Upload CSV
               <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(event,'${t.id}')">
             </label>
             <span id="import-status-${t.id}" style="font-size:11px;color:var(--muted);width:100%"></span>
@@ -637,108 +612,84 @@ function renderImport(){
   </div>`;
 }
 
-function downloadTemplate(tableId, label, cols) {
-  if (typeof XLSX === "undefined") { alert("Excel library loading, please try again."); return; }
-  const ws = XLSX.utils.aoa_to_sheet([cols]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Template");
-  XLSX.writeFile(wb, "template_" + tableId + ".xlsx");
+function downloadTemplate(tableId,label,cols){
+  if(typeof XLSX==="undefined"){alert("Loading Excel library, please try again.");return;}
+  const ws=XLSX.utils.aoa_to_sheet([cols]);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Template");
+  XLSX.writeFile(wb,"template_"+tableId+".xlsx");
 }
 
-async function parseFileToRows(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array"});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(ws, {defval:null, raw:false});
-        const rows = raw.map(r => {
-          const obj = {};
-          Object.entries(r).forEach(([k,v]) => {
-            const key = String(k).trim();
-            const val = (v===null||v==="") ? null : (!isNaN(v) && v !== "") ? Number(v) : String(v).trim();
-            if (val !== null && val !== "") obj[key] = val;
+async function parseFileToRows(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const raw=XLSX.utils.sheet_to_json(ws,{defval:null,raw:false});
+        const rows=raw.map(r=>{
+          const obj={};
+          Object.entries(r).forEach(([k,v])=>{
+            const key=String(k).trim();
+            const val=(v===null||v==="")?null:(!isNaN(v)&&v!=="")?Number(v):String(v).trim();
+            if(val!==null&&val!=="")obj[key]=val;
           });
           return obj;
-        }).filter(r => Object.keys(r).length > 0);
+        }).filter(r=>Object.keys(r).length>0);
         resolve(rows);
-      } catch(e) { reject(e); }
+      }catch(e){reject(e);}
     };
-    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onerror=()=>reject(new Error("Could not read file"));
     reader.readAsArrayBuffer(file);
   });
 }
 
-async function importFile(event, table) {
-  const file = event.target.files[0]; if (!file) return;
-  event.target.value = "";
-  const statusEl = document.getElementById("import-status-" + table);
-  const ext = file.name.split(".").pop().toLowerCase();
-  if (!["xlsx","xls","csv"].includes(ext)) {
-    statusEl.textContent = "Please upload an Excel (.xlsx) or CSV file";
-    statusEl.style.color = "var(--red)"; return;
-  }
-  statusEl.textContent = "Reading file..."; statusEl.style.color = "var(--yellow)";
-  try {
-    let rows;
-    if (ext === "csv") {
-      const text = await file.text();
-      const lines = text.split("\n").filter(l => l.trim());
-      if (lines.length < 2) { statusEl.textContent = "File is empty!"; statusEl.style.color = "var(--red)"; return; }
-      const sep = lines[0].includes(";") ? ";" : ",";
-      const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g,""));
-      rows = lines.slice(1).map(line => {
-        const vals = line.split(sep).map(v => v.trim().replace(/^"|"$/g,""));
-        const obj = {};
-        headers.forEach((h,i) => {
-          const v = vals[i] || "";
-          if (h && v !== "") obj[h] = isNaN(v) ? v : Number(v);
-        });
-        return obj;
-      }).filter(r => Object.keys(r).length > 0);
-    } else {
-      rows = await parseFileToRows(file);
-    }
-    if (!rows.length) { statusEl.textContent = "No data found!"; statusEl.style.color = "var(--red)"; return; }
-    statusEl.textContent = "Importing " + rows.length + " records...";
-    let ok = 0, err = 0;
-    for (const row of rows) {
-      try {
-        const cleanRow = {...row};
-        // Remove null/empty id - let Supabase assign it
-        if (cleanRow.id === null || cleanRow.id === undefined || cleanRow.id === "" || cleanRow.id === 0) {
-          delete cleanRow.id;
-        }
-        if (cleanRow.id) {
-          // ID exists: try update first, insert if not found
-          const ex = await apiFetch(table + "?id=eq." + cleanRow.id, {params:{limit:1}});
-          if (ex.length > 0) {
-            await apiFetch(table + "?id=eq." + cleanRow.id, {method:"PATCH", body:cleanRow});
-          } else {
-            // ID doesn't exist in DB - insert without ID to avoid conflicts
-            const {id, ...rowWithoutId} = cleanRow;
-            await apiFetch(table, {method:"POST", body:rowWithoutId});
-          }
-        } else {
-          await apiFetch(table, {method:"POST", body:cleanRow});
+async function importFile(event,table){
+  const file=event.target.files[0];if(!file)return;
+  const statusEl=document.getElementById("import-status-"+table);
+  const ext=file.name.split(".").pop().toLowerCase();if(!["xlsx","xls","csv"].includes(ext)){statusEl.textContent="Please upload Excel or CSV";statusEl.style.color="var(--red)";return;}
+  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
+  try{
+    const text=await file.text();
+    const lines=text.split("\n").filter(l=>l.trim());
+    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
+    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
+    rows=lines.slice(1).map(line=>{
+      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
+      const obj={};
+      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
+      return obj;
+    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
+    statusEl.textContent="Importing "+rows.length+" records...";
+    let ok=0,err=0;
+    for(const row of rows){
+      try{
+        if(row.id){
+          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
+          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
+          else await apiFetch(table,{method:"POST",body:row});
+        }else{
+          const{id,...r}=row;
+          await apiFetch(table,{method:"POST",body:r});
         }
         ok++;
-      } catch(e) { err++; console.error("Row error:", e.message, row); logAction("ERROR", table, null, null, {error: e.message, row: JSON.stringify(row).slice(0,100)}); }
+      }catch(e){err++;}
     }
-    statusEl.textContent = "✓ " + ok + " imported" + (err > 0 ? ", " + err + " errors (see console)" : "");
-    statusEl.style.color = err > 0 ? "var(--yellow)" : "var(--green)";
-    if (ok > 0) logAction("IMPORT", table, null, null, {records_imported: ok, errors: err});
-    if (table==="vendors") state.vendors = await getAll("vendors");
-    else if (table==="products") state.products = await getAll("products");
-    else if (table==="commodities") state.commodities = await getAll("commodities");
-    else if (table==="product_contacts") state.contacts = await getAll("product_contacts");
-    else if (table==="geographic_coverage") state.geo = await getAll("geographic_coverage");
-    else if (table==="product_commodities_coverage") state.pcc = await getAll("product_commodities_coverage");
-    else if (table==="customer_type_coverage") state.ct = await getAll("customer_type_coverage");
+    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
+    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
+    // Reload affected data
+    if(table==="vendors")state.vendors=await getAll("vendors");
+    else if(table==="products")state.products=await getAll("products");
+    else if(table==="commodities")state.commodities=await getAll("commodities");
+    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
+    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
+    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
+    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
     render();
-  } catch(e) { statusEl.textContent = "Error: " + e.message; statusEl.style.color = "var(--red)"; }
+  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
 }
+
 // ── MODALS ──
 function openModal(title,fields,saveFn){
   document.getElementById("modal-title").textContent=title;
@@ -754,10 +705,7 @@ function closeModal(){document.getElementById("modal").classList.remove("open");
 function saveModal(){if(modalSaveFn)modalSaveFn();}
 function getVals(keys){
   const els=[...document.getElementById("modal-fields").querySelectorAll("input,select,textarea")];
-  const r={};keys.forEach((k,i)=>{
-    const v=els[i]?.value||"";
-    r[k] = (k==="id" && v==="") ? null : v;
-  });return r;
+  const r={};keys.forEach((k,i)=>{const v=els[i]?.value||"";r[k]=(k==="id"&&v==="")?null:v;});return r;
 }
 
 function openVendorModal(id){
@@ -767,8 +715,8 @@ function openVendorModal(id){
   ],async()=>{
     const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
     if(!vals.id)delete vals.id;
-    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);logAction("UPDATE","vendors",v.id,vals.vendor_name,{});}
-    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];logAction("INSERT","vendors",res[0]?.id,vals.vendor_name,{});}closeModal();render();}catch(e){logAction("ERROR","vendors",null,vals.vendor_name,{error:e.message});alert("Error: "+e.message);}
+    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -781,8 +729,8 @@ function openProductModal(id){
   ],async()=>{
     const vals=getVals(["id","product_name","product_type","vendor","deployment_model","version_info","notes"]);
     if(!vals.id)delete vals.id;
-    try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","products",p.id,vals.product_name,{vendor:vals.vendor});}
-    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];logAction("INSERT","products",res[0]?.id,vals.product_name,{vendor:vals.vendor});}closeModal();render();}catch(e){logAction("ERROR","products",null,vals.product_name,{error:e.message});alert("Error: "+e.message);}
+    try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -793,8 +741,8 @@ function openCommodityModal(id){
   ],async()=>{
     const vals=getVals(["id","commodity_name"]);
     if(!vals.id)delete vals.id;
-    try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);logAction("UPDATE","commodities",c.id,vals.commodity_name,{});}
-    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];logAction("INSERT","commodities",res[0]?.id,vals.commodity_name,{});}closeModal();render();}catch(e){logAction("ERROR","commodities",null,null,{error:e.message});alert("Error: "+e.message);}
+    try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -809,8 +757,8 @@ function openPCCModal(id){
   ],async()=>{
     const vals=getVals(["id","product","product_type","commodity","coverage_level"]);
     if(!vals.id)delete vals.id;
-    try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","product_commodities_coverage",p.id,vals.product+" - "+vals.commodity,{coverage:vals.coverage_level});}
-    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];logAction("INSERT","product_commodities_coverage",res[0]?.id,vals.product+" - "+vals.commodity,{coverage:vals.coverage_level});}closeModal();render();}catch(e){logAction("ERROR","product_commodities_coverage",null,null,{error:e.message});alert("Error: "+e.message);}
+    try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -823,8 +771,8 @@ function openContactModal(id){
   ],async()=>{
     const vals=getVals(["id","product","vendor","contact_name","role_title","email","phone_number","region"]);
     if(!vals.id)delete vals.id;
-    try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);logAction("UPDATE","product_contacts",ct.id,vals.contact_name,{product:vals.product});}
-    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];logAction("INSERT","product_contacts",res[0]?.id,vals.contact_name,{product:vals.product});}closeModal();render();}catch(e){logAction("ERROR","product_contacts",null,vals.contact_name,{error:e.message});alert("Error: "+e.message);}
+    try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -860,7 +808,7 @@ function renderCommoditiesView(){
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
     <div class="filters">
-      <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
@@ -874,79 +822,6 @@ function renderCommoditiesView(){
 }
 
 // ── INIT ──
-// ── ACTIVITY LOGS ──
-async function logAction(action, tableName, recordId, recordName, details) {
-  try {
-    const user = getUsername() || "Unknown";
-    await apiFetch("activity_logs", {
-      method: "POST",
-      body: {
-        action,
-        table_name: tableName,
-        record_id: recordId || null,
-        record_name: recordName || null,
-        user_name: user,
-        details: details ? JSON.stringify(details) : null
-      }
-    });
-  } catch(e) {
-    console.warn("Could not write log:", e.message);
-  }
-}
-
-async function renderLogs() {
-  document.getElementById("section-logs").innerHTML = '<div class="loading">Loading logs...</div>';
-  try {
-    const logs = await apiFetch("activity_logs", {
-      params: { order: "created_at.desc", limit: 200 }
-    });
-    const actionColor = {
-      INSERT: "var(--green)", UPDATE: "var(--yellow)",
-      DELETE: "var(--red)", IMPORT: "var(--accent)"
-    };
-    document.getElementById("section-logs").innerHTML = `
-      <div class="card">
-        <div class="card-head">
-          <span class="card-title">📋 Activity Logs</span>
-          <span class="card-meta">${logs.length} recent entries</span>
-          <button class="btn" style="margin-left:8px" onclick="renderLogs()">↺ Refresh</button>
-        </div>
-        ${logs.length === 0 ? '<div class="loading">No activity yet</div>' : `
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead><tr>
-              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;white-space:nowrap">Date & Time</th>
-              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">User</th>
-              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Action</th>
-              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Table</th>
-              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Record</th>
-              <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Details</th>
-            </tr></thead>
-            <tbody>
-              ${logs.map(l => {
-                const dt = new Date(l.created_at);
-                const dateStr = dt.toLocaleDateString("en-GB") + " " + dt.toLocaleTimeString("en-GB", {hour:"2-digit",minute:"2-digit"});
-                const col = actionColor[l.action] || "var(--muted)";
-                let details = "";
-                try { const d = JSON.parse(l.details); details = Object.entries(d).map(([k,v]) => k+": "+v).join(", "); } catch {}
-                return `<tr>
-                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);white-space:nowrap;font-size:11px">${dateStr}</td>
-                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);font-weight:600">${l.user_name||""}</td>
-                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border)"><span style="background:${col}22;color:${col};border:1px solid ${col}44;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${l.action}</span></td>
-                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted)">${(l.table_name||"").replace(/_/g," ")}</td>
-                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border)">${l.record_name||l.record_id||""}</td>
-                  <td style="padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);font-size:11px;max-width:300px">${details}</td>
-                </tr>`;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>`}
-      </div>`;
-  } catch(e) {
-    document.getElementById("section-logs").innerHTML = `<div class="loading" style="color:var(--red)">Error loading logs: ${e.message}</div>`;
-  }
-}
-
 async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
@@ -982,17 +857,25 @@ geographic_coverage(id,product_type,product,north_america,europe_russia,south_am
 product_contacts(id,product,product_type,vendor,contact_name,role_title,email,phone_number,region)`;
 
 const SYSTEM_PROMPT=`You are an AI assistant for the Product Advisor CTRM database. Always respond in English.
-${DB_SCHEMA}
 
-When user asks a DATA QUESTION, respond with ONLY:
-SQL_QUERY: SELECT ... (max 50 rows, use ILIKE for text search, no INSERT/UPDATE/DELETE)
+DATABASE SCHEMA:
+vendors(id,vendor_name,headquarters,website,industries_served)
+products(id,product_name,product_type,vendor,deployment_model,version_info,notes)
+product_commodities_coverage(id,product,product_type,commodity,coverage_level) -- Covered/Partially Covered/Not Covered/Can be covered
+product_function_ctrm(id,product,function_name,commodity,coverage_level) -- deployed/capable/not currently/Not Applicable
+product_function_risk(id,product,category,function_name,coverage_level)
+customer_type_coverage(id,product_type,product,utility,energy_retailer,generator_non_renewables,renewables_generator,trader_broker,hedge_fund_cta,bank_financial_institution,consultant_analyst,agricultural_producer,biofuels,producer_marketer,refining_petrochemical,merchant_energy_firm,industrial_consumer,other) -- 0-1 decimals
+geographic_coverage(id,product_type,product,north_america,europe_russia,south_america,middle_east_africa,asia_australia) -- 0-1 decimals
+product_contacts(id,product,product_type,vendor,contact_name,role_title,email,phone_number,region)
 
-When user wants to ADD data:
-ACTION:ADD_VENDOR:{"vendor_name":"","headquarters":"","website":"","industries_served":""}
-ACTION:ADD_PRODUCT:{"product_name":"","product_type":"CTRM Solutions","vendor":"","deployment_model":"","version_info":"","notes":""}
-ACTION:ADD_CONTACT:{"product":"","vendor":"","contact_name":"","role_title":"","email":"","phone_number":"","region":""}
-
-For simple conversational questions answer directly. Be concise and use bullet points.`;
+RULES:
+1. Data questions: respond ONLY with: SQL_QUERY: SELECT ... FROM table WHERE column ILIKE '%value%' LIMIT 50
+2. Add records: respond ONLY with (use real values, no placeholders):
+   ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
+   ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"","version_info":"","notes":""}
+   ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"","phone_number":"","region":""}
+3. Never show template placeholders - use real values from user input
+4. Simple questions: answer directly in plain text`;
 
 let chatHistory=[],chatOpen=false;
 function showGroqKeyModal(){
@@ -1000,20 +883,16 @@ function showGroqKeyModal(){
   ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
   const bx=document.createElement("div");
   bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px";
-  bx.innerHTML="<div style='font-size:22px;text-align:center;margin-bottom:12px'>&#128273;</div><div style='font-weight:700;font-size:15px;margin-bottom:6px;text-align:center'>Groq API Key Required</div><div style='color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.6'>The AI chatbox uses Groq (free). Get your key at <a href=\"https://console.groq.com\" target=\"_blank\" style=\"color:var(--accent)\">console.groq.com</a></div>";
+  const h=document.createElement("div");h.innerHTML="<div style='font-size:22px;text-align:center;margin-bottom:12px'>&#128273;</div><div style='font-weight:700;font-size:15px;margin-bottom:6px;text-align:center'>Groq API Key Required</div><div style='color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.6'>Get your free key at <a href=\"https://console.groq.com\" target=\"_blank\" style=\"color:var(--accent)\">console.groq.com</a></div>";
   const inp=document.createElement("input");
   inp.placeholder="Paste your Groq API key (gsk_...)";
   inp.style.cssText="width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px";
   const sb=document.createElement("button");
   sb.style.cssText="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
   sb.textContent="Save & Continue";
-  const note=document.createElement("div");
-  note.style.cssText="font-size:10px;color:var(--muted);margin-top:10px;text-align:center";
-  note.textContent="Key stored only in your browser";
-  bx.appendChild(inp);bx.appendChild(sb);bx.appendChild(note);ov.appendChild(bx);
-  document.body.appendChild(ov);
-  ov.onclick=e=>{if(e.target===ov)ov.remove();};
-  setTimeout(()=>inp.focus(),100);
+  const note=document.createElement("div");note.style.cssText="font-size:10px;color:var(--muted);margin-top:10px;text-align:center";note.textContent="Key stored only in your browser";
+  bx.appendChild(h);bx.appendChild(inp);bx.appendChild(sb);bx.appendChild(note);ov.appendChild(bx);
+  document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>inp.focus(),100);
   sb.onclick=()=>{const k=inp.value.trim();if(!k.startsWith("gsk_")){alert("Please enter a valid Groq key");return;}GROQ_KEY=k;localStorage.setItem("pa_groq_key",k);ov.remove();toggleChat();};
 }
 
@@ -1052,29 +931,15 @@ function addTableMsg(cols,rows){
 }
 
 async function execQuery(sql) {
-  // Use the exec_sql RPC function to run SQL directly
   const res = await fetch(SB_URL + "/rest/v1/rpc/exec_sql", {
     method: "POST",
-    headers: {
-      "apikey": SB_KEY,
-      "Authorization": "Bearer " + SB_KEY,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
-    },
-    body: JSON.stringify({ query: sql })
+    headers: {"apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json", "Prefer": "return=representation"},
+    body: JSON.stringify({query: sql.trim().replace(/;+$/, "")})
   });
-  
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
-  
+  if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   if (Array.isArray(data)) return data;
-  if (typeof data === "string") {
-    try { return JSON.parse(data); } catch { return [{result: data}]; }
-  }
-  return data ? [data] : [];
+  try { return JSON.parse(data); } catch { return [{result: String(data)}]; }
 }
 
 
@@ -1130,8 +995,7 @@ document.body.insertAdjacentHTML("beforeend",`
     <div style="padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
       <span style="font-size:16px">🤖</span>
       <div><div style="font-weight:700;font-size:12px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Queries the full database in real-time</div></div>
-      <button onclick="GROQ_KEY=\'\';localStorage.removeItem(\'pa_groq_key\');alert(\'Key removed! Close and reopen the chat to enter a new key.\')" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">🔑 Key</button>
-      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML=''" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">Clear</button>
+      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML=''" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">Clear</button>
       <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-left:4px">✕</button>
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
