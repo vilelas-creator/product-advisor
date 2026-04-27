@@ -103,24 +103,13 @@ a:hover{text-decoration:underline;}
 <script>
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
-const GROQ_KEY="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";
+let GROQ_KEY = localStorage.getItem("pa_groq_key") || "";
 const GROQ_MODEL="llama-3.3-70b-versatile";
 const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
 const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
 const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
 let isDark=true;
-let currentUser=localStorage.getItem("pa_username")||"";
-function ensureUsername(cb){
-  if(currentUser){if(cb)cb();return;}
-  const d=document.createElement("div");
-  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px";
-  d.innerHTML='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:400px;padding:24px;text-align:center"><div style="font-size:24px;margin-bottom:12px">👋</div><div style="font-weight:700;font-size:15px;margin-bottom:6px">Welcome to Product Advisor</div><div style="color:var(--muted);font-size:12px;margin-bottom:18px">Please enter your name. It will be used to identify your comments.</div><input id="uname-inp" placeholder="Your full name..." style="width:100%;margin-bottom:14px;padding:9px 12px;font-size:13px;border-radius:6px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box"><button id="uname-btn" class="btn btn-primary" style="width:100%;padding:9px;font-size:13px">Continue →</button></div>';
-  document.body.appendChild(d);
-  setTimeout(()=>document.getElementById("uname-inp")?.focus(),100);
-  const go=()=>{const n=document.getElementById("uname-inp").value.trim();if(!n){alert("Please enter your name.");return;}currentUser=n;localStorage.setItem("pa_username",n);d.remove();if(cb)cb();};
-  document.getElementById("uname-btn").onclick=go;
-  document.getElementById("uname-inp").onkeydown=(e)=>{if(e.key==="Enter")go();};
-}
+let currentUser="User";
 
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
 
@@ -155,169 +144,198 @@ function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.starts
 function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
 function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
 
-// ── USER IDENTITY ──
-function getUsername() {
-  return localStorage.getItem("pa_username") || "";
+// ── COMMENTS ──
+function renderComments(comments){
+  if(!comments||!comments.length)return'<div style="color:var(--muted);font-size:11px;padding:4px 0">No comments yet</div>';
+  return comments.map(c=>`<div class="comment-block"><div class="comment-meta">👤 ${c.user} &nbsp;·&nbsp; ${c.date}</div><div class="comment-text">${c.text}</div></div>`).join("");
 }
+function addComment(table,id,currentComments){
+  const text=prompt("Add comment:");
+  if(!text||!text.trim())return;
+  const now=new Date();
+  const dateStr=now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  const newComment={user:currentUser,date:dateStr,text:text.trim()};
+  const updated=[...(currentComments||[]),newComment];
+  apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}})
+    .then(()=>{
+      if(table==="vendors")state.vendors=state.vendors.map(v=>v.id===id?{...v,capspire_comments:JSON.stringify(updated)}:v);
+      else if(table==="products")state.products=state.products.map(p=>p.id===id?{...p,capspire_comments:JSON.stringify(updated)}:p);
+      else if(table==="commodities")state.commodities=state.commodities.map(c=>c.id===id?{...c,capspire_comments:JSON.stringify(updated)}:c);
+      render();
+    }).catch(e=>alert("Error saving comment: "+e.message));
+}
+function parseComments(v){try{return v?JSON.parse(v):[];}catch{return[];}}
+function commentCell(table,row){
+  const comments=parseComments(row.capspire_comments);
+  const count=comments.length;
+  return`<td style="min-width:200px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--muted)">${count?count+" comment"+(count>1?"s":""):"No comments"}</span><button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('${table}',${row.id})">💬 View</button><button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="addComment('${table}',${row.id},parseComments(${JSON.stringify(row.capspire_comments||"[]")}))">+ Add</button></div></td>`;
+}
+function showComments(table,id){
+  const row=state[table==="vendors"?"vendors":table==="products"?"products":"commodities"].find(r=>r.id===id);
+  const comments=parseComments(row?.capspire_comments);
+  const d=document.createElement("div");
+  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  d.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px"><div style="display:flex;align-items:center;margin-bottom:14px"><strong>capSpire Comments</strong><button onclick="this.closest('div[style]').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button></div>${renderComments(comments)}<button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="this.closest('div[style]').remove();addComment('${table}',${id},${JSON.stringify(comments)})">+ Add Comment</button></div>`;
+  document.body.appendChild(d);
+}
+
+// ── USER IDENTITY ──
+function getUsername() { return localStorage.getItem("pa_username") || ""; }
 
 function ensureUsername(callback) {
   const user = getUsername();
   if (user) { callback(user); return; }
   const overlay = document.createElement("div");
-  overlay.id = "username-overlay";
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
-  overlay.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center"><div style="font-size:28px;margin-bottom:12px">&#128100;</div><div style="font-weight:700;font-size:16px;margin-bottom:6px">Welcome to Product Advisor</div><div style="color:var(--muted);font-size:12px;margin-bottom:20px">Please enter your name. It will identify your comments.</div><input id="uname-inp" placeholder="Your full name..." style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box"><button id="uname-btn" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600">Continue &#8594;</button></div>';
-  document.body.appendChild(overlay);
-  setTimeout(() => { const el = document.getElementById("uname-inp"); if(el) el.focus(); }, 100);
+  const box = document.createElement("div");
+  box.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center";
+  box.innerHTML = "<div style='font-size:28px;margin-bottom:12px'>&#128100;</div><div style='font-weight:700;font-size:16px;margin-bottom:6px'>Welcome to Product Advisor</div><div style='color:var(--muted);font-size:12px;margin-bottom:20px'>Please enter your name to continue.</div>";
+  const inp = document.createElement("input");
+  inp.id = "uname-inp"; inp.placeholder = "Your full name...";
+  inp.style.cssText = "width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box";
+  const btn = document.createElement("button");
+  btn.textContent = "Continue \u2192";
+  btn.style.cssText = "width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600";
+  box.appendChild(inp); box.appendChild(btn); overlay.appendChild(box); document.body.appendChild(overlay);
+  setTimeout(() => inp.focus(), 100);
   const save = () => {
-    const name = (document.getElementById("uname-inp").value || "").trim();
-    if (!name) { document.getElementById("uname-inp").style.border = "1px solid var(--red)"; return; }
-    localStorage.setItem("pa_username", name);
-    overlay.remove();
-    callback(name);
+    const name = inp.value.trim();
+    if (!name) { inp.style.border = "1px solid var(--red)"; return; }
+    localStorage.setItem("pa_username", name); overlay.remove(); callback(name);
   };
-  document.getElementById("uname-btn").onclick = save;
-  document.getElementById("uname-inp").onkeydown = e => { if(e.key === "Enter") save(); };
+  btn.onclick = save; inp.onkeydown = e => { if (e.key === "Enter") save(); };
 }
 
 // ── COMMENTS ──
 function parseComments(v) { try { return v ? JSON.parse(v) : []; } catch { return []; } }
+function escH(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 function saveCommentsToState(table, id, updated) {
   const str = JSON.stringify(updated);
-  if (table === "vendors") state.vendors = state.vendors.map(v => v.id === id ? {...v, capspire_comments: str} : v);
-  else if (table === "products") state.products = state.products.map(p => p.id === id ? {...p, capspire_comments: str} : p);
-  else if (table === "commodities") state.commodities = state.commodities.map(c => c.id === id ? {...c, capspire_comments: str} : c);
+  if (table === "vendors") state.vendors = state.vendors.map(v => v.id===id ? {...v,capspire_comments:str} : v);
+  else if (table === "products") state.products = state.products.map(p => p.id===id ? {...p,capspire_comments:str} : p);
+  else if (table === "commodities") state.commodities = state.commodities.map(c => c.id===id ? {...c,capspire_comments:str} : c);
 }
 
-let currentModalTable = "";
-let currentModalId = null;
-let currentModalComments = [];
+let cmtTable="", cmtId=null, cmtList=[];
 
 function renderComments(comments) {
-  if (!comments || !comments.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">No comments yet</div>';
-  return comments.map((c, i) => 
-    '<div class="comment-block">' +
-    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
-    '<span class="comment-meta">&#128100; ' + c.user + ' &nbsp;&middot;&nbsp; ' + c.date + '</span>' +
-    '<button onclick="editComment(' + i + ')" style="margin-left:auto;background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--accent)">&#9998; Edit</button>' +
-    '<button onclick="deleteComment(' + i + ')" style="background:none;border:none;color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--red)">&#128465; Delete</button>' +
-    '</div>' +
-    '<div class="comment-text">' + c.text + '</div></div>'
+  if (!comments||!comments.length) return "<div style='color:var(--muted);font-size:11px;padding:4px 0'>No comments yet</div>";
+  return comments.map((c,i) =>
+    "<div class='comment-block'>" +
+    "<div style='display:flex;align-items:center;gap:6px;margin-bottom:4px'>" +
+    "<span class='comment-meta'>&#128100; " + escH(c.user) + " &nbsp;&middot;&nbsp; " + escH(c.date) + "</span>" +
+    "<button data-ci='" + i + "' data-ca='edit' style='margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#9998; Edit</button>" +
+    "<button data-ci='" + i + "' data-ca='del' style='background:none;border:1px solid var(--red);color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#128465;</button>" +
+    "</div><div class='comment-text'>" + escH(c.text) + "</div></div>"
   ).join("");
 }
 
-function refreshCommentsModal() {
-  const el = document.getElementById("comments-list");
-  if (el) el.innerHTML = renderComments(currentModalComments);
+function refreshCmtModal() {
+  const el = document.getElementById("cmt-list");
+  if (el) el.innerHTML = renderComments(cmtList);
 }
 
-function editComment(idx) {
-  const comment = currentModalComments[idx];
-  const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
-  const box = document.createElement("div");
-  box.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
-  const title = document.createElement("div");
-  title.style.cssText = "font-weight:700;font-size:14px;margin-bottom:14px";
-  title.textContent = "✏ Edit Comment";
+function editCmt(idx) {
+  const c = cmtList[idx];
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx = document.createElement("div");
+  bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
+  const t = document.createElement("div"); t.style.cssText = "font-weight:700;font-size:14px;margin-bottom:14px"; t.textContent = "\u270F Edit Comment";
   const ta = document.createElement("textarea");
-  ta.id = "edit-inp";
   ta.style.cssText = "width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
-  ta.value = comment.text;
-  const btns = document.createElement("div");
-  btns.style.cssText = "display:flex;gap:8px;margin-top:12px";
-  const saveBtn = document.createElement("button");
-  saveBtn.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600";
-  saveBtn.textContent = "💾 Save";
-  const cancelBtn = document.createElement("button");
-  cancelBtn.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.onclick = () => overlay.remove();
-  btns.appendChild(saveBtn);
-  btns.appendChild(cancelBtn);
-  box.appendChild(title);
-  box.appendChild(ta);
-  box.appendChild(btns);
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-  overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
-  setTimeout(() => ta.focus(), 100);
-  saveBtn.onclick = async () => {
-    const newText = ta.value.trim();
-    if (!newText) return;
-    currentModalComments[idx] = {...comment, text: newText};
-    overlay.remove();
-    try {
-      await apiFetch(currentModalTable + "?id=eq." + currentModalId, {method:"PATCH", body:{capspire_comments: JSON.stringify(currentModalComments)}});
-      saveCommentsToState(currentModalTable, currentModalId, currentModalComments);
-      refreshCommentsModal();
-      render();
-    } catch(e) { alert("Error: " + e.message); }
+  ta.value = c.text;
+  const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;margin-top:12px";
+  const sb = document.createElement("button"); sb.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; sb.textContent = "\uD83D\uDCBE Save";
+  const cb = document.createElement("button"); cb.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit"; cb.textContent = "Cancel";
+  cb.onclick = () => ov.remove();
+  row.appendChild(sb); row.appendChild(cb); bx.appendChild(t); bx.appendChild(ta); bx.appendChild(row); ov.appendChild(bx);
+  document.body.appendChild(ov); ov.onclick = e => { if(e.target===ov) ov.remove(); }; setTimeout(() => ta.focus(), 100);
+  sb.onclick = async () => {
+    const txt = ta.value.trim(); if (!txt) return;
+    cmtList[idx] = {...c, text: txt}; ov.remove();
+    try { await apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}}); saveCommentsToState(cmtTable, cmtId, cmtList); refreshCmtModal(); render(); } catch(e) { alert("Error: "+e.message); }
   };
 }
 
-function deleteComment(idx) {
+function delCmt(idx) {
   if (!confirm("Delete this comment?")) return;
-  currentModalComments.splice(idx, 1);
-  apiFetch(currentModalTable + "?id=eq." + currentModalId, {method:"PATCH", body:{capspire_comments: JSON.stringify(currentModalComments)}})
-    .then(() => { saveCommentsToState(currentModalTable, currentModalId, currentModalComments); refreshCommentsModal(); render(); })
-    .catch(e => alert("Error: " + e.message));
+  cmtList.splice(idx,1);
+  apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}})
+    .then(() => { saveCommentsToState(cmtTable,cmtId,cmtList); refreshCmtModal(); render(); })
+    .catch(e => alert("Error: "+e.message));
 }
 
 function openAddComment(table, id) {
-  const stateKey = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
-  const row = state[stateKey].find(r => r.id === id);
-  const existingComments = parseComments(row?.capspire_comments);
+  const sk = table==="vendors"?"vendors":table==="products"?"products":"commodities";
+  const row = state[sk].find(r=>r.id===id);
+  const existing = parseComments(row?.capspire_comments);
   ensureUsername(user => {
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
-    overlay.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">&#128172; Add Comment</div><div style="font-size:11px;color:var(--muted);margin-bottom:14px">Commenting as <strong style="color:var(--text)">' + user + '</strong></div><textarea id="comment-inp" placeholder="Write your comment here..." style="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box"></textarea><div style="display:flex;gap:8px;margin-top:12px"><button id="comment-save-btn" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">&#128190; Save</button><button id="comment-cancel-btn" style="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px">Cancel</button></div></div>';
-    document.body.appendChild(overlay);
-    overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
-    setTimeout(() => { const el = document.getElementById("comment-inp"); if(el) el.focus(); }, 100);
-    document.getElementById("comment-cancel-btn").onclick = () => overlay.remove();
-    document.getElementById("comment-save-btn").onclick = async () => {
-      const text = (document.getElementById("comment-inp").value || "").trim();
-      if (!text) { alert("Please write a comment first."); return; }
+    const ov = document.createElement("div");
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
+    const bx = document.createElement("div"); bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
+    const t1 = document.createElement("div"); t1.style.cssText = "font-weight:700;font-size:14px;margin-bottom:4px"; t1.textContent = "\uD83D\uDCAC Add Comment";
+    const t2 = document.createElement("div"); t2.style.cssText = "font-size:11px;color:var(--muted);margin-bottom:14px"; t2.textContent = "Commenting as " + user;
+    const ta = document.createElement("textarea"); ta.id = "cmt-inp"; ta.placeholder = "Write your comment here...";
+    ta.style.cssText = "width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
+    const btns = document.createElement("div"); btns.style.cssText = "display:flex;gap:8px;margin-top:12px";
+    const sb = document.createElement("button"); sb.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; sb.textContent = "\uD83D\uDCBE Save";
+    const cb = document.createElement("button"); cb.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit"; cb.textContent = "Cancel";
+    cb.onclick = () => ov.remove(); btns.appendChild(sb); btns.appendChild(cb);
+    bx.appendChild(t1); bx.appendChild(t2); bx.appendChild(ta); bx.appendChild(btns); ov.appendChild(bx);
+    document.body.appendChild(ov); ov.onclick = e => { if(e.target===ov) ov.remove(); }; setTimeout(() => ta.focus(), 100);
+    sb.onclick = async () => {
+      const txt = ta.value.trim(); if (!txt) { alert("Please write a comment first."); return; }
       const now = new Date();
-      const dateStr = now.toLocaleDateString("en-GB") + ", " + now.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
-      const updated = [...existingComments, {user, date: dateStr, text}];
-      overlay.remove();
-      try {
-        await apiFetch(table + "?id=eq." + id, {method:"PATCH", body:{capspire_comments: JSON.stringify(updated)}});
-        saveCommentsToState(table, id, updated);
-        render();
-      } catch(e) { alert("Error saving comment: " + e.message); }
+      const ds = now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+      const updated = [...existing, {user, date:ds, text:txt}]; ov.remove();
+      try { await apiFetch(table+"?id=eq."+id, {method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}}); saveCommentsToState(table, id, updated); render(); } catch(e) { alert("Error: "+e.message); }
     };
   });
 }
 
-function addComment(table, id) { openAddComment(table, id); }
+function showComments(table, id) {
+  const sk = table==="vendors"?"vendors":table==="products"?"products":"commodities";
+  const row = state[sk].find(r=>r.id===id);
+  cmtTable=table; cmtId=id; cmtList=parseComments(row?.capspire_comments);
+  const d = document.createElement("div"); d.id = "cmt-overlay";
+  d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx = document.createElement("div"); bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px";
+  const hd = document.createElement("div"); hd.style.cssText = "display:flex;align-items:center;margin-bottom:14px";
+  const ht = document.createElement("strong"); ht.textContent = "\uD83D\uDCAC capSpire Comments";
+  const hc = document.createElement("button"); hc.style.cssText = "margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer"; hc.textContent = "\u2715"; hc.onclick = () => d.remove();
+  hd.appendChild(ht); hd.appendChild(hc);
+  const lst = document.createElement("div"); lst.id = "cmt-list"; lst.innerHTML = renderComments(cmtList);
+  const ab = document.createElement("button"); ab.style.cssText = "margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; ab.textContent = "+ Add Comment";
+  ab.onclick = () => { d.remove(); openAddComment(table, id); };
+  bx.appendChild(hd); bx.appendChild(lst); bx.appendChild(ab); d.appendChild(bx); document.body.appendChild(d);
+  d.onclick = e => { if(e.target===d) d.remove(); };
+  lst.addEventListener("click", e => {
+    const btn = e.target.closest("[data-ca]"); if (!btn) return;
+    const idx = parseInt(btn.dataset.ci);
+    if (btn.dataset.ca === "edit") editCmt(idx);
+    else if (btn.dataset.ca === "del") delCmt(idx);
+  });
+}
 
 function commentCell(table, row) {
   const comments = parseComments(row.capspire_comments);
   const count = comments.length;
-  return '<td style="min-width:180px"><div style="display:flex;align-items:center;gap:6px">' +
-    '<span style="font-size:11px;color:var(--muted)">' + (count ? count + " comment" + (count > 1 ? "s" : "") : "No comments") + '</span>' +
-    '<button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('' + table + '',' + row.id + ')">&#128172; View</button>' +
-    '<button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="openAddComment('' + table + '',' + row.id + ')">+ Add</button>' +
-    '</div></td>';
+  return "<td style='min-width:180px'><div style='display:flex;align-items:center;gap:6px'>" +
+    "<span style='font-size:11px;color:var(--muted)'>" + (count ? count+" comment"+(count>1?"s":"") : "No comments") + "</span>" +
+    "<button data-ct='" + table + "' data-cid='" + row.id + "' data-ca='view' class='btn' style='font-size:10px;padding:2px 7px'>&#128172; View</button>" +
+    "<button data-ct='" + table + "' data-cid='" + row.id + "' data-ca='add' class='btn btn-primary' style='font-size:10px;padding:2px 7px'>+ Add</button>" +
+    "</div></td>";
 }
 
-function showComments(table, id) {
-  const stateKey = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
-  const row = state[stateKey].find(r => r.id === id);
-  currentModalTable = table;
-  currentModalId = id;
-  currentModalComments = parseComments(row?.capspire_comments);
-  const d = document.createElement("div");
-  d.id = "comments-modal-overlay";
-  d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
-  d.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px"><div style="display:flex;align-items:center;margin-bottom:14px"><strong>&#128172; capSpire Comments</strong><button onclick="document.getElementById(&quot;comments-modal-overlay&quot;).remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">&#10005;</button></div><div id="comments-list">' + renderComments(currentModalComments) + '</div><button onclick="document.getElementById(&quot;comments-modal-overlay&quot;).remove();openAddComment(&quot;' + table + '',' + id + ')" style="margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">+ Add Comment</button></div>';
-  document.body.appendChild(d);
-  d.onclick = e => { if(e.target === d) d.remove(); };
-}
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-ca]");
+  if (!btn || !btn.dataset.ct) return;
+  const action = btn.dataset.ca, table = btn.dataset.ct, id = parseInt(btn.dataset.cid);
+  if (action === "view") showComments(table, id);
+  else if (action === "add") openAddComment(table, id);
+});
 
 // ── TABS ──
 const TABS=[
@@ -829,36 +847,25 @@ For simple conversational questions answer directly. Be concise and use bullet p
 
 let chatHistory=[],chatOpen=false;
 function showGroqKeyModal(){
-  const overlay=document.createElement("div");
-  overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
-  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px">
-    <div style="font-size:22px;text-align:center;margin-bottom:12px">🔑</div>
-    <div style="font-weight:700;font-size:15px;margin-bottom:6px;text-align:center">Groq API Key Required</div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:6px;line-height:1.6">The AI chatbox uses Groq (free). You need your own personal API key:</div>
-    <ol style="color:var(--muted);font-size:12px;line-height:2;padding-left:18px;margin-bottom:16px">
-      <li>Go to <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a></li>
-      <li>Sign up or log in</li>
-      <li>Go to <strong style="color:var(--text)">API Keys</strong> → <strong style="color:var(--text)">Create API Key</strong></li>
-      <li>Paste your key below</li>
-    </ol>
-    <input id="groq-key-input" placeholder="Paste your Groq API key here (gsk_...)" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px">
-    <div style="display:flex;gap:8px">
-      <button id="groq-key-save" class="btn btn-primary" style="flex:1;padding:9px">Save & Continue</button>
-      <button onclick="this.closest('div[style]').remove()" class="btn" style="padding:9px">Cancel</button>
-    </div>
-    <div style="font-size:10px;color:var(--muted);margin-top:10px;text-align:center">Your key is stored only in your browser — never sent to our servers</div>
-  </div>`;
-  document.body.appendChild(overlay);
-  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
-  setTimeout(()=>document.getElementById("groq-key-input")?.focus(),100);
-  document.getElementById("groq-key-save").onclick=()=>{
-    const key=document.getElementById("groq-key-input").value.trim();
-    if(!key.startsWith("gsk_")){alert("Please enter a valid Groq key (starts with gsk_)");return;}
-    GROQ_KEY=key;
-    localStorage.setItem("pa_groq_key",key);
-    overlay.remove();
-    toggleChat();
-  };
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");
+  bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px";
+  bx.innerHTML="<div style='font-size:22px;text-align:center;margin-bottom:12px'>&#128273;</div><div style='font-weight:700;font-size:15px;margin-bottom:6px;text-align:center'>Groq API Key Required</div><div style='color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.6'>The AI chatbox uses Groq (free). Get your key at <a href=\"https://console.groq.com\" target=\"_blank\" style=\"color:var(--accent)\">console.groq.com</a></div>";
+  const inp=document.createElement("input");
+  inp.placeholder="Paste your Groq API key (gsk_...)";
+  inp.style.cssText="width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px";
+  const sb=document.createElement("button");
+  sb.style.cssText="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
+  sb.textContent="Save & Continue";
+  const note=document.createElement("div");
+  note.style.cssText="font-size:10px;color:var(--muted);margin-top:10px;text-align:center";
+  note.textContent="Key stored only in your browser";
+  bx.appendChild(inp);bx.appendChild(sb);bx.appendChild(note);ov.appendChild(bx);
+  document.body.appendChild(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  setTimeout(()=>inp.focus(),100);
+  sb.onclick=()=>{const k=inp.value.trim();if(!k.startsWith("gsk_")){alert("Please enter a valid Groq key");return;}GROQ_KEY=k;localStorage.setItem("pa_groq_key",k);ov.remove();toggleChat();};
 }
 
 function toggleChat(){
@@ -931,10 +938,6 @@ async function execQuery(sql){
 }
 
 async function sendChat(){
-  if(!GROQ_KEY){
-    showGroqKeyModal();
-    return;
-  }
   const inp=document.getElementById("chat-input");
   const msg=inp.value.trim();if(!msg)return;
   inp.value="";
@@ -986,7 +989,7 @@ document.body.insertAdjacentHTML("beforeend",`
     <div style="padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
       <span style="font-size:16px">🤖</span>
       <div><div style="font-weight:700;font-size:12px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Queries the full database in real-time</div></div>
-      <button onclick="chatHistory=[];document.getElementById(&quot;chat-messages&quot;).innerHTML=&quot;&quot;" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">Clear</button>
+      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML=''" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">Clear</button>
       <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-left:4px">✕</button>
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
