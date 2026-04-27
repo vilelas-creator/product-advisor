@@ -257,7 +257,7 @@ function editCmt(idx) {
   sb.onclick = async () => {
     const txt = ta.value.trim(); if (!txt) return;
     cmtList[idx] = {...c, text: txt}; ov.remove();
-    try { await apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}}); saveCommentsToState(cmtTable, cmtId, cmtList); refreshCmtModal(); render(); } catch(e) { alert("Error: "+e.message); }
+    try { await apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}}); saveCommentsToState(cmtTable, cmtId, cmtList); logAction("UPDATE","comments",cmtId,null,{table:cmtTable,text:txt.slice(0,50)}); refreshCmtModal(); render(); } catch(e) { logAction("ERROR","comments",cmtId,null,{error:e.message}); alert("Error: "+e.message); }
   };
 }
 
@@ -265,8 +265,8 @@ function delCmt(idx) {
   if (!confirm("Delete this comment?")) return;
   cmtList.splice(idx,1);
   apiFetch(cmtTable+"?id=eq."+cmtId, {method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}})
-    .then(() => { saveCommentsToState(cmtTable,cmtId,cmtList); refreshCmtModal(); render(); })
-    .catch(e => alert("Error: "+e.message));
+    .then(() => { saveCommentsToState(cmtTable,cmtId,cmtList); logAction("DELETE","comments",cmtId,null,{table:cmtTable}); refreshCmtModal(); render(); })
+    .catch(e => { logAction("ERROR","comments",cmtId,null,{error:e.message}); alert("Error: "+e.message); });
 }
 
 function openAddComment(table, id) {
@@ -292,7 +292,7 @@ function openAddComment(table, id) {
       const now = new Date();
       const ds = now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
       const updated = [...existing, {user, date:ds, text:txt}]; ov.remove();
-      try { await apiFetch(table+"?id=eq."+id, {method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}}); saveCommentsToState(table, id, updated); render(); } catch(e) { alert("Error: "+e.message); }
+      try { await apiFetch(table+"?id=eq."+id, {method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}}); saveCommentsToState(table, id, updated); logAction("INSERT","comments",id,user,{table,text:txt.slice(0,50)}); render(); } catch(e) { logAction("ERROR","comments",id,null,{error:e.message}); alert("Error: "+e.message); }
     };
   });
 }
@@ -578,7 +578,6 @@ function renderContacts(){
 const ALL_TABLES=[
   {id:"vendors",label:"Vendors",cols:["id","vendor_name","headquarters","website","industries_served"]},
   {id:"products",label:"Products",cols:["id","product_name","product_type","vendor","product_type2","deployment_model","version_info","licensing_model","notes"]},
-  {id:"commodities",label:"Commodities",cols:["id","commodity_name"]},
   {id:"product_commodities_coverage",label:"Commodity Coverage",cols:["id","product","product_type","commodity","coverage_level"]},
   {id:"product_function_ctrm",label:"CTRM Coverage",cols:["id","product","function_name","commodity","coverage_level"]},
   {id:"product_function_risk",label:"Risk Coverage",cols:["id","product","category","function_name","coverage_level"]},
@@ -706,7 +705,7 @@ async function importFile(event, table) {
           await apiFetch(table, {method:"POST", body:cleanRow});
         }
         ok++;
-      } catch(e) { err++; console.error("Row error:", e.message, row); }
+      } catch(e) { err++; console.error("Row error:", e.message, row); logAction("ERROR", table, null, null, {error: e.message, row: JSON.stringify(row).slice(0,100)}); }
     }
     statusEl.textContent = "✓ " + ok + " imported" + (err > 0 ? ", " + err + " errors (see console)" : "");
     statusEl.style.color = err > 0 ? "var(--yellow)" : "var(--green)";
@@ -746,7 +745,7 @@ function openVendorModal(id){
   ],async()=>{
     const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
     try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);logAction("UPDATE","vendors",v.id,vals.vendor_name,{});}
-    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];logAction("INSERT","vendors",res[0]?.id,vals.vendor_name,{});}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];logAction("INSERT","vendors",res[0]?.id,vals.vendor_name,{});}closeModal();render();}catch(e){logAction("ERROR","vendors",null,vals.vendor_name,{error:e.message});alert("Error: "+e.message);}
   });
 }
 
@@ -759,7 +758,7 @@ function openProductModal(id){
   ],async()=>{
     const vals=getVals(["id","product_name","product_type","vendor","deployment_model","version_info","notes"]);
     try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","products",p.id,vals.product_name,{vendor:vals.vendor});}
-    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];logAction("INSERT","products",res[0]?.id,vals.product_name,{vendor:vals.vendor});}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];logAction("INSERT","products",res[0]?.id,vals.product_name,{vendor:vals.vendor});}closeModal();render();}catch(e){logAction("ERROR","products",null,vals.product_name,{error:e.message});alert("Error: "+e.message);}
   });
 }
 
@@ -769,8 +768,8 @@ function openCommodityModal(id){
     {label:"ID",value:c?.id||"",ro:true},{label:"Commodity Name",value:c?.commodity_name||""}
   ],async()=>{
     const vals=getVals(["id","commodity_name"]);
-    try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);logAction("UPDATE","commodities",c.id,vals.commodity_name,{});}
+    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];logAction("INSERT","commodities",res[0]?.id,vals.commodity_name,{});}closeModal();render();}catch(e){logAction("ERROR","commodities",null,null,{error:e.message});alert("Error: "+e.message);}
   });
 }
 
@@ -784,8 +783,8 @@ function openPCCModal(id){
     {label:"ID",value:p?.id||"",ro:true},{label:"Product",type:"select",value:p?.product||"",options:prods},{label:"Product Type",type:"select",value:p?.product_type||"",options:types},{label:"Commodity",type:"select",value:p?.commodity||"",options:coms},{label:"Coverage Level",type:"select",value:p?.coverage_level||"",options:covs}
   ],async()=>{
     const vals=getVals(["id","product","product_type","commodity","coverage_level"]);
-    try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","product_commodities_coverage",p.id,vals.product+" - "+vals.commodity,{coverage:vals.coverage_level});}
+    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];logAction("INSERT","product_commodities_coverage",res[0]?.id,vals.product+" - "+vals.commodity,{coverage:vals.coverage_level});}closeModal();render();}catch(e){logAction("ERROR","product_commodities_coverage",null,null,{error:e.message});alert("Error: "+e.message);}
   });
 }
 
@@ -798,7 +797,7 @@ function openContactModal(id){
   ],async()=>{
     const vals=getVals(["id","product","vendor","contact_name","role_title","email","phone_number","region"]);
     try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);logAction("UPDATE","product_contacts",ct.id,vals.contact_name,{product:vals.product});}
-    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];logAction("INSERT","product_contacts",res[0]?.id,vals.contact_name,{product:vals.product});}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];logAction("INSERT","product_contacts",res[0]?.id,vals.contact_name,{product:vals.product});}closeModal();render();}catch(e){logAction("ERROR","product_contacts",null,vals.contact_name,{error:e.message});alert("Error: "+e.message);}
   });
 }
 
