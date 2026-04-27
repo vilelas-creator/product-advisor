@@ -141,7 +141,26 @@ function pagerHtml(id,page,total,per){
 }
 function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
-function sf(key,val){state.filters[key]=val;state.pages={};render();}
+function sf(key, val) {
+  state.filters[key] = val;
+  state.pages = {};
+  // Save focused element info before render
+  const active = document.activeElement;
+  const activeId = active?.id;
+  const selStart = active?.selectionStart;
+  const selEnd = active?.selectionEnd;
+  render();
+  // Restore focus after render
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) {
+      el.focus();
+      if (selStart !== undefined && el.setSelectionRange) {
+        try { el.setSelectionRange(selStart, selEnd); } catch(e) {}
+      }
+    }
+  }
+}
 function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};render();}
 function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
 function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
@@ -379,7 +398,7 @@ function renderVendors(){
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-vendors").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span></div>
-    <div class="filters"><input value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
+    <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
     ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${commentCell("vendors",v)}<td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
@@ -398,7 +417,7 @@ function renderProducts(){
   document.getElementById("section-products").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
+      <input id="search-p_q" value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
@@ -416,7 +435,7 @@ function renderCommodities(){
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
-    <div class="filters"><input value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
+    <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
     ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td>${commentCell("commodities",c)}<td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
@@ -436,7 +455,7 @@ function renderCommCoverage(){
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
@@ -462,7 +481,7 @@ function renderCTRM(){
     <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span></div>
     ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
     <div class="filters">
-      <input value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
+      <input id="search-ctrm_q" value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ctrm_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('ctrm_com',this.value)">${selOpts(coms,cF,"All Commodities")}</select>
       <select onchange="sf('ctrm_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
@@ -486,7 +505,7 @@ function renderRisk(){
   document.getElementById("section-risk").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
+      <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('risk_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
       <select onchange="sf('risk_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
@@ -510,7 +529,7 @@ function renderGeo(){
   document.getElementById("section-geo").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
+      <input id="search-geo_q" value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('geo_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
       <select onchange="sf('geo_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${resetBtn('geo_')}
@@ -533,7 +552,7 @@ function renderCustomerType(){
   document.getElementById("section-customertype").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
+      <input id="search-ct_q" value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ct_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
       <select onchange="sf('ct_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${resetBtn('ct_')}
@@ -554,7 +573,7 @@ function renderContacts(){
   document.getElementById("section-contacts").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
+      <input id="search-con_q" value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('con_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
       <select onchange="sf('con_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('con_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openContactModal(null)">+ Add Contact</button>
@@ -841,7 +860,7 @@ function renderCommoditiesView(){
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
