@@ -1052,76 +1052,29 @@ function addTableMsg(cols,rows){
 }
 
 async function execQuery(sql) {
-  // Use Supabase's SQL execution endpoint
+  // Use the exec_sql RPC function to run SQL directly
   const res = await fetch(SB_URL + "/rest/v1/rpc/exec_sql", {
     method: "POST",
     headers: {
       "apikey": SB_KEY,
       "Authorization": "Bearer " + SB_KEY,
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
     },
     body: JSON.stringify({ query: sql })
   });
-  if (res.ok) {
-    const data = await res.json();
-    return Array.isArray(data) ? data : [data];
+  
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
   }
-
-  // Fallback: parse SQL manually and use REST API
-  const sqlL = sql.toLowerCase().trim();
-  const tMatch = sql.match(/from\s+(\w+)/i);
-  if (!tMatch) throw new Error("Could not parse table name from SQL");
-  const table = tMatch[1].toLowerCase();
-
-  // Handle COUNT
-  if (sqlL.includes("count(*)")) {
-    const allData = await apiFetch(table, {params: {select: "id", limit: 1000}});
-    return [{count: allData.length}];
+  
+  const data = await res.json();
+  if (Array.isArray(data)) return data;
+  if (typeof data === "string") {
+    try { return JSON.parse(data); } catch { return [{result: data}]; }
   }
-
-  // Build REST params
-  const params = {limit: 50};
-
-  // SELECT columns
-  const selM = sql.match(/^select\s+(.+?)\s+from/i);
-  if (selM && selM[1].trim() !== "*") {
-    const cols = selM[1].split(",")
-      .map(c => c.trim().split(/\s+as\s+/i)[0].trim().replace(/[\w]+\./, "").replace(/[()]/g,""))
-      .filter(c => c && !c.includes(" ") && c !== "count" && c !== "distinct");
-    if (cols.length > 0) params.select = cols.join(",");
-  }
-
-  // WHERE clause - handle multiple conditions
-  const whereM = sql.match(/where\s+(.+?)(?:\s+order\s+by|\s+limit|\s+group\s+by|$)/is);
-  if (whereM) {
-    const w = whereM[1].trim();
-    // Handle ILIKE
-    const ilikeM = w.match(/(\w+)\s+ilike\s+'%([^']+)%'/i);
-    // Handle =
-    const eqM = w.match(/(\w+)\s*=\s*'([^']+)'/i);
-    // Handle ILIKE without wildcards
-    const ilike2M = w.match(/(\w+)\s+ilike\s+'([^'%]+)'/i);
-
-    if (ilikeM) {
-      params[ilikeM[1] + ".ilike"] = "%" + ilikeM[2] + "%";
-    } else if (eqM) {
-      params[eqM[1] + ".eq"] = eqM[2];
-    } else if (ilike2M) {
-      params[ilike2M[1] + ".ilike"] = "%" + ilike2M[2] + "%";
-    }
-  }
-
-  // ORDER BY
-  const ordM = sql.match(/order\s+by\s+(\w+)(?:\s+(asc|desc))?/i);
-  if (ordM) {
-    params.order = ordM[1] + (ordM[2]?.toLowerCase() === "desc" ? ".desc" : "");
-  }
-
-  // LIMIT
-  const limM = sql.match(/limit\s+(\d+)/i);
-  if (limM) params.limit = Math.min(parseInt(limM[1]), 100);
-
-  return await apiFetch(table, {params});
+  return data ? [data] : [];
 }
 
 
