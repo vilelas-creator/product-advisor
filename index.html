@@ -156,50 +156,31 @@ function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFil
 function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
 
 // ── USER IDENTITY ──
-function getCurrentUser() {
-  let user = localStorage.getItem("pa_username");
-  if (!user) {
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
-    overlay.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center">
-      <div style="font-size:28px;margin-bottom:12px">👤</div>
-      <div style="font-weight:700;font-size:16px;margin-bottom:6px">Welcome to Product Advisor</div>
-      <div style="color:var(--muted);font-size:12px;margin-bottom:20px">Please enter your name to continue. This will be used to identify your comments.</div>
-      <input id="username-input" placeholder="Your full name..." style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box">
-      <button id="username-save" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px">Continue →</button>
-    </div>`;
-    document.body.appendChild(overlay);
-    setTimeout(() => document.getElementById("username-input")?.focus(), 100);
-    const save = () => {
-      const name = document.getElementById("username-input").value.trim();
-      if (!name) { document.getElementById("username-input").style.border = "1px solid var(--red)"; return; }
-      localStorage.setItem("pa_username", name);
-      overlay.remove();
-    };
-    document.getElementById("username-save").onclick = save;
-    document.getElementById("username-input").onkeydown = e => { if(e.key === "Enter") save(); };
-    return null;
-  }
-  return user;
+function getUsername() {
+  return localStorage.getItem("pa_username") || "";
+}
+
+function ensureUsername(callback) {
+  const user = getUsername();
+  if (user) { callback(user); return; }
+  const overlay = document.createElement("div");
+  overlay.id = "username-overlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
+  overlay.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center"><div style="font-size:28px;margin-bottom:12px">&#128100;</div><div style="font-weight:700;font-size:16px;margin-bottom:6px">Welcome to Product Advisor</div><div style="color:var(--muted);font-size:12px;margin-bottom:20px">Please enter your name. It will identify your comments.</div><input id="uname-inp" placeholder="Your full name..." style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box"><button id="uname-btn" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600">Continue &#8594;</button></div>';
+  document.body.appendChild(overlay);
+  setTimeout(() => { const el = document.getElementById("uname-inp"); if(el) el.focus(); }, 100);
+  const save = () => {
+    const name = (document.getElementById("uname-inp").value || "").trim();
+    if (!name) { document.getElementById("uname-inp").style.border = "1px solid var(--red)"; return; }
+    localStorage.setItem("pa_username", name);
+    overlay.remove();
+    callback(name);
+  };
+  document.getElementById("uname-btn").onclick = save;
+  document.getElementById("uname-inp").onkeydown = e => { if(e.key === "Enter") save(); };
 }
 
 // ── COMMENTS ──
-function renderComments(comments) {
-  if (!comments || !comments.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">No comments yet</div>';
-  return comments.map((c, i) => `<div class="comment-block">
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-      <span class="comment-meta">👤 ${c.user} &nbsp;·&nbsp; ${c.date}</span>
-      <button onclick="editComment(currentModalTable,currentModalId,${i})" style="margin-left:auto;background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--accent)44">✏ Edit</button>
-      <button onclick="deleteComment(currentModalTable,currentModalId,${i})" style="background:none;border:none;color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--red)44">🗑 Delete</button>
-    </div>
-    <div class="comment-text">${c.text}</div>
-  </div>`).join("");
-}
-
-let currentModalTable = "";
-let currentModalId = null;
-let currentModalComments = [];
-
 function parseComments(v) { try { return v ? JSON.parse(v) : []; } catch { return []; } }
 
 function saveCommentsToState(table, id, updated) {
@@ -209,96 +190,96 @@ function saveCommentsToState(table, id, updated) {
   else if (table === "commodities") state.commodities = state.commodities.map(c => c.id === id ? {...c, capspire_comments: str} : c);
 }
 
+let currentModalTable = "";
+let currentModalId = null;
+let currentModalComments = [];
+
+function renderComments(comments) {
+  if (!comments || !comments.length) return '<div style="color:var(--muted);font-size:11px;padding:4px 0">No comments yet</div>';
+  return comments.map((c, i) => 
+    '<div class="comment-block">' +
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+    '<span class="comment-meta">&#128100; ' + c.user + ' &nbsp;&middot;&nbsp; ' + c.date + '</span>' +
+    '<button onclick="editComment(' + i + ')" style="margin-left:auto;background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--accent)">&#9998; Edit</button>' +
+    '<button onclick="deleteComment(' + i + ')" style="background:none;border:none;color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--red)">&#128465; Delete</button>' +
+    '</div>' +
+    '<div class="comment-text">' + c.text + '</div></div>'
+  ).join("");
+}
+
 function refreshCommentsModal() {
   const el = document.getElementById("comments-list");
   if (el) el.innerHTML = renderComments(currentModalComments);
 }
 
-function editComment(table, id, idx) {
+function editComment(idx) {
   const comment = currentModalComments[idx];
   const overlay = document.createElement("div");
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
-  overlay.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:14px">✏ Edit Comment</div>
-    <textarea id="edit-comment-input" style="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">${comment.text}</textarea>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button id="edit-save" class="btn btn-primary">💾 Save</button>
-      <button onclick="this.closest('div[style]').remove()" class="btn">Cancel</button>
-    </div>
-  </div>`;
+  overlay.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px"><div style="font-weight:700;font-size:14px;margin-bottom:14px">&#9998; Edit Comment</div><textarea id="edit-inp" style="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">' + comment.text + '</textarea><div style="display:flex;gap:8px;margin-top:12px"><button id="edit-save-btn" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">&#128190; Save</button><button onclick="this.closest('div[style]').remove()" style="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px">Cancel</button></div></div>';
   document.body.appendChild(overlay);
   overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
-  document.getElementById("edit-save").onclick = async () => {
-    const newText = document.getElementById("edit-comment-input").value.trim();
+  setTimeout(() => { const el = document.getElementById("edit-inp"); if(el) el.focus(); }, 100);
+  document.getElementById("edit-save-btn").onclick = async () => {
+    const newText = (document.getElementById("edit-inp").value || "").trim();
     if (!newText) return;
     currentModalComments[idx] = {...comment, text: newText};
     overlay.remove();
     try {
-      await apiFetch(table + "?id=eq." + id, {method:"PATCH", body:{capspire_comments: JSON.stringify(currentModalComments)}});
-      saveCommentsToState(table, id, currentModalComments);
+      await apiFetch(currentModalTable + "?id=eq." + currentModalId, {method:"PATCH", body:{capspire_comments: JSON.stringify(currentModalComments)}});
+      saveCommentsToState(currentModalTable, currentModalId, currentModalComments);
       refreshCommentsModal();
       render();
     } catch(e) { alert("Error: " + e.message); }
   };
-  setTimeout(() => document.getElementById("edit-comment-input")?.focus(), 100);
 }
 
-function deleteComment(table, id, idx) {
+function deleteComment(idx) {
   if (!confirm("Delete this comment?")) return;
   currentModalComments.splice(idx, 1);
-  apiFetch(table + "?id=eq." + id, {method:"PATCH", body:{capspire_comments: JSON.stringify(currentModalComments)}})
-    .then(() => { saveCommentsToState(table, id, currentModalComments); refreshCommentsModal(); render(); })
+  apiFetch(currentModalTable + "?id=eq." + currentModalId, {method:"PATCH", body:{capspire_comments: JSON.stringify(currentModalComments)}})
+    .then(() => { saveCommentsToState(currentModalTable, currentModalId, currentModalComments); refreshCommentsModal(); render(); })
     .catch(e => alert("Error: " + e.message));
-}
-
-function addComment(table, id, currentComments) {
-  const user = getCurrentUser();
-  if (!user) { setTimeout(() => addComment(table, id, currentComments), 500); return; }
-  const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
-  overlay.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:4px">💬 Add Comment</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Commenting as <strong style="color:var(--text)">${user}</strong> · <a onclick="localStorage.removeItem('pa_username');this.closest('div[style]').remove()" href="#" style="color:var(--accent)">Change name</a></div>
-    <textarea id="comment-input" placeholder="Write your comment here..." style="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box"></textarea>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button id="comment-save" class="btn btn-primary">💾 Save Comment</button>
-      <button id="comment-cancel" class="btn">Cancel</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  setTimeout(() => document.getElementById("comment-input")?.focus(), 100);
-  document.getElementById("comment-cancel").onclick = () => overlay.remove();
-  overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
-  document.getElementById("comment-save").onclick = async () => {
-    const text = document.getElementById("comment-input").value.trim();
-    if (!text) { alert("Please write a comment first."); return; }
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-GB") + ", " + now.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
-    const newComment = {user, date: dateStr, text};
-    const updated = [...(currentComments || []), newComment];
-    overlay.remove();
-    try {
-      await apiFetch(table + "?id=eq." + id, {method:"PATCH", body:{capspire_comments: JSON.stringify(updated)}});
-      saveCommentsToState(table, id, updated);
-      render();
-    } catch(e) { alert("Error saving comment: " + e.message); }
-  };
-}
-
-function commentCell(table, row) {
-  const comments = parseComments(row.capspire_comments);
-  const count = comments.length;
-  return `<td style="min-width:180px"><div style="display:flex;align-items:center;gap:6px">
-    <span style="font-size:11px;color:var(--muted)">${count ? count + " comment" + (count > 1 ? "s" : "") : "No comments"}</span>
-    <button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('${table}',${row.id})">💬 View</button>
-    <button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="openAddComment('${table}',${row.id})">+ Add</button>
-  </div></td>`;
 }
 
 function openAddComment(table, id) {
   const stateKey = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
   const row = state[stateKey].find(r => r.id === id);
-  addComment(table, id, parseComments(row?.capspire_comments));
+  const existingComments = parseComments(row?.capspire_comments);
+  ensureUsername(user => {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
+    overlay.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">&#128172; Add Comment</div><div style="font-size:11px;color:var(--muted);margin-bottom:14px">Commenting as <strong style='color:var(--text)'>' + user + '</strong></div><textarea id="comment-inp" placeholder="Write your comment here..." style="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box"></textarea><div style="display:flex;gap:8px;margin-top:12px"><button id="comment-save-btn" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">&#128190; Save</button><button id="comment-cancel-btn" style="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px">Cancel</button></div></div>';
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if(e.target === overlay) overlay.remove(); };
+    setTimeout(() => { const el = document.getElementById("comment-inp"); if(el) el.focus(); }, 100);
+    document.getElementById("comment-cancel-btn").onclick = () => overlay.remove();
+    document.getElementById("comment-save-btn").onclick = async () => {
+      const text = (document.getElementById("comment-inp").value || "").trim();
+      if (!text) { alert("Please write a comment first."); return; }
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-GB") + ", " + now.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
+      const updated = [...existingComments, {user, date: dateStr, text}];
+      overlay.remove();
+      try {
+        await apiFetch(table + "?id=eq." + id, {method:"PATCH", body:{capspire_comments: JSON.stringify(updated)}});
+        saveCommentsToState(table, id, updated);
+        render();
+      } catch(e) { alert("Error saving comment: " + e.message); }
+    };
+  });
+}
+
+function addComment(table, id) { openAddComment(table, id); }
+
+function commentCell(table, row) {
+  const comments = parseComments(row.capspire_comments);
+  const count = comments.length;
+  return '<td style="min-width:180px"><div style="display:flex;align-items:center;gap:6px">' +
+    '<span style="font-size:11px;color:var(--muted)">' + (count ? count + " comment" + (count > 1 ? "s" : "") : "No comments") + '</span>' +
+    '<button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('' + table + '',' + row.id + ')">&#128172; View</button>' +
+    '<button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="openAddComment('' + table + '',' + row.id + ')">+ Add</button>' +
+    '</div></td>';
 }
 
 function showComments(table, id) {
@@ -310,14 +291,7 @@ function showComments(table, id) {
   const d = document.createElement("div");
   d.id = "comments-modal-overlay";
   d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
-  d.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px">
-    <div style="display:flex;align-items:center;margin-bottom:14px">
-      <strong>💬 capSpire Comments</strong>
-      <button onclick="document.getElementById('comments-modal-overlay').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
-    </div>
-    <div id="comments-list">${renderComments(currentModalComments)}</div>
-    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="document.getElementById('comments-modal-overlay').remove();addComment('${table}',${id},currentModalComments)">+ Add Comment</button>
-  </div>`;
+  d.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px"><div style="display:flex;align-items:center;margin-bottom:14px"><strong>&#128172; capSpire Comments</strong><button onclick="document.getElementById('comments-modal-overlay').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">&#10005;</button></div><div id="comments-list">' + renderComments(currentModalComments) + '</div><button onclick="document.getElementById('comments-modal-overlay').remove();openAddComment('' + table + '',' + id + ')" style="margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">+ Add Comment</button></div>';
   document.body.appendChild(d);
   d.onclick = e => { if(e.target === d) d.remove(); };
 }
