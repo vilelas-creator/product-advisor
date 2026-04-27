@@ -68,6 +68,7 @@ a:hover{text-decoration:underline;}
 .comment-text{color:var(--text);line-height:1.5;}
 @media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:3px 6px;font-size:10px;}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <header>
@@ -592,8 +593,8 @@ function renderImport(){
       <div style="background:var(--bg3);border:1px solid var(--yellow)44;border-radius:8px;padding:14px;margin-bottom:20px">
         <div style="font-weight:700;color:var(--yellow);margin-bottom:8px">⚠ Important — Read before importing</div>
         <ul style="color:var(--muted);font-size:12px;line-height:2.2;padding-left:18px">
-          <li>Files must be in <strong style="color:var(--text)">CSV format (.csv)</strong> — NOT Excel (.xlsx or .xls)</li>
-          <li>To save as CSV from Excel: <strong style="color:var(--text)">File → Save As → CSV (Comma delimited)</strong></li>
+          <li>Upload <strong style="color:var(--text)">Excel (.xlsx)</strong> or CSV files — Excel is recommended</li>
+          <li>Download the template to get the correct column format for each table</li>
           <li>The first row must be the column headers — do not change them</li>
           <li>Leave the ID column empty for new records (it will be assigned automatically)</li>
           <li>Records with an existing ID will be updated; new IDs will be inserted</li>
@@ -607,8 +608,8 @@ function renderImport(){
           <div style="padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-success" onclick="downloadTemplate('${t.id}','${t.label}',[${t.cols.map(c=>`'${c}'`).join(",")}])">⬇ Template</button>
             <label class="btn btn-primary" style="cursor:pointer">
-              ⬆ Upload CSV
-              <input type="file" accept=".csv" style="display:none" onchange="importCSV(event,'${t.id}')">
+              ⬆ Upload Excel / CSV
+              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(event,'${t.id}')">
             </label>
             <span id="import-status-${t.id}" style="font-size:11px;color:var(--muted);width:100%"></span>
           </div>
@@ -618,60 +619,98 @@ function renderImport(){
   </div>`;
 }
 
-function downloadTemplate(tableId,label,cols){
-  const csv=cols.join(",")+",capspire_comments\n";
-  const blob=new Blob([csv],{type:"text/csv"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="template_"+tableId+".csv";
-  a.click();
+function downloadTemplate(tableId, label, cols) {
+  if (typeof XLSX === "undefined") { alert("Excel library loading, please try again."); return; }
+  const ws = XLSX.utils.aoa_to_sheet([cols]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Template");
+  XLSX.writeFile(wb, "template_" + tableId + ".xlsx");
 }
 
-async function importCSV(event,table){
-  const file=event.target.files[0];if(!file)return;
-  const statusEl=document.getElementById("import-status-"+table);
-  if(!file.name.endsWith(".csv")){statusEl.textContent="Error: Please upload a .csv file, not Excel";statusEl.style.color="var(--red)";return;}
-  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
-  try{
-    const text=await file.text();
-    const lines=text.split("\n").filter(l=>l.trim());
-    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
-    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
-    const rows=lines.slice(1).map(line=>{
-      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-      const obj={};
-      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
-      return obj;
-    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
-    statusEl.textContent="Importing "+rows.length+" records...";
-    let ok=0,err=0;
-    for(const row of rows){
-      try{
-        if(row.id){
-          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
-          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
-          else await apiFetch(table,{method:"POST",body:row});
-        }else{
-          const{id,...r}=row;
-          await apiFetch(table,{method:"POST",body:r});
+async function parseFileToRows(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array"});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(ws, {defval:null, raw:false});
+        const rows = raw.map(r => {
+          const obj = {};
+          Object.entries(r).forEach(([k,v]) => {
+            const key = String(k).trim();
+            const val = (v===null||v==="") ? null : (!isNaN(v) && v !== "") ? Number(v) : String(v).trim();
+            if (val !== null && val !== "") obj[key] = val;
+          });
+          return obj;
+        }).filter(r => Object.keys(r).length > 0);
+        resolve(rows);
+      } catch(e) { reject(e); }
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function importFile(event, table) {
+  const file = event.target.files[0]; if (!file) return;
+  event.target.value = "";
+  const statusEl = document.getElementById("import-status-" + table);
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (!["xlsx","xls","csv"].includes(ext)) {
+    statusEl.textContent = "Please upload an Excel (.xlsx) or CSV file";
+    statusEl.style.color = "var(--red)"; return;
+  }
+  statusEl.textContent = "Reading file..."; statusEl.style.color = "var(--yellow)";
+  try {
+    let rows;
+    if (ext === "csv") {
+      const text = await file.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      if (lines.length < 2) { statusEl.textContent = "File is empty!"; statusEl.style.color = "var(--red)"; return; }
+      const sep = lines[0].includes(";") ? ";" : ",";
+      const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g,""));
+      rows = lines.slice(1).map(line => {
+        const vals = line.split(sep).map(v => v.trim().replace(/^"|"$/g,""));
+        const obj = {};
+        headers.forEach((h,i) => {
+          const v = vals[i] || "";
+          if (h && v !== "") obj[h] = isNaN(v) ? v : Number(v);
+        });
+        return obj;
+      }).filter(r => Object.keys(r).length > 0);
+    } else {
+      rows = await parseFileToRows(file);
+    }
+    if (!rows.length) { statusEl.textContent = "No data found!"; statusEl.style.color = "var(--red)"; return; }
+    statusEl.textContent = "Importing " + rows.length + " records...";
+    let ok = 0, err = 0;
+    for (const row of rows) {
+      try {
+        const cleanRow = {...row};
+        if (!cleanRow.id) delete cleanRow.id;
+        if (cleanRow.id) {
+          const ex = await apiFetch(table + "?id=eq." + cleanRow.id, {params:{limit:1}});
+          if (ex.length > 0) await apiFetch(table + "?id=eq." + cleanRow.id, {method:"PATCH", body:cleanRow});
+          else await apiFetch(table, {method:"POST", body:cleanRow});
+        } else {
+          await apiFetch(table, {method:"POST", body:cleanRow});
         }
         ok++;
-      }catch(e){err++;}
+      } catch(e) { err++; console.error("Row error:", e.message, row); }
     }
-    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
-    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
-    // Reload affected data
-    if(table==="vendors")state.vendors=await getAll("vendors");
-    else if(table==="products")state.products=await getAll("products");
-    else if(table==="commodities")state.commodities=await getAll("commodities");
-    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
-    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
-    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
-    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
+    statusEl.textContent = "✓ " + ok + " imported" + (err > 0 ? ", " + err + " errors (see console)" : "");
+    statusEl.style.color = err > 0 ? "var(--yellow)" : "var(--green)";
+    if (table==="vendors") state.vendors = await getAll("vendors");
+    else if (table==="products") state.products = await getAll("products");
+    else if (table==="commodities") state.commodities = await getAll("commodities");
+    else if (table==="product_contacts") state.contacts = await getAll("product_contacts");
+    else if (table==="geographic_coverage") state.geo = await getAll("geographic_coverage");
+    else if (table==="product_commodities_coverage") state.pcc = await getAll("product_commodities_coverage");
+    else if (table==="customer_type_coverage") state.ct = await getAll("customer_type_coverage");
     render();
-  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
+  } catch(e) { statusEl.textContent = "Error: " + e.message; statusEl.style.color = "var(--red)"; }
 }
-
 // ── MODALS ──
 function openModal(title,fields,saveFn){
   document.getElementById("modal-title").textContent=title;
