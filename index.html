@@ -109,7 +109,18 @@ const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
 const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
 const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
 let isDark=true;
-let currentUser="User";
+let currentUser=localStorage.getItem("pa_username")||"";
+function ensureUsername(cb){
+  if(currentUser){if(cb)cb();return;}
+  const d=document.createElement("div");
+  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px";
+  d.innerHTML='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:400px;padding:24px;text-align:center"><div style="font-size:24px;margin-bottom:12px">👋</div><div style="font-weight:700;font-size:15px;margin-bottom:6px">Welcome to Product Advisor</div><div style="color:var(--muted);font-size:12px;margin-bottom:18px">Please enter your name. It will be used to identify your comments.</div><input id="uname-inp" placeholder="Your full name..." style="width:100%;margin-bottom:14px;padding:9px 12px;font-size:13px;border-radius:6px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box"><button id="uname-btn" class="btn btn-primary" style="width:100%;padding:9px;font-size:13px">Continue →</button></div>';
+  document.body.appendChild(d);
+  setTimeout(()=>document.getElementById("uname-inp")?.focus(),100);
+  const go=()=>{const n=document.getElementById("uname-inp").value.trim();if(!n){alert("Please enter your name.");return;}currentUser=n;localStorage.setItem("pa_username",n);d.remove();if(cb)cb();};
+  document.getElementById("uname-btn").onclick=go;
+  document.getElementById("uname-inp").onkeydown=(e)=>{if(e.key==="Enter")go();};
+}
 
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
 
@@ -280,8 +291,14 @@ function commentCell(table, row) {
   return `<td style="min-width:180px"><div style="display:flex;align-items:center;gap:6px">
     <span style="font-size:11px;color:var(--muted)">${count ? count + " comment" + (count > 1 ? "s" : "") : "No comments"}</span>
     <button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('${table}',${row.id})">💬 View</button>
-    <button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="addComment('${table}',${row.id},parseComments(${JSON.stringify(JSON.stringify(row.capspire_comments || '[]'))}))">+ Add</button>
+    <button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="openAddComment('${table}',${row.id})">+ Add</button>
   </div></td>`;
+}
+
+function openAddComment(table, id) {
+  const stateKey = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
+  const row = state[stateKey].find(r => r.id === id);
+  addComment(table, id, parseComments(row?.capspire_comments));
 }
 
 function showComments(table, id) {
@@ -814,7 +831,41 @@ ACTION:ADD_CONTACT:{"product":"","vendor":"","contact_name":"","role_title":"","
 For simple conversational questions answer directly. Be concise and use bullet points.`;
 
 let chatHistory=[],chatOpen=false;
+function showGroqKeyModal(){
+  const overlay=document.createElement("div");
+  overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
+  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px">
+    <div style="font-size:22px;text-align:center;margin-bottom:12px">🔑</div>
+    <div style="font-weight:700;font-size:15px;margin-bottom:6px;text-align:center">Groq API Key Required</div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:6px;line-height:1.6">The AI chatbox uses Groq (free). You need your own personal API key:</div>
+    <ol style="color:var(--muted);font-size:12px;line-height:2;padding-left:18px;margin-bottom:16px">
+      <li>Go to <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a></li>
+      <li>Sign up or log in</li>
+      <li>Go to <strong style="color:var(--text)">API Keys</strong> → <strong style="color:var(--text)">Create API Key</strong></li>
+      <li>Paste your key below</li>
+    </ol>
+    <input id="groq-key-input" placeholder="Paste your Groq API key here (gsk_...)" style="width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px">
+    <div style="display:flex;gap:8px">
+      <button id="groq-key-save" class="btn btn-primary" style="flex:1;padding:9px">Save & Continue</button>
+      <button onclick="this.closest('div[style]').remove()" class="btn" style="padding:9px">Cancel</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:10px;text-align:center">Your key is stored only in your browser — never sent to our servers</div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  setTimeout(()=>document.getElementById("groq-key-input")?.focus(),100);
+  document.getElementById("groq-key-save").onclick=()=>{
+    const key=document.getElementById("groq-key-input").value.trim();
+    if(!key.startsWith("gsk_")){alert("Please enter a valid Groq key (starts with gsk_)");return;}
+    GROQ_KEY=key;
+    localStorage.setItem("pa_groq_key",key);
+    overlay.remove();
+    toggleChat();
+  };
+}
+
 function toggleChat(){
+  if(!chatOpen&&!GROQ_KEY){showGroqKeyModal();return;}
   chatOpen=!chatOpen;
   document.getElementById("chat-panel").style.display=chatOpen?"flex":"none";
   document.getElementById("chat-fab").textContent=chatOpen?"✕":"💬";
@@ -883,6 +934,10 @@ async function execQuery(sql){
 }
 
 async function sendChat(){
+  if(!GROQ_KEY){
+    showGroqKeyModal();
+    return;
+  }
   const inp=document.getElementById("chat-input");
   const msg=inp.value.trim();if(!msg)return;
   inp.value="";
