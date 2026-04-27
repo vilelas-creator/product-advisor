@@ -700,6 +700,12 @@ async function sendChat() {
     });
 
     const data = await res.json();
+    if (!res.ok) {
+      const errMsg = data?.error?.message || JSON.stringify(data);
+      document.getElementById("chat-typing")?.remove();
+      addChatMessage("assistant", "API Error: " + errMsg);
+      return;
+    }
     const reply = data.choices?.[0]?.message?.content || "Sorry, I could not process your request.";
 
     // Remove typing indicator
