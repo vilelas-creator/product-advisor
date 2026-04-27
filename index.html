@@ -105,7 +105,6 @@ a:hover{text-decoration:underline;}
 <script>
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
-let GROQ_KEY = localStorage.getItem("pa_groq_key") || "";
 const GROQ_MODEL="llama-3.3-70b-versatile";
 const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
 const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
@@ -845,149 +844,307 @@ async function init(){
 init();
 
 // ── CHATBOX ──
-const DB_SCHEMA=`Database tables:
-vendors(id,vendor_name,headquarters,website,industries_served)
-products(id,product_name,product_type,vendor,deployment_model,version_info,notes)
-commodities(id,commodity_name)
-product_commodities_coverage(id,product,product_type,commodity,coverage_level) -- coverage_level: Covered/Partially Covered/Not Covered/Can be covered
-product_function_ctrm(id,product,function_name,commodity,coverage_level) -- coverage_level: deployed/capable/not capable/not applicable
-product_function_risk(id,product,category,function_name,coverage_level)
-customer_type_coverage(id,product_type,product,utility,energy_retailer,generator_non_renewables,renewables_generator,trader_broker,hedge_fund_cta,bank_financial_institution,consultant_analyst,agricultural_producer,biofuels,producer_marketer,refining_petrochemical,merchant_energy_firm,industrial_consumer,other) -- numeric cols are 0-1 decimals
-geographic_coverage(id,product_type,product,north_america,europe_russia,south_america,middle_east_africa,asia_australia) -- numeric cols are 0-1 decimals
-product_contacts(id,product,product_type,vendor,contact_name,role_title,email,phone_number,region)`;
+let GROQ_KEY = localStorage.getItem("pa_groq_key") || "";
+let chatHistory = [], chatOpen = false;
 
-const SYSTEM_PROMPT=`You are an AI assistant for the Product Advisor CTRM database. Always respond in English.
-
-DATABASE SCHEMA:
-vendors(id,vendor_name,headquarters,website,industries_served)
-products(id,product_name,product_type,vendor,deployment_model,version_info,notes)
-product_commodities_coverage(id,product,product_type,commodity,coverage_level) -- Covered/Partially Covered/Not Covered/Can be covered
-product_function_ctrm(id,product,function_name,commodity,coverage_level) -- deployed/capable/not currently/Not Applicable
-product_function_risk(id,product,category,function_name,coverage_level)
-customer_type_coverage(id,product_type,product,utility,energy_retailer,generator_non_renewables,renewables_generator,trader_broker,hedge_fund_cta,bank_financial_institution,consultant_analyst,agricultural_producer,biofuels,producer_marketer,refining_petrochemical,merchant_energy_firm,industrial_consumer,other) -- 0-1 decimals
-geographic_coverage(id,product_type,product,north_america,europe_russia,south_america,middle_east_africa,asia_australia) -- 0-1 decimals
-product_contacts(id,product,product_type,vendor,contact_name,role_title,email,phone_number,region)
-
-RULES:
-1. Data questions: respond ONLY with: SQL_QUERY: SELECT ... FROM table WHERE column ILIKE '%value%' LIMIT 50
-2. Add records: respond ONLY with (use real values, no placeholders):
-   ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
-   ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"","version_info":"","notes":""}
-   ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"","phone_number":"","region":""}
-3. Never show template placeholders - use real values from user input
-4. Simple questions: answer directly in plain text`;
-
-let chatHistory=[],chatOpen=false;
-function showGroqKeyModal(){
-  const ov=document.createElement("div");
-  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
-  const bx=document.createElement("div");
-  bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px";
-  const h=document.createElement("div");h.innerHTML="<div style='font-size:22px;text-align:center;margin-bottom:12px'>&#128273;</div><div style='font-weight:700;font-size:15px;margin-bottom:6px;text-align:center'>Groq API Key Required</div><div style='color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.6'>Get your free key at <a href=\"https://console.groq.com\" target=\"_blank\" style=\"color:var(--accent)\">console.groq.com</a></div>";
-  const inp=document.createElement("input");
-  inp.placeholder="Paste your Groq API key (gsk_...)";
-  inp.style.cssText="width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px";
-  const sb=document.createElement("button");
-  sb.style.cssText="width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
-  sb.textContent="Save & Continue";
-  const note=document.createElement("div");note.style.cssText="font-size:10px;color:var(--muted);margin-top:10px;text-align:center";note.textContent="Key stored only in your browser";
-  bx.appendChild(h);bx.appendChild(inp);bx.appendChild(sb);bx.appendChild(note);ov.appendChild(bx);
-  document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>inp.focus(),100);
-  sb.onclick=()=>{const k=inp.value.trim();if(!k.startsWith("gsk_")){alert("Please enter a valid Groq key");return;}GROQ_KEY=k;localStorage.setItem("pa_groq_key",k);ov.remove();toggleChat();};
-}
-
-function toggleChat(){
-  if(!chatOpen&&!GROQ_KEY){showGroqKeyModal();return;}
-  chatOpen=!chatOpen;
-  document.getElementById("chat-panel").style.display=chatOpen?"flex":"none";
-  document.getElementById("chat-fab").textContent=chatOpen?"✕":"💬";
-  if(chatOpen&&chatHistory.length===0)addMsg("assistant","Hi! I can query the full database.\n\nExamples:\n• Which products cover FX?\n• How many vendors are from the UK?\n• Which products have deployed Power CTRM functions?\n• Add a new contact for Allegro");
-  setTimeout(()=>{const e=document.getElementById("chat-messages");if(e)e.scrollTop=e.scrollHeight;},100);
-}
-function addMsg(role,text){
-  const el=document.getElementById("chat-messages");if(!el)return;
-  const d=document.createElement("div");
-  d.style.cssText="margin-bottom:10px;display:flex;flex-direction:column;align-items:"+(role==="user"?"flex-end":"flex-start");
-  const b=document.createElement("div");
-  b.style.cssText="max-width:90%;padding:7px 11px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;"+(role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
-  b.textContent=text;d.appendChild(b);el.appendChild(d);el.scrollTop=el.scrollHeight;
-}
-function addTableMsg(cols,rows){
-  const el=document.getElementById("chat-messages");if(!el)return;
-  const wrap=document.createElement("div");
-  wrap.style.cssText="margin-bottom:10px;max-width:100%;overflow-x:auto";
-  const tbl=document.createElement("table");
-  tbl.style.cssText="width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:6px;overflow:hidden";
-  const thead=document.createElement("thead");
-  const hr=document.createElement("tr");
-  cols.forEach(c=>{const th=document.createElement("th");th.style.cssText="padding:5px 9px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap";th.textContent=c;hr.appendChild(th);});
-  thead.appendChild(hr);tbl.appendChild(thead);
-  const tbody=document.createElement("tbody");
-  rows.forEach(row=>{const tr=document.createElement("tr");cols.forEach(c=>{const td=document.createElement("td");td.style.cssText="padding:4px 9px;border-bottom:1px solid var(--row-border);font-size:11px";td.textContent=row[c]??"";;tr.appendChild(td);});tbody.appendChild(tr);});
-  tbl.appendChild(tbody);wrap.appendChild(tbl);
-  const meta=document.createElement("div");meta.style.cssText="font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
-  meta.textContent=rows.length+" result"+(rows.length!==1?"s":"");
-  wrap.appendChild(meta);el.appendChild(wrap);el.scrollTop=el.scrollHeight;
-}
-
-async function execQuery(sql) {
-  const res = await fetch(SB_URL + "/rest/v1/rpc/exec_sql", {
+async function groqCall(messages, maxTokens=800) {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: {"apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json", "Prefer": "return=representation"},
-    body: JSON.stringify({query: sql.trim().replace(/;+$/, "")})
+    headers: {"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
+    body: JSON.stringify({model:GROQ_MODEL, messages, max_tokens:maxTokens, temperature:0.1})
   });
-  if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
-  if (Array.isArray(data)) return data;
-  try { return JSON.parse(data); } catch { return [{result: String(data)}]; }
+  if (!res.ok) throw new Error(data?.error?.message || JSON.stringify(data));
+  return (data.choices?.[0]?.message?.content || "").trim();
 }
 
+// Search functions that work on in-memory data
+function searchData(intent) {
+  const q = (intent.query || "").toLowerCase();
+  const table = (intent.table || "").toLowerCase();
+  const field = (intent.field || "").toLowerCase();
+  const limit = intent.limit || 50;
 
-async function sendChat(){
-  const inp=document.getElementById("chat-input");
-  const msg=inp.value.trim();if(!msg)return;
-  inp.value="";
-  addMsg("user",msg);
-  chatHistory.push({role:"user",content:msg});
-  const typing=document.createElement("div");
-  typing.id="chat-typing";typing.style.cssText="margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
-  typing.textContent="Thinking...";
-  document.getElementById("chat-messages").appendChild(typing);
-  document.getElementById("chat-messages").scrollTop=99999;
-  try{
-    const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
-      body:JSON.stringify({model:GROQ_MODEL,messages:[{role:"system",content:SYSTEM_PROMPT},...chatHistory.slice(-6)],max_tokens:400,temperature:0.1})
-    });
-    const data=await res.json();
-    if(!res.ok){document.getElementById("chat-typing")?.remove();addMsg("assistant","API Error: "+(data?.error?.message||JSON.stringify(data)));return;}
-    const reply=(data.choices?.[0]?.message?.content||"").trim();
-    document.getElementById("chat-typing")?.remove();
-    if(reply.startsWith("SQL_QUERY:")){
-      const sql=reply.replace("SQL_QUERY:","").trim();
-      try{
-        const results=await execQuery(sql);
-        if(!results.length){addMsg("assistant","No results found.");}
-        else{addTableMsg(Object.keys(results[0]),results);}
-      }catch(e){addMsg("assistant","Query error: "+e.message);}
-    }else if(reply.startsWith("ACTION:")){
-      const aM=reply.match(/ACTION:(\w+):(\{.*\})/s);
-      if(aM){
-        try{
-          const rec=JSON.parse(aM[2]);
-          const tbl=aM[1]==="ADD_VENDOR"?"vendors":aM[1]==="ADD_PRODUCT"?"products":"product_contacts";
-          await apiFetch(tbl,{method:"POST",body:rec});
-          if(tbl==="vendors")state.vendors=await getAll("vendors");
-          else if(tbl==="products")state.products=await getAll("products");
-          else state.contacts=await getAll("product_contacts");
-          addMsg("assistant","Record added successfully to "+tbl.replace(/_/g," ")+"!");render();
-        }catch(e){addMsg("assistant","Error adding record: "+e.message);}
+  let results = [];
+
+  if (table === "vendors") {
+    results = state.vendors.filter(v =>
+      !q || Object.values(v).some(val => (val||"").toString().toLowerCase().includes(q))
+    );
+  } else if (table === "products") {
+    results = state.products.filter(p =>
+      (!q || Object.values(p).some(val => (val||"").toString().toLowerCase().includes(q))) &&
+      (!intent.vendor || (p.vendor||"").toLowerCase().includes(intent.vendor.toLowerCase()))
+    );
+  } else if (table === "commodities" || table === "product_commodities_coverage") {
+    results = state.pcc.filter(p =>
+      (!q || (p.commodity||"").toLowerCase().includes(q) || (p.product||"").toLowerCase().includes(q)) &&
+      (!intent.commodity || (p.commodity||"").toLowerCase().includes(intent.commodity.toLowerCase())) &&
+      (!intent.product || (p.product||"").toLowerCase().includes(intent.product.toLowerCase())) &&
+      (!intent.coverage || (p.coverage_level||"").toLowerCase().includes(intent.coverage.toLowerCase()))
+    );
+  } else if (table === "product_function_ctrm" || table === "ctrm") {
+    results = state.ctrm.filter(r =>
+      (!q || Object.values(r).some(val => (val||"").toString().toLowerCase().includes(q))) &&
+      (!intent.product || (r.product||"").toLowerCase().includes(intent.product.toLowerCase())) &&
+      (!intent.commodity || (r.commodity||"").toLowerCase().includes(intent.commodity.toLowerCase())) &&
+      (!intent.function || (r.function_name||"").toLowerCase().includes(intent.function.toLowerCase()))
+    );
+  } else if (table === "product_function_risk" || table === "risk") {
+    results = state.risk.filter(r =>
+      (!q || Object.values(r).some(val => (val||"").toString().toLowerCase().includes(q))) &&
+      (!intent.product || (r.product||"").toLowerCase().includes(intent.product.toLowerCase())) &&
+      (!intent.category || (r.category||"").toLowerCase().includes(intent.category.toLowerCase()))
+    );
+  } else if (table === "geographic_coverage" || table === "geographic") {
+    results = state.geo.filter(g =>
+      !q || (g.product||"").toLowerCase().includes(q)
+    );
+  } else if (table === "customer_type_coverage" || table === "customer_types") {
+    results = state.ct.filter(g =>
+      !q || (g.product||"").toLowerCase().includes(q)
+    );
+  } else if (table === "product_contacts" || table === "contacts") {
+    results = state.contacts.filter(c =>
+      !q || Object.values(c).some(val => (val||"").toString().toLowerCase().includes(q))
+    );
+  } else {
+    // Search across all tables
+    const allResults = [];
+    if (q) {
+      state.vendors.filter(v => Object.values(v).some(val => (val||"").toString().toLowerCase().includes(q))).forEach(v => allResults.push({...v, _table:"vendors"}));
+      state.products.filter(p => Object.values(p).some(val => (val||"").toString().toLowerCase().includes(q))).forEach(p => allResults.push({...p, _table:"products"}));
+      state.pcc.filter(p => Object.values(p).some(val => (val||"").toString().toLowerCase().includes(q))).slice(0,20).forEach(p => allResults.push({...p, _table:"commodity_coverage"}));
+    }
+    results = allResults;
+  }
+
+  return results.slice(0, limit);
+}
+
+function countData(intent) {
+  const results = searchData(intent);
+  return results.length;
+}
+
+async function processQuestion(question) {
+  // Step 1: Ask Groq to classify the intent
+  const classifyPrompt = `You are analyzing a question about a CTRM (Commodity Trading & Risk Management) database.
+
+Available tables and their key fields:
+- vendors: vendor_name, headquarters, industries_served
+- products: product_name, product_type, vendor, deployment_model, version_info
+- product_commodities_coverage: product, commodity, coverage_level (Covered/Partially Covered/Not Covered)
+- product_function_ctrm: product, function_name, commodity, coverage_level
+- product_function_risk: product, category, function_name, coverage_level
+- geographic_coverage: product, north_america, europe_russia, south_america, middle_east_africa, asia_australia
+- customer_type_coverage: product, utility, energy_retailer, trader_broker, etc.
+- product_contacts: product, vendor, contact_name, role_title, email
+
+The user asked: "${question}"
+
+Respond with ONLY a JSON object (no markdown, no explanation):
+{
+  "type": "search" | "count" | "add" | "general",
+  "table": "<table name>",
+  "query": "<search term if any>",
+  "field": "<specific field to search>",
+  "commodity": "<commodity name if mentioned>",
+  "product": "<product name if mentioned>",
+  "vendor": "<vendor name if mentioned>",
+  "coverage": "<coverage level if mentioned>",
+  "category": "<category if mentioned>",
+  "function": "<function name if mentioned>",
+  "limit": 50,
+  "add_data": null
+}`;
+
+  const intentJson = await groqCall([{role:"user", content:classifyPrompt}], 300);
+  
+  let intent;
+  try {
+    const clean = intentJson.replace(/```json|```/g, "").trim();
+    intent = JSON.parse(clean);
+  } catch(e) {
+    // If JSON parsing fails, treat as general question
+    return {type:"general", raw:intentJson};
+  }
+
+  if (intent.type === "count") {
+    const count = countData(intent);
+    return {type:"count", count, intent};
+  } else if (intent.type === "search") {
+    const results = searchData(intent);
+    return {type:"search", results, intent};
+  } else if (intent.type === "add") {
+    return {type:"add", intent};
+  } else {
+    return {type:"general", intent};
+  }
+}
+
+function showGroqKeyModal() {
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx = document.createElement("div");
+  bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px";
+  bx.innerHTML = "<div style='font-size:22px;text-align:center;margin-bottom:12px'>&#128273;</div><div style='font-weight:700;font-size:15px;margin-bottom:6px;text-align:center'>Groq API Key Required</div><div style='color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.6'>The AI chatbox uses Groq (free). Get your key at <a href=\"https://console.groq.com\" target=\"_blank\" style=\"color:var(--accent)\">console.groq.com</a></div>";
+  const inp = document.createElement("input");
+  inp.placeholder = "Paste your Groq API key (gsk_...)";
+  inp.style.cssText = "width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px";
+  const sb = document.createElement("button");
+  sb.style.cssText = "width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
+  sb.textContent = "Save & Continue";
+  const note = document.createElement("div");
+  note.style.cssText = "font-size:10px;color:var(--muted);margin-top:10px;text-align:center";
+  note.textContent = "Key stored only in your browser";
+  bx.appendChild(inp); bx.appendChild(sb); bx.appendChild(note); ov.appendChild(bx);
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  setTimeout(() => inp.focus(), 100);
+  sb.onclick = () => {
+    const k = inp.value.trim();
+    if (!k.startsWith("gsk_")) { alert("Please enter a valid Groq key (starts with gsk_)"); return; }
+    GROQ_KEY = k; localStorage.setItem("pa_groq_key", k); ov.remove(); toggleChat();
+  };
+}
+
+function toggleChat() {
+  if (!chatOpen && !GROQ_KEY) { showGroqKeyModal(); return; }
+  chatOpen = !chatOpen;
+  document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
+  document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
+  if (chatOpen && chatHistory.length === 0) {
+    addMsg("assistant", "Hi! Ask me anything about the database in natural language.\n\nExamples:\n• Which products cover Power?\n• How many vendors are from the UK?\n• Show me all ION Commodities products\n• Which products have deployed FX CTRM functions?\n• Add a new contact for Allegro");
+  }
+  setTimeout(() => { const e = document.getElementById("chat-messages"); if(e) e.scrollTop = e.scrollHeight; }, 100);
+}
+
+function addMsg(role, text) {
+  const el = document.getElementById("chat-messages"); if (!el) return;
+  const d = document.createElement("div");
+  d.style.cssText = "margin-bottom:10px;display:flex;flex-direction:column;align-items:" + (role==="user"?"flex-end":"flex-start");
+  const b = document.createElement("div");
+  b.style.cssText = "max-width:90%;padding:7px 11px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;" + (role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
+  b.textContent = text; d.appendChild(b); el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+function addTableMsg(cols, rows) {
+  const el = document.getElementById("chat-messages"); if (!el) return;
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "margin-bottom:10px;max-width:100%;overflow-x:auto";
+  const tbl = document.createElement("table");
+  tbl.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:6px;overflow:hidden";
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  cols.forEach(c => { const th = document.createElement("th"); th.style.cssText = "padding:5px 9px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap"; th.textContent = c; hr.appendChild(th); });
+  thead.appendChild(hr); tbl.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  rows.forEach(row => { const tr = document.createElement("tr"); cols.forEach(c => { const td = document.createElement("td"); td.style.cssText = "padding:4px 9px;border-bottom:1px solid var(--row-border);font-size:11px"; td.textContent = row[c] ?? ""; tr.appendChild(td); }); tbody.appendChild(tr); });
+  tbl.appendChild(tbody); wrap.appendChild(tbl);
+  const meta = document.createElement("div"); meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
+  meta.textContent = rows.length + " result" + (rows.length !== 1 ? "s" : "");
+  wrap.appendChild(meta); el.appendChild(wrap); el.scrollTop = el.scrollHeight;
+}
+
+async function handleAdd(question) {
+  // Ask Groq for the fields needed
+  const addPrompt = `The user wants to add data to the Product Advisor database. 
+User said: "${question}"
+
+Available products: ${state.products.slice(0,20).map(p=>p.product_name).join(", ")}
+Available vendors: ${state.vendors.map(v=>v.vendor_name).join(", ")}
+
+If the user has provided enough information, respond with ONLY one of these (no other text):
+ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
+ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
+ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"E","phone_number":"P","region":"R"}
+
+If information is missing, ask the user for the specific missing fields. Never use placeholder values.`;
+
+  const reply = await groqCall([...chatHistory.slice(-4), {role:"user", content:addPrompt}], 400);
+  
+  const actionMatch = reply.match(/ACTION:(\w+):(\{.*\})/s);
+  if (actionMatch) {
+    try {
+      const rec = JSON.parse(actionMatch[2]);
+      // Check for empty required fields
+      const hasEmpty = Object.values(rec).some(v => !v || v === "" || v === "X" || v === "Y" || v === "Z");
+      if (hasEmpty) {
+        addMsg("assistant", reply.replace(/ACTION:.*$/s, "").trim() || "Please provide more details. What are the specific values?");
+        return;
       }
-    }else{addMsg("assistant",reply);}
-    chatHistory.push({role:"assistant",content:reply});
-  }catch(e){document.getElementById("chat-typing")?.remove();addMsg("assistant","Connection error: "+e.message);}
+      const tbl = actionMatch[1]==="ADD_VENDOR"?"vendors":actionMatch[1]==="ADD_PRODUCT"?"products":"product_contacts";
+      await apiFetch(tbl, {method:"POST", body:rec});
+      if (tbl==="vendors") state.vendors = await getAll("vendors");
+      else if (tbl==="products") state.products = await getAll("products");
+      else state.contacts = await getAll("product_contacts");
+      logAction("INSERT", tbl, null, rec.vendor_name||rec.product_name||rec.contact_name, {via:"chatbox"});
+      addMsg("assistant", "Done! Record added successfully to " + tbl.replace(/_/g," ") + ".");
+      render();
+    } catch(e) {
+      addMsg("assistant", "Error adding record: " + e.message);
+    }
+  } else {
+    addMsg("assistant", reply);
+  }
 }
+
+async function sendChat() {
+  const inp = document.getElementById("chat-input");
+  const msg = inp.value.trim(); if (!msg) return;
+  inp.value = "";
+  addMsg("user", msg);
+  chatHistory.push({role:"user", content:msg});
+
+  const typing = document.createElement("div");
+  typing.id = "chat-typing"; typing.style.cssText = "margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
+  typing.textContent = "Thinking...";
+  document.getElementById("chat-messages").appendChild(typing);
+  document.getElementById("chat-messages").scrollTop = 99999;
+
+  try {
+    const processed = await processQuestion(msg);
+    document.getElementById("chat-typing")?.remove();
+
+    if (processed.type === "search" && processed.results) {
+      if (processed.results.length === 0) {
+        addMsg("assistant", "No results found for your query. Try a different search term.");
+      } else {
+        // Show results as table
+        const cols = Object.keys(processed.results[0]).filter(k => !k.startsWith("_") && k !== "id" && k !== "capspire_comments");
+        addTableMsg(cols, processed.results);
+        // Ask Groq to summarise
+        const summary = await groqCall([
+          {role:"system", content:"You are a helpful assistant. Summarise these search results in 1-2 sentences in English."},
+          {role:"user", content:`Question: ${msg}\nResults (${processed.results.length} records): ${JSON.stringify(processed.results.slice(0,10))}`}
+        ], 200);
+        addMsg("assistant", summary);
+      }
+    } else if (processed.type === "count") {
+      const summary = await groqCall([
+        {role:"system", content:"Answer this question based on the count provided. Be concise."},
+        {role:"user", content:`Question: ${msg}\nCount result: ${processed.count}`}
+      ], 150);
+      addMsg("assistant", summary);
+    } else if (processed.type === "add") {
+      await handleAdd(msg);
+    } else {
+      // General question - answer directly
+      const answer = await groqCall([
+        {role:"system", content:`You are a helpful assistant for the Product Advisor CTRM database. Answer in English. Database summary: ${state.vendors.length} vendors, ${state.products.length} products, ${state.ctrm.length} CTRM records.`},
+        ...chatHistory.slice(-6)
+      ], 400);
+      addMsg("assistant", answer);
+    }
+
+    chatHistory.push({role:"assistant", content: processed.type === "search" ? `Found ${processed.results?.length || 0} results` : "Answered"});
+  } catch(e) {
+    document.getElementById("chat-typing")?.remove();
+    addMsg("assistant", "Error: " + e.message);
+  }
+}
+
 
 document.body.insertAdjacentHTML("beforeend",`
   <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:900">💬</button>
