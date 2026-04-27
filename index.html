@@ -17,53 +17,56 @@
   --input-bg:#ffffff;--row-border:#f1f5f9;
 }
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;transition:background .2s,color .2s;}
-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:52px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
-.logo{font-weight:700;font-size:15px;color:var(--accent);}
-.sub{font-size:11px;color:var(--muted);margin-left:4px;}
-nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:4px 0;}
-.tab{padding:5px 10px;font-size:12px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s;}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:8px;height:48px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.logo{font-weight:700;font-size:14px;color:var(--accent);white-space:nowrap;}
+.sub{font-size:10px;color:var(--muted);margin-left:4px;}
+nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:3px 0;}
+.tab{padding:4px 10px;font-size:11px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s;white-space:nowrap;}
 .tab.active{background:var(--accent);color:#fff;font-weight:600;}
 .tab:hover:not(.active){background:var(--bg3);}
-.theme-btn{padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit;margin-left:8px;}
-main{padding:16px;max-width:1500px;margin:0 auto;}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;}
-.card-head{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg3);}
+.theme-btn{padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit;white-space:nowrap;}
+main{padding:12px;max-width:1600px;margin:0 auto;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;}
+.card-head{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg3);}
 .card-title{font-weight:600;font-size:13px;}
 .card-meta{font-size:11px;color:var(--muted);margin-left:auto;}
-.filters{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--bg3);}
-input,select{background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;}
+.filters{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--bg3);}
+input,select{background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 9px;font-size:12px;font-family:inherit;outline:none;}
 input{width:180px;}
-.btn{padding:5px 12px;font-size:11px;font-weight:600;border:none;border-radius:6px;cursor:pointer;font-family:inherit;background:var(--bg3);color:var(--muted);}
+.btn{padding:4px 10px;font-size:11px;font-weight:600;border:none;border-radius:5px;cursor:pointer;font-family:inherit;background:var(--bg3);color:var(--muted);}
 .btn-primary{background:var(--accent);color:#fff;}
-.btn-reset{background:#1e3a1e;color:var(--green);border:1px solid var(--green)44;}
+.btn-success{background:#14532d;color:#86efac;border:1px solid #22c55e44;}
+.btn-reset{background:#1e3a1e;color:var(--green);border:1px solid var(--green);}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
-td{padding:7px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:middle;}
+th{padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+td{padding:6px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:middle;}
 .badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;}
-.pager{display:flex;gap:8px;padding:8px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);align-items:center;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px 20px;text-align:center;}
-.stat-n{font-size:28px;font-weight:700;color:var(--accent);}
-.stat-l{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
-.bar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px;}
+.pager{display:flex;gap:8px;padding:7px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);align-items:center;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center;}
+.stat-n{font-size:26px;font-weight:700;color:var(--accent);}
+.stat-l{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:1px;}
+.bar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
 .bar-inner{height:100%;border-radius:2px;}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 a{color:var(--accent);text-decoration:none;cursor:pointer;}
 a:hover{text-decoration:underline;}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;padding:20px;}
 .modal-bg.open{display:flex;}
-.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:24px;}
-.fg{margin-bottom:12px;}
-.lbl{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:22px;}
+.fg{margin-bottom:11px;}
+.lbl{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:3px;text-transform:uppercase;}
 .fg input,.fg select,.fg textarea{width:100%;}
-.fg textarea{min-height:60px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;}
+.fg textarea{min-height:55px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 9px;font-size:12px;font-family:inherit;}
 .section{display:none;}
 .section.active{display:block;}
-.loading{padding:32px;text-align:center;color:var(--muted);}
-.row-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--row-border);}
+.loading{padding:28px;text-align:center;color:var(--muted);}
+.row-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--row-border);}
 .pct-cell{min-width:90px;}
-.pct-val{font-size:11px;font-weight:600;margin-bottom:2px;}
-@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:4px 7px;font-size:11px;}}
+.comment-block{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px;}
+.comment-meta{color:var(--muted);font-size:10px;margin-bottom:3px;}
+.comment-text{color:var(--text);line-height:1.5;}
+@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:3px 6px;font-size:10px;}}
 </style>
 </head>
 <body>
@@ -76,9 +79,9 @@ a:hover{text-decoration:underline;}
   <div id="section-overview" class="section active"></div>
   <div id="section-vendors" class="section"></div>
   <div id="section-products" class="section"></div>
+  <div id="section-commodities" class="section"></div>
   <div id="section-ctrm" class="section"></div>
   <div id="section-risk" class="section"></div>
-  <div id="section-commodities" class="section"></div>
   <div id="section-geo" class="section"></div>
   <div id="section-customertype" class="section"></div>
   <div id="section-contacts" class="section"></div>
@@ -86,12 +89,12 @@ a:hover{text-decoration:underline;}
 </main>
 <div class="modal-bg" id="modal">
   <div class="modal-box">
-    <div style="display:flex;align-items:center;margin-bottom:18px">
+    <div style="display:flex;align-items:center;margin-bottom:16px">
       <strong id="modal-title" style="font-size:14px"></strong>
       <button class="btn" style="margin-left:auto" onclick="closeModal()">✕ Close</button>
     </div>
     <div id="modal-fields"></div>
-    <div style="display:flex;gap:8px;margin-top:16px">
+    <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-primary" onclick="saveModal()">💾 Save</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
@@ -100,14 +103,17 @@ a:hover{text-decoration:underline;}
 <script>
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
+const GROQ_KEY="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";
+const GROQ_MODEL="llama-3.3-70b-versatile";
 const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
 const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
 const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
-
 let isDark=true;
+let currentUser="User";
+
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
 
-let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],pages:{},filters:{},ctrmLoading:true};
+let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
 let modalSaveFn=null;
 
 async function apiFetch(table,opts={}){
@@ -132,21 +138,65 @@ function pagerHtml(id,page,total,per){
   return`<div class="pager"><button class="btn" onclick="changePage('${id}',${page-1})" ${page===0?"disabled":""}>← Prev</button><span>Page ${page+1} / ${pages} · ${total.toLocaleString()} records</span><button class="btn" onclick="changePage('${id}',${page+1})" ${page>=pages-1?"disabled":""}>Next →</button></div>`;
 }
 function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
+function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
+function sf(key,val){state.filters[key]=val;state.pages={};render();}
+function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};render();}
+function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
+function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
 
-function navToTab(tab,filterKey,filterVal){
-  if(filterKey)state.filters[filterKey]=filterVal;
-  state.pages={};
-  setTab(tab);
+// ── COMMENTS ──
+function renderComments(comments){
+  if(!comments||!comments.length)return'<div style="color:var(--muted);font-size:11px;padding:4px 0">No comments yet</div>';
+  return comments.map(c=>`<div class="comment-block"><div class="comment-meta">👤 ${c.user} &nbsp;·&nbsp; ${c.date}</div><div class="comment-text">${c.text}</div></div>`).join("");
+}
+function addComment(table,id,currentComments){
+  const text=prompt("Add comment:");
+  if(!text||!text.trim())return;
+  const now=new Date();
+  const dateStr=now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  const newComment={user:currentUser,date:dateStr,text:text.trim()};
+  const updated=[...(currentComments||[]),newComment];
+  apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}})
+    .then(()=>{
+      if(table==="vendors")state.vendors=state.vendors.map(v=>v.id===id?{...v,capspire_comments:JSON.stringify(updated)}:v);
+      else if(table==="products")state.products=state.products.map(p=>p.id===id?{...p,capspire_comments:JSON.stringify(updated)}:p);
+      else if(table==="commodities")state.commodities=state.commodities.map(c=>c.id===id?{...c,capspire_comments:JSON.stringify(updated)}:c);
+      render();
+    }).catch(e=>alert("Error saving comment: "+e.message));
+}
+function parseComments(v){try{return v?JSON.parse(v):[];}catch{return[];}}
+function commentCell(table,row){
+  const comments=parseComments(row.capspire_comments);
+  const count=comments.length;
+  return`<td style="min-width:200px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--muted)">${count?count+" comment"+(count>1?"s":""):"No comments"}</span><button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('${table}',${row.id})">💬 View</button><button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="addComment('${table}',${row.id},parseComments(${JSON.stringify(row.capspire_comments||"[]")}))">+ Add</button></div></td>`;
+}
+function showComments(table,id){
+  const row=state[table==="vendors"?"vendors":table==="products"?"products":"commodities"].find(r=>r.id===id);
+  const comments=parseComments(row?.capspire_comments);
+  const d=document.createElement("div");
+  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  d.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px"><div style="display:flex;align-items:center;margin-bottom:14px"><strong>capSpire Comments</strong><button onclick="this.closest('div[style]').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button></div>${renderComments(comments)}<button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="this.closest('div[style]').remove();addComment('${table}',${id},${JSON.stringify(comments)})">+ Add Comment</button></div>`;
+  document.body.appendChild(d);
 }
 
-const TABS=[{id:"overview",label:"📊 Overview"},{id:"vendors",label:"🏢 Vendors"},{id:"products",label:"📦 Products"},{id:"ctrm",label:"⚡ CTRM"},{id:"risk",label:"🛡 Risk"},{id:"commodities",label:"🌾 Commodities"},{id:"geo",label:"🌍 Geographic"},{id:"customertype",label:"👥 Customer Types"},{id:"contacts",label:"👤 Contacts"},{id:"import",label:"📥 Import Data"}];
+// ── TABS ──
+const TABS=[
+  {id:"overview",label:"📊 Overview"},
+  {id:"vendors",label:"🏢 Vendors"},
+  {id:"products",label:"📦 Products"},
+  {id:"commodities",label:"🌾 Commodities"},
+  {id:"ctrm",label:"⚡ CTRM"},
+  {id:"risk",label:"🛡 Risk"},
+  {id:"geo",label:"🌍 Geographic"},
+  {id:"customertype",label:"👥 Customer Types"},
+  {id:"contacts",label:"👤 Contacts"},
+  {id:"import",label:"📥 Import Data"}
+];
 let activeTab="overview";
-
 function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
 function setTab(id){activeTab=id;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById("section-"+id).classList.add("active");initNav();render();}
 
-function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
-
+// ── OVERVIEW ──
 function renderOverview(){
   const{vendors,products,ctrm}=state;
   const byType={};products.forEach(p=>{byType[p.product_type]=(byType[p.product_type]||0)+1;});
@@ -154,75 +204,97 @@ function renderOverview(){
   const pct=ctrm.length?Math.round(deployed/ctrm.length*100):0;
   const regions={};vendors.forEach(v=>{const h=(v.headquarters||"").toLowerCase();let r="Other";if(h.includes("uk")||h.includes("london")||h.includes("united kingdom"))r="United Kingdom";else if(h.includes("usa")||h.includes("houston")||h.includes("florida")||h.includes("texas")||h.includes("new york")||h.includes("arkansas")||h.includes("bentonville"))r="USA";else if(h.includes("singapore"))r="Singapore";else if(h.includes("dubai")||h.includes("uae"))r="UAE";else if(h.includes("netherlands"))r="Netherlands";else if(h.includes("germany")||h.includes("switzerland")||h.includes("france"))r="Europe (Other)";else if(h.includes("india"))r="India";else if(h.includes("australia"))r="Australia";regions[r]=(regions[r]||0)+1;});
   document.getElementById("section-overview").innerHTML=`
-    <div class="stat-grid">
-      ${[{n:vendors.length,l:"Vendors"},{n:products.length,l:"Products"},{n:products.filter(p=>p.product_type==="CTRM Solutions").length,l:"CTRM Products"},{n:ctrm.length>0?pct+"%":"Loading...",l:"CTRM Deployed Rate"}].map(st=>`<div class="stat"><div class="stat-n">${st.n}</div><div class="stat-l">${st.l}</div></div>`).join("")}
-    </div>
+    <div class="stat-grid">${[{n:vendors.length,l:"Vendors"},{n:products.length,l:"Products"},{n:products.filter(p=>p.product_type==="CTRM Solutions").length,l:"CTRM Products"},{n:ctrm.length>0?pct+"%":"Loading...",l:"CTRM Deployed Rate"}].map(st=>`<div class="stat"><div class="stat-n">${st.n}</div><div class="stat-l">${st.l}</div></div>`).join("")}</div>
     <div class="two-col">
-      <div class="card"><div class="card-head"><span class="card-title">Products by Type</span></div><div style="padding:16px">
-        ${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>${t}</span><strong style="color:var(--accent)">${c}</strong></div>${bar(c/products.length*100,"var(--accent)")}</div>`).join("")}
-      </div></div>
-      <div class="card"><div class="card-head"><span class="card-title">Vendors by Region</span></div><div style="padding:16px">
-        ${Object.entries(regions).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<div class="row-item"><span>${r}</span><strong style="color:var(--accent)">${c}</strong></div>`).join("")}
-      </div></div>
+      <div class="card"><div class="card-head"><span class="card-title">Products by Type</span></div><div style="padding:14px">${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>${t}</span><strong style="color:var(--accent)">${c}</strong></div>${bar(c/products.length*100,"var(--accent)")}</div>`).join("")}</div></div>
+      <div class="card"><div class="card-head"><span class="card-title">Vendors by Region</span></div><div style="padding:14px">${Object.entries(regions).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<div class="row-item"><span>${r}</span><strong style="color:var(--accent)">${c}</strong></div>`).join("")}</div></div>
     </div>`;
 }
 
+// ── VENDORS ──
 function renderVendors(){
   const q=(state.filters.v_q||"").toLowerCase();
-  const rows=state.vendors.filter(v=>!q||(v.vendor_name+v.headquarters+v.industries_served).toLowerCase().includes(q));
+  const rows=state.vendors.filter(v=>!q||Object.values(v).some(val=>(val||"").toString().toLowerCase().includes(q)));
   const page=state.pages.vendors||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-vendors").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span></div>
-    <div class="filters"><input value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search vendors...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td style="font-weight:600">${v.vendor_name||""}</td><td style="color:var(--muted);max-width:200px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
+    <div class="filters"><input value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${commentCell("vendors",v)}<td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
+// ── PRODUCTS ──
 function renderProducts(){
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
-  const deplF=state.filters.p_depl||"";
   const types=[...new Set(state.products.map(p=>p.product_type).filter(Boolean))].sort();
   const vendors=[...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
-  const depls=[...new Set(state.products.map(p=>(p.deployment_model||"").split(/[;,\n]/)[0].trim()).filter(Boolean))].sort();
-  const rows=state.products.filter(p=>
-    (!typeF||p.product_type===typeF)&&
-    (!vendorF||p.vendor===vendorF)&&
-    (!deplF||(p.deployment_model||"").includes(deplF))&&
-    (!q||(p.product_name+p.vendor+p.notes).toLowerCase().includes(q)));
+  const rows=state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const page=state.pages.products||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-products").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('p_q',this.value)" placeholder="Search products...">
+      <input value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr>
-      <td style="color:var(--accent);width:40px">${p.id}</td>
-      <td style="font-weight:600">${p.product_name||""}</td>
-      <td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
-      <td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}');return false;" href="#">${p.vendor||""}</a></td>
-      <td style="color:var(--muted);max-width:160px;font-size:11px">${p.deployment_model||""}</td>
-      <td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td>
-      <td style="color:var(--muted);max-width:180px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>
-      <td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td>
-    </tr>`).join("")}
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600">${p.product_name||""}</td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>${commentCell("products",p)}<td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
+// ── COMMODITIES ──
+function renderCommodities(){
+  const q=(state.filters.com_q||"").toLowerCase();
+  const rows=state.commodities.filter(c=>!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  const page=state.pages.commodities||0;const PER=20;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
+    <div class="filters"><input value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td>${commentCell("commodities",c)}<td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
+}
+
+// ── COMMODITY COVERAGE ──
+function renderCommCoverage(){
+  const q=(state.filters.pcc_q||"").toLowerCase();
+  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
+  const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
+  const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
+  const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
+  const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  const rows=state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  const page=state.pages.pcc||0;const PER=30;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
+      <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,covF,"All Coverage")}</select>
+      ${resetBtn('pcc_')}
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td>${bdg(p.commodity,"var(--green)")}</td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}</div>`;
+}
+
+// ── CTRM ──
 function renderCTRM(){
   const q=(state.filters.ctrm_q||"").toLowerCase();
   const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
   const prods=[...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
   const coms=[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-  const rows=state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||(r.product+r.function_name).toLowerCase().includes(q)));
+  const rows=state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const page=state.pages.ctrm||0;const PER=50;
   const paged=rows.slice(page*PER,(page+1)*PER);
   const loading=state.ctrmLoading;
@@ -230,162 +302,109 @@ function renderCTRM(){
     <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span></div>
     ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
     <div class="filters">
-      <input value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search function...">
+      <input value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ctrm_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('ctrm_com',this.value)">${selOpts(coms,cF,"All Commodities")}</select>
       <select onchange="sf('ctrm_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr>
-      <td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}');return false;" href="#">${r.product||""}</a></td>
-      <td>${r.function_name||""}</td>
-      <td>${bdg(r.commodity,"var(--accent)")}</td>
-      <td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td>
-    </tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
 
+// ── RISK ──
 function renderRisk(){
   const q=(state.filters.risk_q||"").toLowerCase();
   const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
   const prods=[...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
   const cats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-  const rows=state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||(r.function_name||"").toLowerCase().includes(q)));
+  const rows=state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const page=state.pages.risk||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-risk").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search functions...">
+      <input value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('risk_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
       <select onchange="sf('risk_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr>
-      <td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}');return false;" href="#">${r.product||""}</a></td>
-      <td>${bdg(r.category,"var(--purple)")}</td>
-      <td>${r.function_name||""}</td>
-      <td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td>
-    </tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
 
-function renderCommodities(){
-  const q=(state.filters.pcc_q||"").toLowerCase();
-  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";
-  const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
-  const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
-  const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
-  const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  const comF=state.filters.pcc_com||"";
-  const rows=state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||(p.product||"").toLowerCase().includes(q)));
-  const page=state.pages.pcc||0;const PER=30;
-  const paged=rows.slice(page*PER,(page+1)*PER);
-  document.getElementById("section-commodities").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
-    <div class="filters">
-      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search product...">
-      <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
-      <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
-      <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
-      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,covF,"All Coverage")}</select>${resetBtn('pcc_')}
-    </div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th></tr></thead><tbody>
-    ${paged.map(p=>`<tr>
-      <td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}');return false;" href="#">${p.product||""}</a></td>
-      <td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
-      <td>${bdg(p.commodity,"var(--green)")}</td>
-      <td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td>
-    </tr>`).join("")}
-    </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
-  </div>`;
-}
-
-function pctCell(v){
-  if(v===null||v===undefined||v==="")return`<span style="color:var(--border)">—</span>`;
-  const p=Math.round(parseFloat(v)*100);
-  if(isNaN(p))return`<span style="color:var(--muted)">—</span>`;
-  const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";
-  return`<div class="pct-cell"><div class="pct-val" style="color:${col}">${p}%</div>${bar(p,col)}</div>`;
-}
-
+// ── GEO ──
 function renderGeo(){
   const q=(state.filters.geo_q||"").toLowerCase();
-  const typeF=state.filters.geo_type||"";
-  const prodF=state.filters.geo_prod||"";
+  const typeF=state.filters.geo_type||"";const prodF=state.filters.geo_prod||"";
   const types=[...new Set(state.geo.map(g=>g.product_type).filter(Boolean))].sort();
   const prods=[...new Set(state.geo.map(g=>g.product).filter(Boolean))].sort();
-  const rows=state.geo.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||(g.product||"").toLowerCase().includes(q)));
+  const rows=state.geo.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const COLS=[{k:"north_america",l:"N. America"},{k:"europe_russia",l:"Europe & Russia"},{k:"south_america",l:"S. America"},{k:"middle_east_africa",l:"ME & Africa"},{k:"asia_australia",l:"Asia & Australia"}];
+  const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(v*100);const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600;margin-bottom:2px">${p}%</div>${bar(p,col)}</div>`;};
   document.getElementById("section-geo").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search product...">
+      <input value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('geo_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
-      <select onchange="sf('geo_type',this.value)">${selOpts(types,typeF,"All Types")}</select>${resetBtn('geo_')}
+      <select onchange="sf('geo_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      ${resetBtn('geo_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th>${COLS.map(c=>`<th>${c.l}</th>`).join("")}</tr></thead><tbody>
-    ${rows.map(g=>`<tr>
-      <td><a onclick="navToTab('products','p_q','${(g.product||"").replace(/'/g,"\\'")}');return false;" href="#">${g.product||""}</a></td>
-      <td>${bdg(g.product_type?.includes("Risk")?"Risk":"CTRM",g.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
-      ${COLS.map(c=>`<td style="min-width:110px">${pctCell(g[c.k])}</td>`).join("")}
-    </tr>`).join("")}
+    ${rows.map(g=>`<tr><td><a onclick="navToTab('products','p_q','${(g.product||"").replace(/'/g,"\\'")}')" href="#">${g.product||""}</a></td><td>${bdg(g.product_type?.includes("Risk")?"Risk":"CTRM",g.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${COLS.map(c=>`<td style="min-width:110px">${pct(g[c.k])}</td>`).join("")}</tr>`).join("")}
     </tbody></table></div>
   </div>`;
 }
 
+// ── CUSTOMER TYPES ──
 function renderCustomerType(){
   const q=(state.filters.ct_q||"").toLowerCase();
-  const typeF=state.filters.ct_type||"";
-  const prodF=state.filters.ct_prod||"";
+  const typeF=state.filters.ct_type||"";const prodF=state.filters.ct_prod||"";
   const types=[...new Set(state.ct.map(g=>g.product_type).filter(Boolean))].sort();
   const prods=[...new Set(state.ct.map(g=>g.product).filter(Boolean))].sort();
-  const rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||(g.product||"").toLowerCase().includes(q)));
+  const rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const CT_COLS=[{k:"utility",l:"Utility"},{k:"energy_retailer",l:"Energy Retailer"},{k:"generator_non_renewables",l:"Generator - Non-Renewables"},{k:"renewables_generator",l:"Renewables Generator"},{k:"trader_broker",l:"Trader/Broker"},{k:"hedge_fund_cta",l:"Hedge Fund/CTA"},{k:"bank_financial_institution",l:"Bank/Financial Institution"},{k:"consultant_analyst",l:"Consultant/Analyst"},{k:"agricultural_producer",l:"Agricultural Producer"},{k:"biofuels",l:"Biofuels"},{k:"producer_marketer",l:"Producer/Producer Marketer"},{k:"refining_petrochemical",l:"Refining/Petrochemical"},{k:"merchant_energy_firm",l:"Merchant Energy Firm"},{k:"industrial_consumer",l:"Industrial Consumer"},{k:"other",l:"Other"}];
+  const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(parseFloat(v)*100);if(isNaN(p))return'<span style="color:var(--muted)">—</span>';const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600">${p}%</div>${bar(p,col)}</div>`;};
   document.getElementById("section-customertype").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search product...">
+      <input value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ct_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
-      <select onchange="sf('ct_type',this.value)">${selOpts(types,typeF,"All Types")}</select>${resetBtn('ct_')}
+      <select onchange="sf('ct_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      ${resetBtn('ct_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th>${CT_COLS.map(c=>`<th style="font-size:9px">${c.l}</th>`).join("")}</tr></thead><tbody>
-    ${rows.map(g=>`<tr>
-      <td style="white-space:nowrap"><a onclick="navToTab('products','p_q','${(g.product||"").replace(/'/g,"\\'")}');return false;" href="#">${g.product||""}</a></td>
-      <td>${bdg(g.product_type?.includes("Risk")?"Risk":"CTRM",g.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
-      ${CT_COLS.map(c=>`<td style="min-width:90px">${pctCell(g[c.k])}</td>`).join("")}
-    </tr>`).join("")}
+    ${rows.map(g=>`<tr><td style="white-space:nowrap"><a onclick="navToTab('products','p_q','${(g.product||"").replace(/'/g,"\\'")}')" href="#">${g.product||""}</a></td><td>${bdg(g.product_type?.includes("Risk")?"Risk":"CTRM",g.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${CT_COLS.map(c=>`<td style="min-width:90px">${pct(g[c.k])}</td>`).join("")}</tr>`).join("")}
     </tbody></table></div>
   </div>`;
 }
 
+// ── CONTACTS ──
 function renderContacts(){
   const q=(state.filters.con_q||"").toLowerCase();
-  const prodF=state.filters.con_prod||"";
-  const vendorF=state.filters.con_vendor||"";
+  const prodF=state.filters.con_prod||"";const vendorF=state.filters.con_vendor||"";
   const prods=[...new Set(state.contacts.map(c=>c.product).filter(Boolean))].sort();
   const vendors=[...new Set(state.contacts.map(c=>c.vendor).filter(Boolean))].sort();
-  const rows=state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||(c.contact_name+c.product+c.vendor).toLowerCase().includes(q)));
+  const rows=state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q))));
   document.getElementById("section-contacts").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span></div>
     <div class="filters">
-      <input value="${q}" oninput="sf('con_q',this.value)" placeholder="Search contacts...">
+      <input value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('con_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
-      <select onchange="sf('con_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>${resetBtn('con_')}
-      <button class="btn btn-primary" style="margin-left:auto" onclick="openContactModal(null)">+ Add Contact</button>
+      <select onchange="sf('con_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
+      ${resetBtn('con_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openContactModal(null)">+ Add Contact</button>
     </div>
     ${rows.length===0?'<div class="loading">No contacts found</div>':`
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Vendor</th><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Region</th><th></th></tr></thead><tbody>
     ${rows.map(c=>`<tr>
-      <td><a onclick="navToTab('products','p_q','${(c.product||"").replace(/'/g,"\\'")}');return false;" href="#">${c.product||""}</a></td>
-      <td><a onclick="navToTab('vendors','v_q','${(c.vendor||"").replace(/'/g,"\\'")}');return false;" href="#">${c.vendor||""}</a></td>
-      <td>${c.contact_name||""}</td>
-      <td style="color:var(--muted)">${c.role_title||""}</td>
+      <td><a onclick="navToTab('products','p_q','${(c.product||"").replace(/'/g,"\\'")}')" href="#">${c.product||""}</a></td>
+      <td><a onclick="navToTab('vendors','v_q','${(c.vendor||"").replace(/'/g,"\\'")}')" href="#">${c.vendor||""}</a></td>
+      <td>${c.contact_name||""}</td><td style="color:var(--muted)">${c.role_title||""}</td>
       <td><a href="mailto:${c.email}">${c.email||""}</a></td>
       <td style="color:var(--muted)">${c.phone_number||""}</td>
       <td style="color:var(--muted)">${c.region||""}</td>
@@ -395,21 +414,107 @@ function renderContacts(){
   </div>`;
 }
 
-function sf(key,val){state.filters[key]=val;state.pages={};render();}
-
-function render(){
-  if(activeTab==="overview")renderOverview();
-  else if(activeTab==="vendors")renderVendors();
-  else if(activeTab==="products")renderProducts();
-  else if(activeTab==="ctrm")renderCTRM();
-  else if(activeTab==="risk")renderRisk();
-  else if(activeTab==="commodities")renderCommodities();
-  else if(activeTab==="geo")renderGeo();
-  else if(activeTab==="customertype")renderCustomerType();
-  else if(activeTab==="contacts")renderContacts();
-  else if(activeTab==="import")renderImport();
+// ── IMPORT DATA ──
+const ALL_TABLES=[
+  {id:"vendors",label:"Vendors",cols:["id","vendor_name","headquarters","website","industries_served"]},
+  {id:"products",label:"Products",cols:["id","product_name","product_type","vendor","product_type2","deployment_model","version_info","licensing_model","notes"]},
+  {id:"commodities",label:"Commodities",cols:["id","commodity_name"]},
+  {id:"product_commodities_coverage",label:"Commodity Coverage",cols:["id","product","product_type","commodity","coverage_level"]},
+  {id:"product_function_ctrm",label:"CTRM Coverage",cols:["id","product","function_name","commodity","coverage_level"]},
+  {id:"product_function_risk",label:"Risk Coverage",cols:["id","product","category","function_name","coverage_level"]},
+  {id:"geographic_coverage",label:"Geographic Coverage",cols:["id","product_type","product","north_america","europe_russia","south_america","middle_east_africa","asia_australia"]},
+  {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
+  {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
+  {id:"functional_areas",label:"Functional Areas",cols:["id","function_name","category"]},
+];
+function renderImport(){
+  document.getElementById("section-import").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">📥 Import Data</span></div>
+    <div style="padding:16px">
+      <div style="background:var(--bg3);border:1px solid var(--yellow)44;border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-weight:700;color:var(--yellow);margin-bottom:8px">⚠ Important — Read before importing</div>
+        <ul style="color:var(--muted);font-size:12px;line-height:2.2;padding-left:18px">
+          <li>Files must be in <strong style="color:var(--text)">CSV format (.csv)</strong> — NOT Excel (.xlsx or .xls)</li>
+          <li>To save as CSV from Excel: <strong style="color:var(--text)">File → Save As → CSV (Comma delimited)</strong></li>
+          <li>The first row must be the column headers — do not change them</li>
+          <li>Leave the ID column empty for new records (it will be assigned automatically)</li>
+          <li>Records with an existing ID will be updated; new IDs will be inserted</li>
+          <li>Numeric percentage fields must be between 0 and 1 (e.g. 50% = 0.5)</li>
+        </ul>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${ALL_TABLES.map(t=>`
+        <div class="card" style="margin:0">
+          <div class="card-head" style="padding:8px 12px"><span style="font-weight:600;font-size:12px">${t.label}</span></div>
+          <div style="padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-success" onclick="downloadTemplate('${t.id}','${t.label}',[${t.cols.map(c=>`'${c}'`).join(",")}])">⬇ Template</button>
+            <label class="btn btn-primary" style="cursor:pointer">
+              ⬆ Upload CSV
+              <input type="file" accept=".csv" style="display:none" onchange="importCSV(event,'${t.id}')">
+            </label>
+            <span id="import-status-${t.id}" style="font-size:11px;color:var(--muted);width:100%"></span>
+          </div>
+        </div>`).join("")}
+      </div>
+    </div>
+  </div>`;
 }
 
+function downloadTemplate(tableId,label,cols){
+  const csv=cols.join(",")+",capspire_comments\n";
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="template_"+tableId+".csv";
+  a.click();
+}
+
+async function importCSV(event,table){
+  const file=event.target.files[0];if(!file)return;
+  const statusEl=document.getElementById("import-status-"+table);
+  if(!file.name.endsWith(".csv")){statusEl.textContent="Error: Please upload a .csv file, not Excel";statusEl.style.color="var(--red)";return;}
+  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
+  try{
+    const text=await file.text();
+    const lines=text.split("\n").filter(l=>l.trim());
+    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
+    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
+    const rows=lines.slice(1).map(line=>{
+      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
+      const obj={};
+      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
+      return obj;
+    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
+    statusEl.textContent="Importing "+rows.length+" records...";
+    let ok=0,err=0;
+    for(const row of rows){
+      try{
+        if(row.id){
+          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
+          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
+          else await apiFetch(table,{method:"POST",body:row});
+        }else{
+          const{id,...r}=row;
+          await apiFetch(table,{method:"POST",body:r});
+        }
+        ok++;
+      }catch(e){err++;}
+    }
+    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
+    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
+    // Reload affected data
+    if(table==="vendors")state.vendors=await getAll("vendors");
+    else if(table==="products")state.products=await getAll("products");
+    else if(table==="commodities")state.commodities=await getAll("commodities");
+    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
+    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
+    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
+    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
+    render();
+  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
+}
+
+// ── MODALS ──
 function openModal(title,fields,saveFn){
   document.getElementById("modal-title").textContent=title;
   document.getElementById("modal-fields").innerHTML=fields.map(f=>{
@@ -451,6 +556,32 @@ function openProductModal(id){
   });
 }
 
+function openCommodityModal(id){
+  const c=id?state.commodities.find(x=>x.id===id):null;
+  openModal(c?"Edit Commodity":"Add Commodity",[
+    {label:"ID",value:c?.id||"",ro:true},{label:"Commodity Name",value:c?.commodity_name||""}
+  ],async()=>{
+    const vals=getVals(["id","commodity_name"]);
+    try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
+function openPCCModal(id){
+  const p=id?state.pcc.find(x=>x.id===id):null;
+  const prods=[...new Set(state.products.map(x=>x.product_name).filter(Boolean))].sort();
+  const types=[...new Set(state.products.map(x=>x.product_type).filter(Boolean))].sort();
+  const coms=[...new Set(state.commodities.map(x=>x.commodity_name).filter(Boolean))].sort();
+  const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
+  openModal(p?"Edit Commodity Coverage":"Add Commodity Coverage",[
+    {label:"ID",value:p?.id||"",ro:true},{label:"Product",type:"select",value:p?.product||"",options:prods},{label:"Product Type",type:"select",value:p?.product_type||"",options:types},{label:"Commodity",type:"select",value:p?.commodity||"",options:coms},{label:"Coverage Level",type:"select",value:p?.coverage_level||"",options:covs}
+  ],async()=>{
+    const vals=getVals(["id","product","product_type","commodity","coverage_level"]);
+    try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
 function openContactModal(id){
   const ct=id?state.contacts.find(x=>x.id===id):null;
   const prods=state.products.map(p=>p.product_name).filter(Boolean).sort();
@@ -464,139 +595,62 @@ function openContactModal(id){
   });
 }
 
-
-function resetFilters(prefix){
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});
-  state.pages={};render();
-  // Reset all select elements and inputs in active section
-  document.querySelectorAll(".section.active input").forEach(el=>el.value="");
-  document.querySelectorAll(".section.active select").forEach(el=>el.selectedIndex=0);
+// ── RENDER ──
+function render(){
+  if(activeTab==="overview")renderOverview();
+  else if(activeTab==="vendors")renderVendors();
+  else if(activeTab==="products")renderProducts();
+  else if(activeTab==="commodities"){
+    // Show commodities list or commodity coverage based on sub-view
+    if(state.filters.com_view==="coverage")renderCommCoverage();
+    else renderCommoditiesView();
+  }
+  else if(activeTab==="ctrm")renderCTRM();
+  else if(activeTab==="risk")renderRisk();
+  else if(activeTab==="geo")renderGeo();
+  else if(activeTab==="customertype")renderCustomerType();
+  else if(activeTab==="contacts")renderContacts();
+  else if(activeTab==="import")renderImport();
 }
 
-function resetBtn(prefix){
-  return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;
-}
-
-function renderImport(){
-  document.getElementById("section-import").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">📥 Import Data</span></div>
-    <div style="padding:20px">
-      <p style="color:var(--muted);margin-bottom:20px;line-height:1.7">Upload an Excel file to import data into any table. Download the template first to see the correct format.</p>
-      
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-        ${["vendors","products","product_contacts","geographic_coverage","product_commodities_coverage","customer_type_coverage"].map(t=>`
-        <div class="card" style="margin:0">
-          <div class="card-head" style="padding:8px 14px"><span style="font-weight:600;font-size:12px">${t.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</span></div>
-          <div style="padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn" onclick="downloadTemplate('${t}')">⬇ Template</button>
-            <label class="btn btn-primary" style="cursor:pointer">
-              ⬆ Upload
-              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(event,'${t}')">
-            </label>
-            <span id="import-status-${t}" style="font-size:11px;color:var(--muted)"></span>
-          </div>
-        </div>`).join("")}
-      </div>
-
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px">
-        <div style="font-weight:600;margin-bottom:8px;font-size:12px">⚠ Important notes</div>
-        <ul style="color:var(--muted);font-size:12px;line-height:2;padding-left:20px">
-          <li>Download the template first to see the correct column format</li>
-          <li>The first row must be the column headers — do not change them</li>
-          <li>Leave the ID column empty for new records — it will be assigned automatically</li>
-          <li>Existing records with the same ID will be updated</li>
-          <li>Numeric fields (percentages) should be between 0 and 1 (e.g. 0.5 = 50%)</li>
-        </ul>
-      </div>
+function renderCommoditiesView(){
+  const q=(state.filters.pcc_q||"").toLowerCase();
+  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
+  const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
+  const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
+  const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
+  const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  const rows=state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  const page=state.pages.pcc||0;const PER=30;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
+    <div class="filters">
+      <input value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
+      <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,covF,"All Coverage")}</select>
+      ${resetBtn('pcc_')}
     </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td>${bdg(p.commodity,"var(--green)")}</td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
   </div>`;
 }
 
-const TABLE_TEMPLATES = {
-  vendors: ["id","vendor_name","headquarters","website","industries_served"],
-  products: ["id","product_name","product_type","vendor","product_type2","deployment_model","version_info","licensing_model","notes"],
-  product_contacts: ["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"],
-  geographic_coverage: ["id","product_type","product","north_america","europe_russia","south_america","middle_east_africa","asia_australia"],
-  product_commodities_coverage: ["id","product","product_type","commodity","coverage_level"],
-  customer_type_coverage: ["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"],
-};
-
-function downloadTemplate(table){
-  const cols = TABLE_TEMPLATES[table] || [];
-  const csv = cols.join(",") + "\n";
-  const blob = new Blob([csv], {type:"text/csv"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `template_${table}.csv`;
-  a.click();
-}
-
-async function importFile(event, table){
-  const file = event.target.files[0];
-  if(!file) return;
-  const statusEl = document.getElementById("import-status-"+table);
-  statusEl.textContent = "Reading file...";
-  statusEl.style.color = "var(--yellow)";
-  
-  try{
-    const text = await file.text();
-    const lines = text.split("\n").filter(l=>l.trim());
-    if(lines.length < 2){ statusEl.textContent = "File is empty!"; statusEl.style.color="var(--red)"; return; }
-    
-    const headers = lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
-    const rows = lines.slice(1).map(line=>{
-      const vals = line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-      const obj = {};
-      headers.forEach((h,i)=>{ const v=vals[i]||""; obj[h] = v===""?null:isNaN(v)?v:Number(v); });
-      return obj;
-    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
-    
-    statusEl.textContent = `Importing ${rows.length} records...`;
-    let ok=0, err=0;
-    
-    for(const row of rows){
-      try{
-        if(row.id){
-          // Try update first, then insert
-          const existing = await apiFetch(`${table}?id=eq.${row.id}`, {params:{limit:1}});
-          if(existing.length > 0) await apiFetch(`${table}?id=eq.${row.id}`,{method:"PATCH",body:row});
-          else await apiFetch(table,{method:"POST",body:row});
-        } else {
-          const {id, ...rowWithoutId} = row;
-          await apiFetch(table,{method:"POST",body:rowWithoutId});
-        }
-        ok++;
-      }catch(e){ err++; }
-    }
-    
-    statusEl.textContent = `✓ ${ok} imported${err>0?" ("+err+" errors)":""}`;
-    statusEl.style.color = err>0?"var(--yellow)":"var(--green)";
-    
-    // Reload affected data
-    if(table==="vendors") state.vendors = await getAll("vendors");
-    else if(table==="products") state.products = await getAll("products");
-    else if(table==="product_contacts") state.contacts = await getAll("product_contacts");
-    else if(table==="geographic_coverage") state.geo = await getAll("geographic_coverage");
-    else if(table==="product_commodities_coverage") state.pcc = await getAll("product_commodities_coverage");
-    else if(table==="customer_type_coverage") state.ct = await getAll("customer_type_coverage");
-    
-  }catch(e){
-    statusEl.textContent = "Error: "+e.message;
-    statusEl.style.color = "var(--red)";
-  }
-}
-
+// ── INIT ──
 async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
   try{
-    const[v,p,ct_data,g,pcc,risk,ct]=await Promise.all([
+    const[v,p,ct_data,g,pcc,risk,ct,com]=await Promise.all([
       getAll("vendors"),getAll("products"),getAll("product_contacts"),
       getAll("geographic_coverage"),getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),getAll("customer_type_coverage")
+      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities")
     ]);
     state.vendors=v;state.products=p;state.contacts=ct_data;
-    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;
     state.ctrmLoading=true;
     render();
     const ctrm=await getAll("product_function_ctrm");
@@ -608,332 +662,159 @@ async function init(){
 }
 init();
 
-// ── CHATBOX (Text-to-SQL) ────────────────────────────────────────────────────
-const GROQ_KEY = "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";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
-let chatHistory = [];
-let chatOpen = false;
+// ── CHATBOX ──
+const DB_SCHEMA=`Database tables:
+vendors(id,vendor_name,headquarters,website,industries_served)
+products(id,product_name,product_type,vendor,deployment_model,version_info,notes)
+commodities(id,commodity_name)
+product_commodities_coverage(id,product,product_type,commodity,coverage_level) -- coverage_level: Covered/Partially Covered/Not Covered/Can be covered
+product_function_ctrm(id,product,function_name,commodity,coverage_level) -- coverage_level: deployed/capable/not capable/not applicable
+product_function_risk(id,product,category,function_name,coverage_level)
+customer_type_coverage(id,product_type,product,utility,energy_retailer,generator_non_renewables,renewables_generator,trader_broker,hedge_fund_cta,bank_financial_institution,consultant_analyst,agricultural_producer,biofuels,producer_marketer,refining_petrochemical,merchant_energy_firm,industrial_consumer,other) -- numeric cols are 0-1 decimals
+geographic_coverage(id,product_type,product,north_america,europe_russia,south_america,middle_east_africa,asia_australia) -- numeric cols are 0-1 decimals
+product_contacts(id,product,product_type,vendor,contact_name,role_title,email,phone_number,region)`;
 
-const DB_SCHEMA = `
-Database schema for Product Advisor (CTRM & Risk Management):
-
-TABLE vendors: id, vendor_name, headquarters, website, industries_served
-TABLE products: id, product_name, product_type, vendor, product_type2, deployment_model, version_info, licensing_model, notes
-TABLE commodities: id, commodity_name
-TABLE functional_areas: id, function_name, category
-TABLE product_commodities_coverage: id, product, product_type, commodity, coverage_level
-  -- coverage_level values: 'Covered', 'Partially Covered', 'Not Covered', 'Can be covered'
-TABLE product_function_ctrm: id, product, function_name, commodity, coverage_level
-  -- coverage_level values: 'Functionality is deployed and in production at a client site', 'Not Deployed, but system is capable of providing functionality', 'System is not currently capable of providing that functionality', 'Not Applicable - Functionality not applicable for commodity'
-TABLE product_function_risk: id, product, category, function_name, coverage_level
-TABLE customer_type_coverage: id, product_type, product, utility, energy_retailer, generator_non_renewables, renewables_generator, trader_broker, hedge_fund_cta, bank_financial_institution, consultant_analyst, agricultural_producer, biofuels, producer_marketer, refining_petrochemical, merchant_energy_firm, industrial_consumer, other
-  -- numeric columns are percentages as decimals (0.0 to 1.0)
-TABLE geographic_coverage: id, product_type, product, north_america, europe_russia, south_america, middle_east_africa, asia_australia
-  -- numeric columns are percentages as decimals (0.0 to 1.0)
-TABLE product_contacts: id, product, product_type, vendor, contact_name, role_title, email, phone_number, region, linkedin_profile
-`;
-
-const SYSTEM_PROMPT = `You are an AI assistant for the Product Advisor CTRM database. Always respond in English.
-
+const SYSTEM_PROMPT=`You are an AI assistant for the Product Advisor CTRM database. Always respond in English.
 ${DB_SCHEMA}
 
-You have two modes:
-1. QUERY MODE: When the user asks a question about the data, generate a SQL query to answer it.
-2. ACTION MODE: When the user wants to add/update data, generate the action.
+When user asks a DATA QUESTION, respond with ONLY:
+SQL_QUERY: SELECT ... (max 50 rows, use ILIKE for text search, no INSERT/UPDATE/DELETE)
 
-For QUERY MODE, respond ONLY with:
-SQL_QUERY: <your SQL query here>
+When user wants to ADD data:
+ACTION:ADD_VENDOR:{"vendor_name":"","headquarters":"","website":"","industries_served":""}
+ACTION:ADD_PRODUCT:{"product_name":"","product_type":"CTRM Solutions","vendor":"","deployment_model":"","version_info":"","notes":""}
+ACTION:ADD_CONTACT:{"product":"","vendor":"","contact_name":"","role_title":"","email":"","phone_number":"","region":""}
 
-For ACTION MODE, respond ONLY with:
-ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
-ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
-ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"","phone_number":"","region":""}
+For simple conversational questions answer directly. Be concise and use bullet points.`;
 
-For ANSWER MODE (simple questions that don't need SQL, like "how many vendors are there"), respond normally.
+let chatHistory=[],chatOpen=false;
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById("chat-panel").style.display=chatOpen?"flex":"none";
+  document.getElementById("chat-fab").textContent=chatOpen?"✕":"💬";
+  if(chatOpen&&chatHistory.length===0)addMsg("assistant","Hi! I can query the full database.\n\nExamples:\n• Which products cover FX?\n• How many vendors are from the UK?\n• Which products have deployed Power CTRM functions?\n• Add a new contact for Allegro");
+  setTimeout(()=>{const e=document.getElementById("chat-messages");if(e)e.scrollTop=e.scrollHeight;},100);
+}
+function addMsg(role,text){
+  const el=document.getElementById("chat-messages");if(!el)return;
+  const d=document.createElement("div");
+  d.style.cssText="margin-bottom:10px;display:flex;flex-direction:column;align-items:"+(role==="user"?"flex-end":"flex-start");
+  const b=document.createElement("div");
+  b.style.cssText="max-width:90%;padding:7px 11px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;"+(role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
+  b.textContent=text;d.appendChild(b);el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function addTableMsg(cols,rows){
+  const el=document.getElementById("chat-messages");if(!el)return;
+  const wrap=document.createElement("div");
+  wrap.style.cssText="margin-bottom:10px;max-width:100%;overflow-x:auto";
+  const tbl=document.createElement("table");
+  tbl.style.cssText="width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:6px;overflow:hidden";
+  const thead=document.createElement("thead");
+  const hr=document.createElement("tr");
+  cols.forEach(c=>{const th=document.createElement("th");th.style.cssText="padding:5px 9px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap";th.textContent=c;hr.appendChild(th);});
+  thead.appendChild(hr);tbl.appendChild(thead);
+  const tbody=document.createElement("tbody");
+  rows.forEach(row=>{const tr=document.createElement("tr");cols.forEach(c=>{const td=document.createElement("td");td.style.cssText="padding:4px 9px;border-bottom:1px solid var(--row-border);font-size:11px";td.textContent=row[c]??"";;tr.appendChild(td);});tbody.appendChild(tr);});
+  tbl.appendChild(tbody);wrap.appendChild(tbl);
+  const meta=document.createElement("div");meta.style.cssText="font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
+  meta.textContent=rows.length+" result"+(rows.length!==1?"s":"");
+  wrap.appendChild(meta);el.appendChild(wrap);el.scrollTop=el.scrollHeight;
+}
 
-Rules for SQL:
-- Use SELECT only (no INSERT/UPDATE/DELETE unless ACTION mode)
-- Always use ILIKE for text searches (case-insensitive)
-- Limit results to 50 rows maximum
-- Use simple, readable column aliases
-- For percentage columns in customer_type_coverage and geographic_coverage, multiply by 100 to show as %
-`;
-
-function toggleChat() {
-  chatOpen = !chatOpen;
-  document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
-  document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
-  if (chatOpen && chatHistory.length === 0) {
-    addChatMessage("assistant", "Hi! I can query the full Product Advisor database for you.\n\nTry asking:\n• Which products cover FX?\n• How many vendors are from the UK?\n• Which products have deployed Power functionality?\n• Show me all ION Commodities products\n• Add a new contact for Allegro");
+async function execQuery(sql){
+  // Parse table name
+  const tMatch=sql.match(/from\s+(\w+)/i);
+  if(!tMatch)throw new Error("Could not parse table name");
+  const table=tMatch[1].toLowerCase();
+  // Build params from SQL
+  const params={limit:50};
+  // SELECT cols
+  const selMatch=sql.match(/^select\s+(.+?)\s+from/i);
+  if(selMatch&&selMatch[1].trim()!=="*"){
+    const cols=selMatch[1].split(",").map(c=>c.trim().split(/\s+as\s+/i)[0].trim().replace(/.*\./,"").replace(/[()]/g,"")).filter(c=>!c.includes(" ")&&c!=="count");
+    if(cols.length>0)params.select=cols.join(",");
   }
-  setTimeout(() => { const el = document.getElementById("chat-messages"); if(el) el.scrollTop = el.scrollHeight; }, 100);
-}
-
-function addChatMessage(role, text) {
-  const el = document.getElementById("chat-messages");
-  if (!el) return;
-  const div = document.createElement("div");
-  div.style.cssText = "margin-bottom:12px;display:flex;flex-direction:column;align-items:" + (role==="user"?"flex-end":"flex-start");
-  const bubble = document.createElement("div");
-  bubble.style.cssText = "max-width:90%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.6;white-space:pre-wrap;" + (role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
-  bubble.textContent = text;
-  div.appendChild(bubble);
-  el.appendChild(div);
-  el.scrollTop = el.scrollHeight;
-}
-
-function addTableMessage(columns, rows) {
-  const el = document.getElementById("chat-messages");
-  if (!el) return;
-  const div = document.createElement("div");
-  div.style.cssText = "margin-bottom:12px;max-width:100%;overflow-x:auto";
-  const table = document.createElement("table");
-  table.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:8px;overflow:hidden";
-  const thead = document.createElement("thead");
-  const hrow = document.createElement("tr");
-  columns.forEach(col => {
-    const th = document.createElement("th");
-    th.style.cssText = "padding:6px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap";
-    th.textContent = col;
-    hrow.appendChild(th);
-  });
-  thead.appendChild(hrow);
-  table.appendChild(thead);
-  const tbody = document.createElement("tbody");
-  rows.forEach(row => {
-    const tr = document.createElement("tr");
-    columns.forEach(col => {
-      const td = document.createElement("td");
-      td.style.cssText = "padding:5px 10px;border-bottom:1px solid var(--row-border);color:var(--text);font-size:11px";
-      const val = row[col];
-      td.textContent = val === null || val === undefined ? "—" : String(val);
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  div.appendChild(table);
-  const meta = document.createElement("div");
-  meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:4px;padding-left:4px";
-  meta.textContent = rows.length + " result" + (rows.length !== 1 ? "s" : "");
-  div.appendChild(meta);
-  el.appendChild(div);
-  el.scrollTop = el.scrollHeight;
-}
-
-async function runQuery(sql) {
-  // Use Supabase RPC to run raw SQL
-  const res = await fetch(SB_URL + "/rest/v1/rpc/run_query", {
-    method: "POST",
-    headers: {
-      "apikey": SB_KEY,
-      "Authorization": "Bearer " + SB_KEY,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ query: sql })
-  });
-  if (!res.ok) {
-    // Fallback: try direct table queries parsed from SQL
-    throw new Error("Query execution failed: " + await res.text());
+  // WHERE
+  const whereMatch=sql.match(/where\s+(.+?)(?:\s+order|\s+limit|\s+group|$)/is);
+  if(whereMatch){
+    const w=whereMatch[1];
+    const ilikeM=w.match(/(\w+)\s+ilike\s+'%([^']+)%'/i);
+    const eqM=w.match(/(\w+)\s*=\s*'([^']+)'/i);
+    const ilikeM2=w.match(/(\w+)\s+ilike\s+'([^']+)'/i);
+    if(ilikeM)params[ilikeM[1]+".ilike"]="%" + ilikeM[2]+"%";
+    else if(eqM)params[eqM[1]+".eq"]=eqM[2];
+    else if(ilikeM2)params[ilikeM2[1]+".ilike"]=ilikeM2[2];
   }
-  return await res.json();
+  // ORDER
+  const ordM=sql.match(/order\s+by\s+(\w+)(?:\s+(asc|desc))?/i);
+  if(ordM)params.order=ordM[1]+(ordM[2]?.toLowerCase()==="desc"?".desc":"");
+  // COUNT
+  if(sql.toLowerCase().includes("count(*)")){
+    const data=await apiFetch(table,{params:{...params,select:"id"}});
+    return[{count:data.length}];
+  }
+  return await apiFetch(table,{params});
 }
 
-async function sendChat() {
-  const input = document.getElementById("chat-input");
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = "";
-  addChatMessage("user", msg);
-  chatHistory.push({ role: "user", content: msg });
-
-  const typing = document.createElement("div");
-  typing.id = "chat-typing";
-  typing.style.cssText = "margin-bottom:12px;color:var(--muted);font-size:11px;padding-left:4px";
-  typing.textContent = "Thinking...";
+async function sendChat(){
+  const inp=document.getElementById("chat-input");
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value="";
+  addMsg("user",msg);
+  chatHistory.push({role:"user",content:msg});
+  const typing=document.createElement("div");
+  typing.id="chat-typing";typing.style.cssText="margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
+  typing.textContent="Thinking...";
   document.getElementById("chat-messages").appendChild(typing);
-  document.getElementById("chat-messages").scrollTop = 99999;
-
-  try {
-    // Step 1: Ask Groq to generate SQL or action
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + GROQ_KEY },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...chatHistory.slice(-6)
-        ],
-        max_tokens: 500,
-        temperature: 0.1,
-      })
+  document.getElementById("chat-messages").scrollTop=99999;
+  try{
+    const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
+      body:JSON.stringify({model:GROQ_MODEL,messages:[{role:"system",content:SYSTEM_PROMPT},...chatHistory.slice(-6)],max_tokens:400,temperature:0.1})
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      document.getElementById("chat-typing")?.remove();
-      addChatMessage("assistant", "API Error: " + (data?.error?.message || JSON.stringify(data)));
-      return;
-    }
-
-    const reply = data.choices?.[0]?.message?.content?.trim() || "";
+    const data=await res.json();
+    if(!res.ok){document.getElementById("chat-typing")?.remove();addMsg("assistant","API Error: "+(data?.error?.message||JSON.stringify(data)));return;}
+    const reply=(data.choices?.[0]?.message?.content||"").trim();
     document.getElementById("chat-typing")?.remove();
-
-    // Step 2: Handle the response
-    if (reply.startsWith("SQL_QUERY:")) {
-      // Execute the SQL query
-      const sql = reply.replace("SQL_QUERY:", "").trim();
-      addChatMessage("assistant", "Running query: " + sql);
-
-      try {
-        // Parse the SQL to determine which table to query
-        const tableMatch = sql.match(/from\s+(\w+)/i);
-        const table = tableMatch?.[1];
-
-        if (!table) throw new Error("Could not determine table from query");
-
-        // Build Supabase REST query from SQL
-        const results = await executeSmartQuery(sql, table);
-        if (results.length === 0) {
-          addChatMessage("assistant", "No results found for this query.");
-        } else {
-          const columns = Object.keys(results[0]);
-          addTableMessage(columns, results);
-        }
-      } catch(e) {
-        addChatMessage("assistant", "Query error: " + e.message + "\n\nTry rephrasing your question.");
+    if(reply.startsWith("SQL_QUERY:")){
+      const sql=reply.replace("SQL_QUERY:","").trim();
+      try{
+        const results=await execQuery(sql);
+        if(!results.length){addMsg("assistant","No results found.");}
+        else{addTableMsg(Object.keys(results[0]),results);}
+      }catch(e){addMsg("assistant","Query error: "+e.message);}
+    }else if(reply.startsWith("ACTION:")){
+      const aM=reply.match(/ACTION:(\w+):(\{.*\})/s);
+      if(aM){
+        try{
+          const rec=JSON.parse(aM[2]);
+          const tbl=aM[1]==="ADD_VENDOR"?"vendors":aM[1]==="ADD_PRODUCT"?"products":"product_contacts";
+          await apiFetch(tbl,{method:"POST",body:rec});
+          if(tbl==="vendors")state.vendors=await getAll("vendors");
+          else if(tbl==="products")state.products=await getAll("products");
+          else state.contacts=await getAll("product_contacts");
+          addMsg("assistant","Record added successfully to "+tbl.replace(/_/g," ")+"!");render();
+        }catch(e){addMsg("assistant","Error adding record: "+e.message);}
       }
-
-    } else if (reply.startsWith("ACTION:")) {
-      const actionMatch = reply.match(/ACTION:(\w+):(\{.*\})/s);
-      if (actionMatch) {
-        const [, actionType, jsonStr] = actionMatch;
-        try {
-          const record = JSON.parse(jsonStr);
-          const table = actionType === "ADD_VENDOR" ? "vendors" : actionType === "ADD_PRODUCT" ? "products" : "product_contacts";
-          await apiFetch(table, { method: "POST", body: record });
-          if (table === "vendors") state.vendors = await getAll("vendors");
-          else if (table === "products") state.products = await getAll("products");
-          else state.contacts = await getAll("product_contacts");
-          addChatMessage("assistant", "Record added successfully to " + table.replace(/_/g," ") + "!");
-          render();
-        } catch(e) { addChatMessage("assistant", "Error adding record: " + e.message); }
-      }
-    } else {
-      addChatMessage("assistant", reply);
-    }
-
-    chatHistory.push({ role: "assistant", content: reply });
-
-  } catch(e) {
-    document.getElementById("chat-typing")?.remove();
-    addChatMessage("assistant", "Connection error: " + e.message);
-  }
+    }else{addMsg("assistant",reply);}
+    chatHistory.push({role:"assistant",content:reply});
+  }catch(e){document.getElementById("chat-typing")?.remove();addMsg("assistant","Connection error: "+e.message);}
 }
 
-async function executeSmartQuery(sql, table) {
-  // Parse SQL and execute via Supabase REST API
-  const sqlLower = sql.toLowerCase();
-
-  // Build params
-  const params = { limit: 50 };
-
-  // Check for WHERE conditions with ILIKE
-  const ilikeMatch = sql.match(/where\s+([\w.]+)\s+ilike\s+'%([^']+)%'/i);
-  const eqMatch = sql.match(/where\s+([\w.]+)\s*=\s*'([^']+)'/i);
-
-  if (ilikeMatch) {
-    params[ilikeMatch[1] + ".ilike"] = "%" + ilikeMatch[2] + "%";
-  } else if (eqMatch) {
-    params[eqMatch[1] + ".eq"] = eqMatch[2];
-  }
-
-  // Check for SELECT columns
-  const selectMatch = sql.match(/select\s+(.+?)\s+from/i);
-  if (selectMatch && selectMatch[1].trim() !== "*") {
-    const cols = selectMatch[1].split(",").map(c => {
-      const parts = c.trim().split(/\s+as\s+/i);
-      return parts[0].trim().replace(/\w+\./, "");
-    }).filter(c => c !== "count(*)");
-    if (cols.length > 0 && !cols[0].includes("(")) {
-      params.select = cols.join(",");
-    }
-  }
-
-  // Check for ORDER BY
-  const orderMatch = sql.match(/order\s+by\s+([\w.]+)(?:\s+(asc|desc))?/i);
-  if (orderMatch) {
-    params.order = orderMatch[1].replace(/\w+\./, "") + (orderMatch[2]?.toLowerCase() === "desc" ? ".desc" : "");
-  }
-
-  // Handle COUNT queries specially
-  if (sqlLower.includes("count(*)")) {
-    const allData = await getAll(table);
-    let filtered = allData;
-    if (ilikeMatch) {
-      const field = ilikeMatch[1].replace(/\w+\./, "");
-      const val = ilikeMatch[2].toLowerCase();
-      filtered = allData.filter(r => (r[field] || "").toLowerCase().includes(val));
-    } else if (eqMatch) {
-      const field = eqMatch[1].replace(/\w+\./, "");
-      const val = eqMatch[2].toLowerCase();
-      filtered = allData.filter(r => (r[field] || "").toLowerCase() === val);
-    }
-    return [{ count: filtered.length }];
-  }
-
-  // Check for JOINs - if so, load from state
-  if (sqlLower.includes("join")) {
-    return executeJoinQuery(sql);
-  }
-
-  return await apiFetch(table, { params });
-}
-
-function executeJoinQuery(sql) {
-  // Handle common join patterns using in-memory state data
-  const sqlLower = sql.toLowerCase();
-
-  if (sqlLower.includes("product_commodities_coverage") || sqlLower.includes("pcc")) {
-    const commodity = sql.match(/commodity\s+ilike\s+'%([^']+)%'/i)?.[1] ||
-                      sql.match(/commodity\s*=\s*'([^']+)'/i)?.[1];
-    if (commodity) {
-      return state.pcc
-        .filter(r => (r.commodity || "").toLowerCase().includes(commodity.toLowerCase()))
-        .filter(r => r.coverage_level === "Covered" || r.coverage_level === "Partially Covered")
-        .map(r => ({ product: r.product, product_type: r.product_type, commodity: r.commodity, coverage_level: r.coverage_level }))
-        .slice(0, 50);
-    }
-  }
-
-  if (sqlLower.includes("product_function_ctrm")) {
-    const commodity = sql.match(/commodity\s+ilike\s+'%([^']+)%'/i)?.[1];
-    const product = sql.match(/product\s+ilike\s+'%([^']+)%'/i)?.[1];
-    return state.ctrm
-      .filter(r => !commodity || (r.commodity || "").toLowerCase().includes(commodity.toLowerCase()))
-      .filter(r => !product || (r.product || "").toLowerCase().includes(product.toLowerCase()))
-      .filter(r => r.coverage_level?.includes("deployed"))
-      .map(r => ({ product: r.product, function_name: r.function_name, commodity: r.commodity, coverage_level: r.coverage_level }))
-      .slice(0, 50);
-  }
-
-  return [];
-}
-
-document.body.insertAdjacentHTML("beforeend", `
-  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:900">💬</button>
-  <div id="chat-panel" style="display:none;position:fixed;bottom:88px;right:24px;width:420px;height:560px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.5);z-index:900;overflow:hidden">
-    <div style="padding:14px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-      <span style="font-size:18px">🤖</span>
-      <div><div style="font-weight:700;font-size:13px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Queries the full database in real-time</div></div>
-      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML='';toggleChat();setTimeout(toggleChat,100)" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:4px;border:1px solid var(--border)">Clear</button>
-      <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer">✕</button>
+document.body.insertAdjacentHTML("beforeend",`
+  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:900">💬</button>
+  <div id="chat-panel" style="display:none;position:fixed;bottom:80px;right:20px;width:400px;height:540px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:900;overflow:hidden">
+    <div style="padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+      <span style="font-size:16px">🤖</span>
+      <div><div style="font-weight:700;font-size:12px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Queries the full database in real-time</div></div>
+      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML=''" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">Clear</button>
+      <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-left:4px">✕</button>
     </div>
-    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column"></div>
-    <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
-      <input id="chat-input" placeholder="Ask anything about the data..." style="flex:1;border-radius:20px;padding:7px 14px;font-size:12px" onkeydown="if(event.key==='Enter')sendChat()">
-      <button onclick="sendChat()" style="background:var(--accent);color:#fff;border:none;border-radius:20px;padding:7px 16px;cursor:pointer;font-size:12px;font-weight:600">Send</button>
+    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
+    <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
+      <input id="chat-input" placeholder="Ask anything about the data..." style="flex:1;border-radius:18px;padding:6px 12px;font-size:12px" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" style="background:var(--accent);color:#fff;border:none;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600">Send</button>
     </div>
   </div>
 `);
