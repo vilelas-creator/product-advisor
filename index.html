@@ -735,7 +735,10 @@ function closeModal(){document.getElementById("modal").classList.remove("open");
 function saveModal(){if(modalSaveFn)modalSaveFn();}
 function getVals(keys){
   const els=[...document.getElementById("modal-fields").querySelectorAll("input,select,textarea")];
-  const r={};keys.forEach((k,i)=>{r[k]=els[i]?.value||"";});return r;
+  const r={};keys.forEach((k,i)=>{
+    const v=els[i]?.value||"";
+    r[k] = (k==="id" && v==="") ? null : v;
+  });return r;
 }
 
 function openVendorModal(id){
@@ -744,6 +747,7 @@ function openVendorModal(id){
     {label:"ID",value:v?.id||"",ro:true},{label:"Vendor Name",value:v?.vendor_name||""},{label:"Headquarters",type:"textarea",value:v?.headquarters||""},{label:"Website",value:v?.website||""},{label:"Industries Served",value:v?.industries_served||""}
   ],async()=>{
     const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
+    if(!vals.id)delete vals.id;
     try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);logAction("UPDATE","vendors",v.id,vals.vendor_name,{});}
     else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];logAction("INSERT","vendors",res[0]?.id,vals.vendor_name,{});}closeModal();render();}catch(e){logAction("ERROR","vendors",null,vals.vendor_name,{error:e.message});alert("Error: "+e.message);}
   });
@@ -757,6 +761,7 @@ function openProductModal(id){
     {label:"ID",value:p?.id||"",ro:true},{label:"Product Name",value:p?.product_name||""},{label:"Product Type",type:"select",value:p?.product_type||"",options:types},{label:"Vendor",type:"select",value:p?.vendor||"",options:vendors},{label:"Deployment Model",type:"textarea",value:p?.deployment_model||""},{label:"Version",value:p?.version_info||""},{label:"Notes",type:"textarea",value:p?.notes||""}
   ],async()=>{
     const vals=getVals(["id","product_name","product_type","vendor","deployment_model","version_info","notes"]);
+    if(!vals.id)delete vals.id;
     try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","products",p.id,vals.product_name,{vendor:vals.vendor});}
     else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];logAction("INSERT","products",res[0]?.id,vals.product_name,{vendor:vals.vendor});}closeModal();render();}catch(e){logAction("ERROR","products",null,vals.product_name,{error:e.message});alert("Error: "+e.message);}
   });
@@ -768,6 +773,7 @@ function openCommodityModal(id){
     {label:"ID",value:c?.id||"",ro:true},{label:"Commodity Name",value:c?.commodity_name||""}
   ],async()=>{
     const vals=getVals(["id","commodity_name"]);
+    if(!vals.id)delete vals.id;
     try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);logAction("UPDATE","commodities",c.id,vals.commodity_name,{});}
     else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];logAction("INSERT","commodities",res[0]?.id,vals.commodity_name,{});}closeModal();render();}catch(e){logAction("ERROR","commodities",null,null,{error:e.message});alert("Error: "+e.message);}
   });
@@ -783,6 +789,7 @@ function openPCCModal(id){
     {label:"ID",value:p?.id||"",ro:true},{label:"Product",type:"select",value:p?.product||"",options:prods},{label:"Product Type",type:"select",value:p?.product_type||"",options:types},{label:"Commodity",type:"select",value:p?.commodity||"",options:coms},{label:"Coverage Level",type:"select",value:p?.coverage_level||"",options:covs}
   ],async()=>{
     const vals=getVals(["id","product","product_type","commodity","coverage_level"]);
+    if(!vals.id)delete vals.id;
     try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);logAction("UPDATE","product_commodities_coverage",p.id,vals.product+" - "+vals.commodity,{coverage:vals.coverage_level});}
     else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];logAction("INSERT","product_commodities_coverage",res[0]?.id,vals.product+" - "+vals.commodity,{coverage:vals.coverage_level});}closeModal();render();}catch(e){logAction("ERROR","product_commodities_coverage",null,null,{error:e.message});alert("Error: "+e.message);}
   });
@@ -796,6 +803,7 @@ function openContactModal(id){
     {label:"ID",value:ct?.id||"",ro:true},{label:"Product",type:"select",value:ct?.product||"",options:prods},{label:"Vendor",type:"select",value:ct?.vendor||"",options:vendors},{label:"Contact Name",value:ct?.contact_name||""},{label:"Role / Title",value:ct?.role_title||""},{label:"Email",value:ct?.email||""},{label:"Phone",value:ct?.phone_number||""},{label:"Region",value:ct?.region||""}
   ],async()=>{
     const vals=getVals(["id","product","vendor","contact_name","role_title","email","phone_number","region"]);
+    if(!vals.id)delete vals.id;
     try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);logAction("UPDATE","product_contacts",ct.id,vals.contact_name,{product:vals.product});}
     else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];logAction("INSERT","product_contacts",res[0]?.id,vals.contact_name,{product:vals.product});}closeModal();render();}catch(e){logAction("ERROR","product_contacts",null,vals.contact_name,{error:e.message});alert("Error: "+e.message);}
   });
