@@ -139,6 +139,16 @@ function pagerHtml(id,page,total,per){
   return`<div class="pager"><button class="btn" onclick="changePage('${id}',${page-1})" ${page===0?"disabled":""}>← Prev</button><span>Page ${page+1} / ${pages} · ${total.toLocaleString()} records</span><button class="btn" onclick="changePage('${id}',${page+1})" ${page>=pages-1?"disabled":""}>Next →</button></div>`;
 }
 function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
+
+function navToProduct(name, type) {
+  const decoded = decodeURIComponent(name.replace(/%27/g,"'"));
+  if (type && type.includes('Risk')) {
+    navToTab('risk', 'risk_prod', decoded);
+  } else {
+    navToTab('ctrm', 'ctrm_prod', decoded);
+  }
+}
+
 function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
 function sf(key,val){
   state.filters[key]=val;state.pages={};
@@ -398,7 +408,7 @@ function renderProducts(){
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600">${p.product_name||""}</td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>${commentCell("products",p)}<td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToProduct('${(p.product_name||"").replace(/'/g,'%27')}','${p.product_type||""}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>${commentCell("products",p)}<td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
