@@ -855,159 +855,22 @@ async function init(){
 init();
 
 // ── CHATBOX ──
-let GROQ_KEY = localStorage.getItem("pa_groq_key") || "";
-let chatHistory = [], chatOpen = false;
-
-async function groqCall(messages, maxTokens=800) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
-    body: JSON.stringify({model:GROQ_MODEL, messages, max_tokens:maxTokens, temperature:0.1})
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || JSON.stringify(data));
-  return (data.choices?.[0]?.message?.content || "").trim();
-}
-
-// Step 1: Ask Groq what to search for (returns structured JSON)
-async function classifyQuestion(question) {
-  // First try to match common patterns directly without API call
-  const q = question.toLowerCase();
-  
-  // Direct pattern matching for common queries
-  if (q.includes("add ") || q.includes("create ") || q.includes("insert ") || q.includes("new ")) {
-    return {table:"products", filters:{}, filter_type:"contains", action:"add"};
-  }
-  
-  // Build dynamic context about actual data
-  const productTypes = [...new Set(state.products.map(p=>p.product_type).filter(Boolean))].join(", ");
-  const commodities = [...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].join(", ");
-  const vendors = state.vendors.map(v=>v.vendor_name).join(", ");
-  const riskCategories = [...new Set(state.risk.map(r=>r.category).filter(Boolean))].join(", ");
-  
-  const prompt = `Analyze this question about a CTRM database and return a JSON search instruction.
-
-Question: "${question}"
-
-ACTUAL DATA AVAILABLE:
-- Product types: ${productTypes}
-- Commodities: ${commodities}
-- Vendors: ${vendors}
-- Risk categories: ${riskCategories}
-
-Tables:
-- "pcc": product_commodities_coverage - has fields: product, commodity, coverage_level ("Covered","Partially Covered","Not Covered","Can be covered")
-- "products": has fields: product_name, vendor, product_type ("CTRM Solutions" or "Standalone Risk Management"), deployment_model, version_info, notes
-- "vendors": has fields: vendor_name, headquarters (country/city), industries_served, website
-- "ctrm": product_function_ctrm - has fields: product, function_name, commodity, coverage_level (contains "deployed in production", "capable", "not currently capable", "not applicable")
-- "risk": product_function_risk - has fields: product, category, function_name, coverage_level
-- "geo": geographic_coverage - has fields: product, north_america, europe_russia, south_america, middle_east_africa, asia_australia (0-1 decimals)
-- "ct": customer_type_coverage - has fields: product, utility, energy_retailer, trader_broker, hedge_fund_cta, bank_financial_institution, generator_non_renewables, renewables_generator, agricultural_producer (0-1 decimals)
-- "contacts": product_contacts - has fields: contact_name, role_title, email, product, vendor, region
-
-Return ONLY valid JSON:
-{
-  "table": "pcc|products|vendors|ctrm|risk|geo|ct|contacts",
-  "filters": {"field": "value"},
-  "filter_type": "contains",
-  "action": "search|count|add"
-}
-
-IMPORTANT RULES:
-- "risk management products" -> table=products, filters={"product_type":"Risk"}
-- "CTRM products" -> table=products, filters={"product_type":"CTRM"}
-- "products cover X" -> table=pcc, filters={"commodity":"X"}  
-- "products cover X AND covered" -> table=pcc, filters={"commodity":"X","coverage_level":"Covered"}
-- "vendors from UK/London/US" -> table=vendors, filters={"headquarters":"UK or US or London etc"}
-- "ION products" -> table=products, filters={"vendor":"ION"}
-- "deployed X CTRM" -> table=ctrm, filters={"commodity":"X","coverage_level":"deployed"}
-- Always use filter_type="contains" unless exact match needed`;
-
-  const reply = await groqCall([{role:"user", content:prompt}], 300);
-  try {
-    return JSON.parse(reply.replace(/```json|```/g,"").trim());
-  } catch(e) {
-    return null;
-  }
-}
-
-// Step 2: Execute the search on in-memory data
-function executeSearch(instruction) {
-  const {table, filters={}, filter_type="contains"} = instruction;
-  
-  const match = (val, filter) => {
-    if (!filter) return true;
-    const v = (val||"").toString().toLowerCase();
-    const f = filter.toString().toLowerCase();
-    if (filter_type === "exact") return v === f;
-    return v.includes(f);
-  };
-
-  let data = [];
-  if (table === "pcc") data = state.pcc;
-  else if (table === "products") data = state.products;
-  else if (table === "vendors") data = state.vendors;
-  else if (table === "ctrm") data = state.ctrm;
-  else if (table === "risk") data = state.risk;
-  else if (table === "geo") data = state.geo;
-  else if (table === "ct") data = state.ct;
-  else if (table === "contacts") data = state.contacts;
-
-  return data.filter(row => 
-    Object.entries(filters).every(([field, value]) => match(row[field], value))
-  );
-}
-
-// Step 3: Format the results with Groq
-async function formatResults(question, results, instruction) {
-  if (results.length === 0) return "No results found for your query.";
-  
-  const sample = results.slice(0,100);
-  const prompt = `The user asked: "${question}"
-  
-Search results (${results.length} total records):
-${JSON.stringify(sample, null, 1)}
-
-Summarise these results clearly and completely in English. List all items. Be precise.`;
-
-  return await groqCall([{role:"user", content:prompt}], 600);
-}
-
-function showGroqKeyModal() {
-  const ov = document.createElement("div");
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
-  const bx = document.createElement("div");
-  bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:440px;padding:24px";
-  bx.innerHTML = "<div style='font-size:22px;text-align:center;margin-bottom:12px'>&#128273;</div><div style='font-weight:700;font-size:15px;margin-bottom:6px;text-align:center'>Groq API Key Required</div><div style='color:var(--muted);font-size:12px;margin-bottom:12px;line-height:1.6'>The AI chatbox uses Groq (free). Get your key at <a href=\"https://console.groq.com\" target=\"_blank\" style=\"color:var(--accent)\">console.groq.com</a></div>";
-  const inp = document.createElement("input");
-  inp.placeholder = "Paste your Groq API key (gsk_...)";
-  inp.style.cssText = "width:100%;padding:8px 12px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px";
-  const sb = document.createElement("button");
-  sb.style.cssText = "width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
-  sb.textContent = "Save & Continue";
-  const note = document.createElement("div");
-  note.style.cssText = "font-size:10px;color:var(--muted);margin-top:10px;text-align:center";
-  note.textContent = "Key stored only in your browser";
-  bx.appendChild(inp); bx.appendChild(sb); bx.appendChild(note); ov.appendChild(bx);
-  document.body.appendChild(ov);
-  ov.onclick = e => { if(e.target===ov) ov.remove(); };
-  setTimeout(() => inp.focus(), 100);
-  sb.onclick = () => {
-    const k = inp.value.trim();
-    if (!k.startsWith("gsk_")) { alert("Please enter a valid Groq key (starts with gsk_)"); return; }
-    GROQ_KEY = k; localStorage.setItem("pa_groq_key", k); ov.remove(); toggleChat();
-  };
-}
+let chatOpen = false;
+let chatState = {}; // tracks current conversation state
 
 function toggleChat() {
-  if (!chatOpen && !GROQ_KEY) { showGroqKeyModal(); return; }
   chatOpen = !chatOpen;
   document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
   document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
-  if (chatOpen && chatHistory.length === 0) {
-    addMsg("assistant", "Hi! Ask me anything about the CTRM database.\n\nExamples:\n• Which products cover Bulk?\n• How many vendors are from the UK?\n• Show me all ION Commodities products\n• Which products have deployed FX CTRM functions?\n• Add a new contact for Allegro");
+  if (chatOpen && !document.getElementById("chat-messages").hasChildNodes()) {
+    showMainMenu();
   }
-  setTimeout(() => { const e = document.getElementById("chat-messages"); if(e) e.scrollTop = e.scrollHeight; }, 100);
+}
+
+function clearChat() {
+  document.getElementById("chat-messages").innerHTML = "";
+  chatState = {};
+  showMainMenu();
 }
 
 function addMsg(role, text) {
@@ -1015,119 +878,446 @@ function addMsg(role, text) {
   const d = document.createElement("div");
   d.style.cssText = "margin-bottom:10px;display:flex;flex-direction:column;align-items:" + (role==="user"?"flex-end":"flex-start");
   const b = document.createElement("div");
-  b.style.cssText = "max-width:90%;padding:7px 11px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;" + (role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
+  b.style.cssText = "max-width:90%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;" + (role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
   b.textContent = text; d.appendChild(b); el.appendChild(d); el.scrollTop = el.scrollHeight;
 }
 
-async function sendChat() {
-  const inp = document.getElementById("chat-input");
-  const msg = inp.value.trim(); if (!msg) return;
-  inp.value = "";
-  addMsg("user", msg);
-  chatHistory.push({role:"user", content:msg});
+function addButtons(buttons) {
+  const el = document.getElementById("chat-messages"); if (!el) return;
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start";
+  buttons.forEach(btn => {
+    const b = document.createElement("button");
+    b.style.cssText = "padding:6px 12px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:16px;cursor:pointer;background:var(--bg2);color:var(--accent);font-family:inherit;transition:all .15s";
+    b.textContent = btn.label;
+    b.onmouseover = () => b.style.background = "var(--accent)22";
+    b.onmouseout = () => b.style.background = "var(--bg2)";
+    b.onclick = () => { btn.action(); };
+    wrap.appendChild(b);
+  });
+  el.appendChild(wrap);
+  el.scrollTop = el.scrollHeight;
+}
 
-  const typing = document.createElement("div");
-  typing.id = "chat-typing";
-  typing.style.cssText = "margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
-  typing.textContent = "Searching...";
-  document.getElementById("chat-messages").appendChild(typing);
-  document.getElementById("chat-messages").scrollTop = 99999;
+function addSearchInput(placeholder, onSubmit) {
+  const el = document.getElementById("chat-messages"); if (!el) return;
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "margin-bottom:10px;display:flex;gap:6px";
+  const inp = document.createElement("input");
+  inp.placeholder = placeholder;
+  inp.style.cssText = "flex:1;padding:7px 12px;border-radius:16px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none";
+  const btn = document.createElement("button");
+  btn.textContent = "Search";
+  btn.style.cssText = "padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:16px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
+  const submit = () => {
+    const val = inp.value.trim();
+    if (!val) return;
+    addMsg("user", val);
+    onSubmit(val);
+  };
+  btn.onclick = submit;
+  inp.onkeydown = e => { if(e.key==="Enter") submit(); };
+  wrap.appendChild(inp); wrap.appendChild(btn);
+  el.appendChild(wrap);
+  el.scrollTop = el.scrollHeight;
+  setTimeout(() => inp.focus(), 100);
+}
 
-  try {
-    // Step 1: Classify the question
-    const instruction = await classifyQuestion(msg);
-    
-    if (!instruction) {
-      document.getElementById("chat-typing")?.remove();
-      // No clear search intent - answer conversationally
-      const reply = await groqCall([
-        {role:"system", content:"You are a helpful assistant for a CTRM database. Answer in English. Be concise."},
-        ...chatHistory.slice(-4)
-      ], 400);
-      addMsg("assistant", reply);
-      chatHistory.push({role:"assistant", content:reply});
-      return;
-    }
-
-    // Handle ADD actions
-    if (instruction.action === "add") {
-      document.getElementById("chat-typing")?.remove();
-      const addPrompt = `The user wants to add data. User said: "${msg}"
-Available products: ${state.products.slice(0,20).map(p=>p.product_name).join(", ")}
-Available vendors: ${state.vendors.map(v=>v.vendor_name).join(", ")}
-
-If all required fields are provided with real values, respond with ONLY:
-ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
-ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
-ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"E","phone_number":"P","region":"R"}
-
-If fields are missing, ask for them. Never use placeholder values like X, Y, Z.`;
-
-      const addReply = await groqCall([{role:"user", content:addPrompt}], 400);
-      const actionMatch = addReply.match(/ACTION:(\w+):(\{.*?\})/s);
-      if (actionMatch) {
-        try {
-          const rec = JSON.parse(actionMatch[2]);
-          const tbl = actionMatch[1]==="ADD_VENDOR"?"vendors":actionMatch[1]==="ADD_PRODUCT"?"products":"product_contacts";
-          await apiFetch(tbl, {method:"POST", body:rec});
-          if (tbl==="vendors") state.vendors = await getAll("vendors");
-          else if (tbl==="products") state.products = await getAll("products");
-          else state.contacts = await getAll("product_contacts");
-          logAction("INSERT", tbl, null, rec.vendor_name||rec.product_name||rec.contact_name, {via:"chatbox"});
-          addMsg("assistant", "Done! Record added to " + tbl.replace(/_/g," ") + ".");
-          render();
-        } catch(e) { addMsg("assistant", "Error: " + e.message); }
-      } else {
-        addMsg("assistant", addReply);
-      }
-      chatHistory.push({role:"assistant", content:addReply});
-      return;
-    }
-
-    // Step 2: Execute search on real data
-    const results = executeSearch(instruction);
-    document.getElementById("chat-typing")?.remove();
-
-    if (results.length === 0) {
-      addMsg("assistant", "No results found. Try rephrasing your question.");
-      chatHistory.push({role:"assistant", content:"No results found."});
-      return;
-    }
-
-    // Step 3: Format with Groq
-    if (instruction.action === "count") {
-      const countReply = await groqCall([
-        {role:"user", content:`The user asked: "${msg}". The answer is: ${results.length} records found.`}
-      ], 150);
-      addMsg("assistant", countReply);
-      chatHistory.push({role:"assistant", content:countReply});
-    } else {
-      const formatted = await formatResults(msg, results, instruction);
-      addMsg("assistant", formatted);
-      chatHistory.push({role:"assistant", content:formatted});
-    }
-
-  } catch(e) {
-    document.getElementById("chat-typing")?.remove();
-    addMsg("assistant", "Error: " + e.message);
+function addResults(results, columns) {
+  if (!results || results.length === 0) {
+    addMsg("assistant", "No results found.");
+    showMainMenu();
+    return;
   }
+  const el = document.getElementById("chat-messages"); if (!el) return;
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "margin-bottom:10px;max-width:100%;overflow-x:auto";
+  const tbl = document.createElement("table");
+  tbl.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:6px;overflow:hidden";
+  const thead = document.createElement("thead");
+  const hr = document.createElement("tr");
+  columns.forEach(c => {
+    const th = document.createElement("th");
+    th.style.cssText = "padding:5px 9px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap";
+    th.textContent = c.label || c.key;
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr); tbl.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  results.forEach(row => {
+    const tr = document.createElement("tr");
+    columns.forEach(c => {
+      const td = document.createElement("td");
+      td.style.cssText = "padding:5px 9px;border-bottom:1px solid var(--row-border);font-size:11px";
+      let val = row[c.key] ?? "";
+      if (typeof val === "number") val = Math.round(val * 100) + "%";
+      td.textContent = val;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody); wrap.appendChild(tbl);
+  const meta = document.createElement("div");
+  meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
+  meta.textContent = results.length + " result" + (results.length !== 1 ? "s" : "");
+  wrap.appendChild(meta); el.appendChild(wrap); el.scrollTop = el.scrollHeight;
+  addMsg("assistant", "What else would you like to know?");
+  showMainMenu();
+}
+
+function showMainMenu() {
+  addMsg("assistant", "What would you like to explore?");
+  addButtons([
+    {label: "🌾 Commodity Coverage", action: showCommodityMenu},
+    {label: "📦 Products", action: showProductMenu},
+    {label: "🏢 Vendors", action: showVendorMenu},
+    {label: "⚡ CTRM Functions", action: showCtrmMenu},
+    {label: "🛡 Risk Functions", action: showRiskMenu},
+    {label: "🌍 Geographic Coverage", action: showGeoMenu},
+    {label: "👥 Customer Types", action: showCustomerMenu},
+    {label: "👤 Contacts", action: showContactMenu},
+    {label: "➕ Add Data", action: showAddMenu},
+  ]);
+}
+
+// ── COMMODITY COVERAGE ──
+function showCommodityMenu() {
+  addMsg("user", "Commodity Coverage");
+  addMsg("assistant", "What do you want to know about commodity coverage?");
+  addButtons([
+    {label: "Which products cover a commodity?", action: () => askCommoditySearch("Covered")},
+    {label: "Partially covered products", action: () => askCommoditySearch("Partial")},
+    {label: "All coverage for a product", action: askProductCoverage},
+    {label: "Count products covering a commodity", action: askCommodityCount},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function askCommoditySearch(coverageFilter) {
+  const label = coverageFilter === "Covered" ? "fully covered" : "partially covered";
+  addMsg("assistant", `Which commodity? (e.g. Power, Gas, FX, Bulk, LNG)`);
+  const commodities = [...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  addButtons(commodities.slice(0,15).map(c => ({
+    label: c,
+    action: () => {
+      addMsg("user", c);
+      const results = state.pcc.filter(r =>
+        r.commodity === c &&
+        (coverageFilter === "Partial" ? (r.coverage_level||"").includes("Partial") : (r.coverage_level||"").includes("Covered") && !(r.coverage_level||"").includes("Not"))
+      );
+      addMsg("assistant", `Products with ${label} coverage for ${c}:`);
+      addResults(results, [{key:"product",label:"Product"},{key:"product_type",label:"Type"},{key:"coverage_level",label:"Coverage"}]);
+    }
+  })));
+  addSearchInput("Or type a commodity name...", val => {
+    const results = state.pcc.filter(r =>
+      (r.commodity||"").toLowerCase().includes(val.toLowerCase()) &&
+      (coverageFilter === "Partial" ? (r.coverage_level||"").includes("Partial") : (r.coverage_level||"").includes("Covered") && !(r.coverage_level||"").includes("Not"))
+    );
+    addMsg("assistant", `Products with ${label} coverage for "${val}":`);
+    addResults(results, [{key:"product",label:"Product"},{key:"commodity",label:"Commodity"},{key:"coverage_level",label:"Coverage"}]);
+  });
+}
+
+function askProductCoverage() {
+  addMsg("assistant", "Which product?");
+  const products = [...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
+  addButtons(products.slice(0,20).map(p => ({
+    label: p,
+    action: () => {
+      addMsg("user", p);
+      const results = state.pcc.filter(r => r.product === p);
+      addMsg("assistant", `Commodity coverage for ${p}:`);
+      addResults(results, [{key:"commodity",label:"Commodity"},{key:"coverage_level",label:"Coverage"}]);
+    }
+  })));
+  addSearchInput("Or type a product name...", val => {
+    const results = state.pcc.filter(r => (r.product||"").toLowerCase().includes(val.toLowerCase()));
+    addResults(results, [{key:"product",label:"Product"},{key:"commodity",label:"Commodity"},{key:"coverage_level",label:"Coverage"}]);
+  });
+}
+
+function askCommodityCount() {
+  addMsg("assistant", "Which commodity?");
+  const commodities = [...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  addButtons(commodities.slice(0,15).map(c => ({
+    label: c,
+    action: () => {
+      addMsg("user", c);
+      const covered = state.pcc.filter(r => r.commodity === c && (r.coverage_level||"").includes("Covered") && !(r.coverage_level||"").includes("Not")).length;
+      const partial = state.pcc.filter(r => r.commodity === c && (r.coverage_level||"").includes("Partial")).length;
+      const not = state.pcc.filter(r => r.commodity === c && (r.coverage_level||"").includes("Not")).length;
+      addMsg("assistant", `${c} coverage summary:
+• Covered: ${covered} products
+• Partially Covered: ${partial} products
+• Not Covered: ${not} products`);
+      showMainMenu();
+    }
+  })));
+}
+
+// ── PRODUCTS ──
+function showProductMenu() {
+  addMsg("user", "Products");
+  addMsg("assistant", "How would you like to filter products?");
+  addButtons([
+    {label: "By vendor", action: askProductsByVendor},
+    {label: "CTRM products only", action: () => { addMsg("user","CTRM products"); const r=state.products.filter(p=>p.product_type==="CTRM Solutions"); addMsg("assistant",`${r.length} CTRM products:`); addResults(r,[{key:"product_name",label:"Product"},{key:"vendor",label:"Vendor"},{key:"version_info",label:"Version"}]); }},
+    {label: "Risk products only", action: () => { addMsg("user","Risk products"); const r=state.products.filter(p=>p.product_type&&p.product_type.includes("Risk")); addMsg("assistant",`${r.length} Risk Management products:`); addResults(r,[{key:"product_name",label:"Product"},{key:"vendor",label:"Vendor"},{key:"version_info",label:"Version"}]); }},
+    {label: "Search by name", action: () => { addMsg("assistant","Type a product name:"); addSearchInput("Product name...", val => { const r=state.products.filter(p=>(p.product_name||"").toLowerCase().includes(val.toLowerCase())); addResults(r,[{key:"product_name",label:"Product"},{key:"vendor",label:"Vendor"},{key:"product_type",label:"Type"}]); }); }},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function askProductsByVendor() {
+  addMsg("assistant", "Which vendor?");
+  const vendors = [...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
+  addButtons(vendors.map(v => ({
+    label: v,
+    action: () => {
+      addMsg("user", v);
+      const results = state.products.filter(p => p.vendor === v);
+      addMsg("assistant", `${results.length} products from ${v}:`);
+      addResults(results, [{key:"product_name",label:"Product"},{key:"product_type",label:"Type"},{key:"version_info",label:"Version"}]);
+    }
+  })));
+}
+
+// ── VENDORS ──
+function showVendorMenu() {
+  addMsg("user", "Vendors");
+  addMsg("assistant", "What would you like to know about vendors?");
+  addButtons([
+    {label: "All vendors", action: () => { addMsg("user","All vendors"); addResults(state.vendors,[{key:"vendor_name",label:"Vendor"},{key:"headquarters",label:"HQ"},{key:"industries_served",label:"Industry"}]); }},
+    {label: "By country/region", action: askVendorsByRegion},
+    {label: "Risk Management vendors", action: () => { addMsg("user","Risk vendors"); const r=state.vendors.filter(v=>(v.industries_served||"").includes("Risk")); addResults(r,[{key:"vendor_name",label:"Vendor"},{key:"headquarters",label:"HQ"}]); }},
+    {label: "Count by region", action: showVendorCount},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function askVendorsByRegion() {
+  addMsg("assistant", "Which region or country?");
+  addSearchInput("e.g. UK, USA, Singapore...", val => {
+    const results = state.vendors.filter(v => (v.headquarters||"").toLowerCase().includes(val.toLowerCase()));
+    addMsg("assistant", `Vendors in ${val}:`);
+    addResults(results, [{key:"vendor_name",label:"Vendor"},{key:"headquarters",label:"HQ"},{key:"website",label:"Website"}]);
+  });
+}
+
+function showVendorCount() {
+  addMsg("user", "Vendor count by region");
+  const regions = {};
+  state.vendors.forEach(v => {
+    const h = (v.headquarters||"").toLowerCase();
+    let r = "Other";
+    if (h.includes("uk")||h.includes("london")||h.includes("united kingdom")) r="United Kingdom";
+    else if (h.includes("usa")||h.includes("united states")||h.includes("houston")||h.includes("new york")||h.includes("florida")||h.includes("texas")) r="USA";
+    else if (h.includes("singapore")) r="Singapore";
+    else if (h.includes("dubai")||h.includes("uae")) r="UAE";
+    else if (h.includes("netherlands")) r="Netherlands";
+    else if (h.includes("germany")||h.includes("france")||h.includes("switzerland")) r="Europe (Other)";
+    else if (h.includes("india")) r="India";
+    else if (h.includes("australia")) r="Australia";
+    regions[r] = (regions[r]||0)+1;
+  });
+  const msg = Object.entries(regions).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`• ${r}: ${c}`).join("\n");
+  addMsg("assistant", "Vendors by region:\n" + msg);
+  showMainMenu();
+}
+
+// ── CTRM FUNCTIONS ──
+function showCtrmMenu() {
+  addMsg("user", "CTRM Functions");
+  addMsg("assistant", "What would you like to know about CTRM functions?");
+  addButtons([
+    {label: "Deployed functions for a product", action: askCtrmByProduct},
+    {label: "Products with deployed function", action: askCtrmByFunction},
+    {label: "By commodity", action: askCtrmByCommodity},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function askCtrmByProduct() {
+  addMsg("assistant", "Which product?");
+  const products = [...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
+  addButtons(products.slice(0,20).map(p => ({
+    label: p,
+    action: () => {
+      addMsg("user", p);
+      const results = state.ctrm.filter(r => r.product === p && (r.coverage_level||"").toLowerCase().includes("deployed"));
+      addMsg("assistant", `Deployed CTRM functions for ${p} (${results.length}):`);
+      addResults(results, [{key:"function_name",label:"Function"},{key:"commodity",label:"Commodity"}]);
+    }
+  })));
+  addSearchInput("Or type product name...", val => {
+    const results = state.ctrm.filter(r => (r.product||"").toLowerCase().includes(val.toLowerCase()) && (r.coverage_level||"").toLowerCase().includes("deployed"));
+    addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"},{key:"commodity",label:"Commodity"}]);
+  });
+}
+
+function askCtrmByFunction() {
+  addMsg("assistant", "Which function? (type to search)");
+  addSearchInput("Function name...", val => {
+    const results = state.ctrm.filter(r =>
+      (r.function_name||"").toLowerCase().includes(val.toLowerCase()) &&
+      (r.coverage_level||"").toLowerCase().includes("deployed")
+    );
+    addMsg("assistant", `Products with deployed "${val}" function:`);
+    addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"},{key:"commodity",label:"Commodity"}]);
+  });
+}
+
+function askCtrmByCommodity() {
+  addMsg("assistant", "Which commodity?");
+  const commodities = [...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
+  addButtons(commodities.slice(0,15).map(c => ({
+    label: c,
+    action: () => {
+      addMsg("user", c);
+      const results = state.ctrm.filter(r => r.commodity === c && (r.coverage_level||"").toLowerCase().includes("deployed"));
+      addMsg("assistant", `Deployed CTRM functions for ${c} (${results.length}):`);
+      addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"}]);
+    }
+  })));
+}
+
+// ── RISK FUNCTIONS ──
+function showRiskMenu() {
+  addMsg("user", "Risk Functions");
+  addMsg("assistant", "What would you like to know about Risk functions?");
+  addButtons([
+    {label: "Deployed functions for a product", action: askRiskByProduct},
+    {label: "By category", action: askRiskByCategory},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function askRiskByProduct() {
+  addMsg("assistant", "Which product?");
+  const products = [...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
+  addButtons(products.slice(0,20).map(p => ({
+    label: p,
+    action: () => {
+      addMsg("user", p);
+      const results = state.risk.filter(r => r.product === p && (r.coverage_level||"").toLowerCase().includes("deployed"));
+      addMsg("assistant", `Deployed Risk functions for ${p} (${results.length}):`);
+      addResults(results, [{key:"category",label:"Category"},{key:"function_name",label:"Function"}]);
+    }
+  })));
+}
+
+function askRiskByCategory() {
+  addMsg("assistant", "Which category?");
+  const cats = [...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
+  addButtons(cats.map(c => ({
+    label: c,
+    action: () => {
+      addMsg("user", c);
+      const results = state.risk.filter(r => r.category === c && (r.coverage_level||"").toLowerCase().includes("deployed"));
+      addMsg("assistant", `Products with deployed ${c} functions (${results.length}):`);
+      addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"}]);
+    }
+  })));
+}
+
+// ── GEOGRAPHIC ──
+function showGeoMenu() {
+  addMsg("user", "Geographic Coverage");
+  addMsg("assistant", "What would you like to know about geographic coverage?");
+  addButtons([
+    {label: "Coverage for a product", action: askGeoByProduct},
+    {label: "Strong North America coverage (>50%)", action: () => showGeoFilter("north_america", 0.5, "North America")},
+    {label: "Strong Europe coverage (>50%)", action: () => showGeoFilter("europe_russia", 0.5, "Europe")},
+    {label: "Strong Asia coverage (>50%)", action: () => showGeoFilter("asia_australia", 0.5, "Asia")},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function askGeoByProduct() {
+  addMsg("assistant", "Which product?");
+  addSearchInput("Product name...", val => {
+    const results = state.geo.filter(g => (g.product||"").toLowerCase().includes(val.toLowerCase()));
+    addResults(results, [{key:"product",label:"Product"},{key:"north_america",label:"N.America"},{key:"europe_russia",label:"Europe"},{key:"south_america",label:"S.America"},{key:"middle_east_africa",label:"MEA"},{key:"asia_australia",label:"Asia"}]);
+  });
+}
+
+function showGeoFilter(field, threshold, label) {
+  addMsg("user", `Strong ${label} coverage`);
+  const results = state.geo.filter(g => (g[field]||0) >= threshold).sort((a,b)=>(b[field]||0)-(a[field]||0));
+  addMsg("assistant", `Products with >50% ${label} coverage (${results.length}):`);
+  addResults(results, [{key:"product",label:"Product"},{key:field,label:label+"%"}]);
+}
+
+// ── CUSTOMER TYPES ──
+function showCustomerMenu() {
+  addMsg("user", "Customer Types");
+  addMsg("assistant", "Which customer type?");
+  const ctFields = [
+    {key:"utility",label:"Utility"},
+    {key:"energy_retailer",label:"Energy Retailer"},
+    {key:"trader_broker",label:"Trader/Broker"},
+    {key:"hedge_fund_cta",label:"Hedge Fund/CTA"},
+    {key:"bank_financial_institution",label:"Bank/Financial"},
+    {key:"generator_non_renewables",label:"Generator (Non-Renewables)"},
+    {key:"renewables_generator",label:"Renewables Generator"},
+    {key:"agricultural_producer",label:"Agricultural Producer"},
+  ];
+  addButtons([
+    ...ctFields.map(f => ({
+      label: f.label,
+      action: () => {
+        addMsg("user", f.label);
+        const results = state.ct.filter(g => (g[f.key]||0) > 0).sort((a,b)=>(b[f.key]||0)-(a[f.key]||0));
+        addMsg("assistant", `Products serving ${f.label} (${results.length}):`);
+        addResults(results, [{key:"product",label:"Product"},{key:f.key,label:"Coverage %"}]);
+      }
+    })),
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+// ── CONTACTS ──
+function showContactMenu() {
+  addMsg("user", "Contacts");
+  addMsg("assistant", "How would you like to search contacts?");
+  addButtons([
+    {label: "All contacts", action: () => { addMsg("user","All contacts"); addResults(state.contacts,[{key:"contact_name",label:"Name"},{key:"role_title",label:"Role"},{key:"vendor",label:"Vendor"},{key:"product",label:"Product"},{key:"email",label:"Email"}]); }},
+    {label: "By product", action: () => { addMsg("assistant","Which product?"); addSearchInput("Product name...", val => { const r=state.contacts.filter(c=>(c.product||"").toLowerCase().includes(val.toLowerCase())); addResults(r,[{key:"contact_name",label:"Name"},{key:"role_title",label:"Role"},{key:"email",label:"Email"},{key:"region",label:"Region"}]); }); }},
+    {label: "By vendor", action: () => { addMsg("assistant","Which vendor?"); addSearchInput("Vendor name...", val => { const r=state.contacts.filter(c=>(c.vendor||"").toLowerCase().includes(val.toLowerCase())); addResults(r,[{key:"contact_name",label:"Name"},{key:"role_title",label:"Role"},{key:"product",label:"Product"},{key:"email",label:"Email"}]); }); }},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+// ── ADD DATA ──
+function showAddMenu() {
+  addMsg("user", "Add Data");
+  addMsg("assistant", "What would you like to add?");
+  addButtons([
+    {label: "➕ Add Vendor", action: () => { closeChat(); openVendorModal(null); }},
+    {label: "➕ Add Product", action: () => { closeChat(); openProductModal(null); }},
+    {label: "➕ Add Contact", action: () => { closeChat(); openContactModal(null); }},
+    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
+  ]);
+}
+
+function closeChat() {
+  chatOpen = false;
+  document.getElementById("chat-panel").style.display = "none";
+  document.getElementById("chat-fab").textContent = "💬";
 }
 
 
 document.body.insertAdjacentHTML("beforeend",`
   <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:900">💬</button>
-  <div id="chat-panel" style="display:none;position:fixed;bottom:80px;right:20px;width:400px;height:540px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:900;overflow:hidden">
+  <div id="chat-panel" style="display:none;position:fixed;bottom:80px;right:20px;width:420px;height:560px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:900;overflow:hidden">
     <div style="padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-      <span style="font-size:16px">🤖</span>
-      <div><div style="font-weight:700;font-size:12px">Product Advisor AI</div><div style="font-size:10px;color:var(--muted)">Queries the full database in real-time</div></div>
-      <button onclick="chatHistory=[];document.getElementById('chat-messages').innerHTML=''" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">Clear</button>
+      <span style="font-size:16px">🔍</span>
+      <div><div style="font-weight:700;font-size:12px">Product Advisor Search</div><div style="font-size:10px;color:var(--muted)">Explore the database interactively</div></div>
+      <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">↺ Menu</button>
       <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-left:4px">✕</button>
     </div>
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
-    <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:6px">
-      <input id="chat-input" placeholder="Ask anything about the data..." style="flex:1;border-radius:18px;padding:6px 12px;font-size:12px" onkeydown="if(event.key==='Enter')sendChat()">
-      <button onclick="sendChat()" style="background:var(--accent);color:#fff;border:none;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600">Send</button>
-    </div>
   </div>
 `);
 </script>
