@@ -848,7 +848,7 @@ init();
 let GROQ_KEY = localStorage.getItem("pa_groq_key") || "";
 let chatHistory = [], chatOpen = false;
 
-async function groqCall(messages, maxTokens=800) {
+async function groqCall(messages, maxTokens=1000) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
@@ -859,129 +859,79 @@ async function groqCall(messages, maxTokens=800) {
   return (data.choices?.[0]?.message?.content || "").trim();
 }
 
-// Search functions that work on in-memory data
-function searchData(intent) {
-  const q = (intent.query || "").toLowerCase();
-  const table = (intent.table || "").toLowerCase();
-  const field = (intent.field || "").toLowerCase();
-  const limit = intent.limit || 50;
-
-  let results = [];
-
-  if (table === "vendors") {
-    results = state.vendors.filter(v =>
-      !q || Object.values(v).some(val => (val||"").toString().toLowerCase().includes(q))
-    );
-  } else if (table === "products") {
-    results = state.products.filter(p =>
-      (!q || Object.values(p).some(val => (val||"").toString().toLowerCase().includes(q))) &&
-      (!intent.vendor || (p.vendor||"").toLowerCase().includes(intent.vendor.toLowerCase()))
-    );
-  } else if (table === "commodities" || table === "product_commodities_coverage") {
-    results = state.pcc.filter(p =>
-      (!q || (p.commodity||"").toLowerCase().includes(q) || (p.product||"").toLowerCase().includes(q)) &&
-      (!intent.commodity || (p.commodity||"").toLowerCase().includes(intent.commodity.toLowerCase())) &&
-      (!intent.product || (p.product||"").toLowerCase().includes(intent.product.toLowerCase())) &&
-      (!intent.coverage || (p.coverage_level||"").toLowerCase().includes(intent.coverage.toLowerCase()))
-    );
-  } else if (table === "product_function_ctrm" || table === "ctrm") {
-    results = state.ctrm.filter(r =>
-      (!q || Object.values(r).some(val => (val||"").toString().toLowerCase().includes(q))) &&
-      (!intent.product || (r.product||"").toLowerCase().includes(intent.product.toLowerCase())) &&
-      (!intent.commodity || (r.commodity||"").toLowerCase().includes(intent.commodity.toLowerCase())) &&
-      (!intent.function || (r.function_name||"").toLowerCase().includes(intent.function.toLowerCase()))
-    );
-  } else if (table === "product_function_risk" || table === "risk") {
-    results = state.risk.filter(r =>
-      (!q || Object.values(r).some(val => (val||"").toString().toLowerCase().includes(q))) &&
-      (!intent.product || (r.product||"").toLowerCase().includes(intent.product.toLowerCase())) &&
-      (!intent.category || (r.category||"").toLowerCase().includes(intent.category.toLowerCase()))
-    );
-  } else if (table === "geographic_coverage" || table === "geographic") {
-    results = state.geo.filter(g =>
-      !q || (g.product||"").toLowerCase().includes(q)
-    );
-  } else if (table === "customer_type_coverage" || table === "customer_types") {
-    results = state.ct.filter(g =>
-      !q || (g.product||"").toLowerCase().includes(q)
-    );
-  } else if (table === "product_contacts" || table === "contacts") {
-    results = state.contacts.filter(c =>
-      !q || Object.values(c).some(val => (val||"").toString().toLowerCase().includes(q))
-    );
-  } else {
-    // Search across all tables
-    const allResults = [];
-    if (q) {
-      state.vendors.filter(v => Object.values(v).some(val => (val||"").toString().toLowerCase().includes(q))).forEach(v => allResults.push({...v, _table:"vendors"}));
-      state.products.filter(p => Object.values(p).some(val => (val||"").toString().toLowerCase().includes(q))).forEach(p => allResults.push({...p, _table:"products"}));
-      state.pcc.filter(p => Object.values(p).some(val => (val||"").toString().toLowerCase().includes(q))).slice(0,20).forEach(p => allResults.push({...p, _table:"commodity_coverage"}));
-    }
-    results = allResults;
-  }
-
-  return results.slice(0, limit);
-}
-
-function countData(intent) {
-  const results = searchData(intent);
-  return results.length;
-}
-
-async function processQuestion(question) {
-  // Step 1: Ask Groq to classify the intent
-  const classifyPrompt = `You are analyzing a question about a CTRM (Commodity Trading & Risk Management) database.
-
-Available tables and their key fields:
-- vendors: vendor_name, headquarters, industries_served
-- products: product_name, product_type, vendor, deployment_model, version_info
-- product_commodities_coverage: product, commodity, coverage_level (Covered/Partially Covered/Not Covered)
-- product_function_ctrm: product, function_name, commodity, coverage_level
-- product_function_risk: product, category, function_name, coverage_level
-- geographic_coverage: product, north_america, europe_russia, south_america, middle_east_africa, asia_australia
-- customer_type_coverage: product, utility, energy_retailer, trader_broker, etc.
-- product_contacts: product, vendor, contact_name, role_title, email
-
-The user asked: "${question}"
-
-Respond with ONLY a JSON object (no markdown, no explanation):
-{
-  "type": "search" | "count" | "add" | "general",
-  "table": "<table name>",
-  "query": "<search term if any>",
-  "field": "<specific field to search>",
-  "commodity": "<commodity name if mentioned>",
-  "product": "<product name if mentioned>",
-  "vendor": "<vendor name if mentioned>",
-  "coverage": "<coverage level if mentioned>",
-  "category": "<category if mentioned>",
-  "function": "<function name if mentioned>",
-  "limit": 50,
-  "add_data": null
-}`;
-
-  const intentJson = await groqCall([{role:"user", content:classifyPrompt}], 300);
+function buildDataContext() {
+  // Build a rich context from in-memory data
+  const vendorList = state.vendors.map(v => v.vendor_name + (v.headquarters ? " ("+v.headquarters.split("\n")[0]+")" : "")).join(", ");
+  const productList = state.products.map(p => p.product_name + " ["+p.vendor+"]").join(", ");
   
-  let intent;
-  try {
-    const clean = intentJson.replace(/```json|```/g, "").trim();
-    intent = JSON.parse(clean);
-  } catch(e) {
-    // If JSON parsing fails, treat as general question
-    return {type:"general", raw:intentJson};
-  }
+  // Commodity coverage summary: for each commodity list covered products
+  const covMap = {};
+  state.pcc.forEach(r => {
+    if (!r.commodity) return;
+    if (!covMap[r.commodity]) covMap[r.commodity] = {covered:[], partial:[], not:[]};
+    if ((r.coverage_level||"").includes("Not Covered")) covMap[r.commodity].not.push(r.product);
+    else if ((r.coverage_level||"").includes("Partial")) covMap[r.commodity].partial.push(r.product);
+    else if ((r.coverage_level||"").includes("Covered") || (r.coverage_level||"").includes("can be")) covMap[r.commodity].covered.push(r.product);
+  });
+  const covSummary = Object.entries(covMap).map(([com, v]) =>
+    com + ": covered=[" + v.covered.join(",") + "] partial=[" + v.partial.join(",") + "]"
+  ).join("\n");
 
-  if (intent.type === "count") {
-    const count = countData(intent);
-    return {type:"count", count, intent};
-  } else if (intent.type === "search") {
-    const results = searchData(intent);
-    return {type:"search", results, intent};
-  } else if (intent.type === "add") {
-    return {type:"add", intent};
-  } else {
-    return {type:"general", intent};
-  }
+  // CTRM deployed summary by product
+  const ctrmDeployed = {};
+  state.ctrm.forEach(r => {
+    if ((r.coverage_level||"").toLowerCase().includes("deployed")) {
+      if (!ctrmDeployed[r.product]) ctrmDeployed[r.product] = [];
+      ctrmDeployed[r.product].push(r.function_name + " (" + r.commodity + ")");
+    }
+  });
+  const ctrmSummary = Object.entries(ctrmDeployed).slice(0,20).map(([p,fns]) => p+": "+fns.slice(0,5).join(", ")).join("\n");
+
+  // Risk summary
+  const riskDeployed = {};
+  state.risk.forEach(r => {
+    if ((r.coverage_level||"").toLowerCase().includes("deployed")) {
+      if (!riskDeployed[r.product]) riskDeployed[r.product] = [];
+      riskDeployed[r.product].push(r.function_name);
+    }
+  });
+  const riskSummary = Object.entries(riskDeployed).slice(0,15).map(([p,fns]) => p+": "+fns.slice(0,5).join(", ")).join("\n");
+
+  // Geographic summary
+  const geoSummary = state.geo.map(g =>
+    g.product + ": NA="+Math.round((g.north_america||0)*100)+"% EU="+Math.round((g.europe_russia||0)*100)+"% SA="+Math.round((g.south_america||0)*100)+"% MEA="+Math.round((g.middle_east_africa||0)*100)+"% ASIA="+Math.round((g.asia_australia||0)*100)+"%"
+  ).join("\n");
+
+  // Customer types summary
+  const ctSummary = state.ct.map(g =>
+    g.product + ": utility="+Math.round((g.utility||0)*100)+"% trader="+Math.round((g.trader_broker||0)*100)+"% bank="+Math.round((g.bank_financial_institution||0)*100)+"%"
+  ).join("\n");
+
+  return `DATABASE CONTEXT:
+
+VENDORS (${state.vendors.length} total):
+${vendorList}
+
+PRODUCTS (${state.products.length} total):
+${productList}
+
+COMMODITY COVERAGE (${state.pcc.length} records):
+${covSummary}
+
+CTRM DEPLOYED FUNCTIONS (${state.ctrm.length} total records, showing deployed only):
+${ctrmSummary}
+
+RISK DEPLOYED FUNCTIONS:
+${riskSummary}
+
+GEOGRAPHIC COVERAGE (% of clients in each region):
+${geoSummary}
+
+CUSTOMER TYPE COVERAGE (% of clients by type):
+${ctSummary}
+
+CONTACTS (${state.contacts.length} total):
+${state.contacts.map(c => c.contact_name+" - "+c.role_title+" at "+c.vendor+" ("+c.product+") - "+c.email).join("\n")}`;
 }
 
 function showGroqKeyModal() {
@@ -1016,7 +966,7 @@ function toggleChat() {
   document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
   document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
   if (chatOpen && chatHistory.length === 0) {
-    addMsg("assistant", "Hi! Ask me anything about the database in natural language.\n\nExamples:\n• Which products cover Power?\n• How many vendors are from the UK?\n• Show me all ION Commodities products\n• Which products have deployed FX CTRM functions?\n• Add a new contact for Allegro");
+    addMsg("assistant", "Hi! Ask me anything about the CTRM database.\n\nExamples:\n• Which products cover Power?\n• How many vendors are from the UK?\n• Which products have deployed FX CTRM functions?\n• Show me all ION Commodities products\n• Which products serve utility customers?\n• Add a new contact for Allegro");
   }
   setTimeout(() => { const e = document.getElementById("chat-messages"); if(e) e.scrollTop = e.scrollHeight; }, 100);
 }
@@ -1030,67 +980,6 @@ function addMsg(role, text) {
   b.textContent = text; d.appendChild(b); el.appendChild(d); el.scrollTop = el.scrollHeight;
 }
 
-function addTableMsg(cols, rows) {
-  const el = document.getElementById("chat-messages"); if (!el) return;
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "margin-bottom:10px;max-width:100%;overflow-x:auto";
-  const tbl = document.createElement("table");
-  tbl.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:6px;overflow:hidden";
-  const thead = document.createElement("thead");
-  const hr = document.createElement("tr");
-  cols.forEach(c => { const th = document.createElement("th"); th.style.cssText = "padding:5px 9px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap"; th.textContent = c; hr.appendChild(th); });
-  thead.appendChild(hr); tbl.appendChild(thead);
-  const tbody = document.createElement("tbody");
-  rows.forEach(row => { const tr = document.createElement("tr"); cols.forEach(c => { const td = document.createElement("td"); td.style.cssText = "padding:4px 9px;border-bottom:1px solid var(--row-border);font-size:11px"; td.textContent = row[c] ?? ""; tr.appendChild(td); }); tbody.appendChild(tr); });
-  tbl.appendChild(tbody); wrap.appendChild(tbl);
-  const meta = document.createElement("div"); meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
-  meta.textContent = rows.length + " result" + (rows.length !== 1 ? "s" : "");
-  wrap.appendChild(meta); el.appendChild(wrap); el.scrollTop = el.scrollHeight;
-}
-
-async function handleAdd(question) {
-  // Ask Groq for the fields needed
-  const addPrompt = `The user wants to add data to the Product Advisor database. 
-User said: "${question}"
-
-Available products: ${state.products.slice(0,20).map(p=>p.product_name).join(", ")}
-Available vendors: ${state.vendors.map(v=>v.vendor_name).join(", ")}
-
-If the user has provided enough information, respond with ONLY one of these (no other text):
-ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
-ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
-ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"E","phone_number":"P","region":"R"}
-
-If information is missing, ask the user for the specific missing fields. Never use placeholder values.`;
-
-  const reply = await groqCall([...chatHistory.slice(-4), {role:"user", content:addPrompt}], 400);
-  
-  const actionMatch = reply.match(/ACTION:(\w+):(\{.*\})/s);
-  if (actionMatch) {
-    try {
-      const rec = JSON.parse(actionMatch[2]);
-      // Check for empty required fields
-      const hasEmpty = Object.values(rec).some(v => !v || v === "" || v === "X" || v === "Y" || v === "Z");
-      if (hasEmpty) {
-        addMsg("assistant", reply.replace(/ACTION:.*$/s, "").trim() || "Please provide more details. What are the specific values?");
-        return;
-      }
-      const tbl = actionMatch[1]==="ADD_VENDOR"?"vendors":actionMatch[1]==="ADD_PRODUCT"?"products":"product_contacts";
-      await apiFetch(tbl, {method:"POST", body:rec});
-      if (tbl==="vendors") state.vendors = await getAll("vendors");
-      else if (tbl==="products") state.products = await getAll("products");
-      else state.contacts = await getAll("product_contacts");
-      logAction("INSERT", tbl, null, rec.vendor_name||rec.product_name||rec.contact_name, {via:"chatbox"});
-      addMsg("assistant", "Done! Record added successfully to " + tbl.replace(/_/g," ") + ".");
-      render();
-    } catch(e) {
-      addMsg("assistant", "Error adding record: " + e.message);
-    }
-  } else {
-    addMsg("assistant", reply);
-  }
-}
-
 async function sendChat() {
   const inp = document.getElementById("chat-input");
   const msg = inp.value.trim(); if (!msg) return;
@@ -1099,42 +988,62 @@ async function sendChat() {
   chatHistory.push({role:"user", content:msg});
 
   const typing = document.createElement("div");
-  typing.id = "chat-typing"; typing.style.cssText = "margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
+  typing.id = "chat-typing";
+  typing.style.cssText = "margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
   typing.textContent = "Thinking...";
   document.getElementById("chat-messages").appendChild(typing);
   document.getElementById("chat-messages").scrollTop = 99999;
 
   try {
-    const processed = await processQuestion(msg);
+    const systemPrompt = `You are an AI assistant for the Product Advisor CTRM (Commodity Trading & Risk Management) database. Always respond in English. Be concise and accurate.
+
+${buildDataContext()}
+
+INSTRUCTIONS:
+- Answer questions based ONLY on the data provided above
+- Be precise and complete - list ALL matching items, not just a few
+- For lists, use bullet points
+- If asked to add data, ask for all required fields before confirming
+- For ADD requests with all fields provided, respond with exactly:
+  ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
+  ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
+  ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"E","phone_number":"P","region":"R"}`;
+
+    const reply = await groqCall([
+      {role:"system", content:systemPrompt},
+      ...chatHistory.slice(-6)
+    ], 1000);
+
     document.getElementById("chat-typing")?.remove();
 
-    if (processed.type === "search" && processed.results) {
-      if (processed.results.length === 0) {
-        addMsg("assistant", "No results found for your query. Try a different search term.");
-      } else {
-        // Show ALL results as table
-        const cols = Object.keys(processed.results[0]).filter(k => !k.startsWith("_") && k !== "id" && k !== "capspire_comments");
-        addTableMsg(cols, processed.results);
-        addMsg("assistant", `Found ${processed.results.length} results for your query.`);
+    // Check for ACTION
+    const actionMatch = reply.match(/ACTION:(\w+):(\{.*?\})/s);
+    if (actionMatch) {
+      const cleanReply = reply.replace(/ACTION:.*$/s, "").trim();
+      if (cleanReply) addMsg("assistant", cleanReply);
+      try {
+        const rec = JSON.parse(actionMatch[2]);
+        const hasEmpty = Object.entries(rec).some(([k,v]) => ["contact_name","vendor_name","product_name"].includes(k) && (!v || v.length < 2));
+        if (hasEmpty) {
+          addMsg("assistant", "Please provide the required fields with real values.");
+          return;
+        }
+        const tbl = actionMatch[1]==="ADD_VENDOR"?"vendors":actionMatch[1]==="ADD_PRODUCT"?"products":"product_contacts";
+        await apiFetch(tbl, {method:"POST", body:rec});
+        if (tbl==="vendors") state.vendors = await getAll("vendors");
+        else if (tbl==="products") state.products = await getAll("products");
+        else state.contacts = await getAll("product_contacts");
+        logAction("INSERT", tbl, null, rec.vendor_name||rec.product_name||rec.contact_name, {via:"chatbox"});
+        addMsg("assistant", "Done! Record added to " + tbl.replace(/_/g," ") + ".");
+        render();
+      } catch(e) {
+        addMsg("assistant", "Error adding record: " + e.message);
       }
-    } else if (processed.type === "count") {
-      const summary = await groqCall([
-        {role:"system", content:"Answer this question based on the count provided. Be concise."},
-        {role:"user", content:`Question: ${msg}\nCount result: ${processed.count}`}
-      ], 150);
-      addMsg("assistant", summary);
-    } else if (processed.type === "add") {
-      await handleAdd(msg);
     } else {
-      // General question - answer directly
-      const answer = await groqCall([
-        {role:"system", content:`You are a helpful assistant for the Product Advisor CTRM database. Answer in English. Database summary: ${state.vendors.length} vendors, ${state.products.length} products, ${state.ctrm.length} CTRM records.`},
-        ...chatHistory.slice(-6)
-      ], 400);
-      addMsg("assistant", answer);
+      addMsg("assistant", reply);
     }
 
-    chatHistory.push({role:"assistant", content: processed.type === "search" ? `Found ${processed.results?.length || 0} results` : "Answered"});
+    chatHistory.push({role:"assistant", content:reply});
   } catch(e) {
     document.getElementById("chat-typing")?.remove();
     addMsg("assistant", "Error: " + e.message);
