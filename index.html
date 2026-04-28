@@ -17,10 +17,10 @@
   --input-bg:#ffffff;--row-border:#f1f5f9;
 }
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;transition:background .2s,color .2s;}
-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:8px;height:48px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:8px;min-height:48px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
 .logo{font-weight:700;font-size:14px;color:var(--accent);white-space:nowrap;}
 .sub{font-size:10px;color:var(--muted);margin-left:4px;}
-nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:3px 0;}
+nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:3px 0;max-width:calc(100% - 280px);}
 .tab{padding:4px 10px;font-size:11px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s;white-space:nowrap;}
 .tab.active{background:var(--accent);color:#fff;font-weight:600;}
 .tab:hover:not(.active){background:var(--bg3);}
@@ -72,7 +72,7 @@ a:hover{text-decoration:underline;}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
-<div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
+<div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-size:32px;margin-bottom:8px">📊</div>
@@ -117,12 +117,12 @@ a:hover{text-decoration:underline;}
     </div>
   </div>
 </div>
-<header>
+<header style="display:none">
   <div><span class="logo">Product Advisor</span><span class="sub">CTRM &amp; Risk Management Intelligence</span></div>
   <nav id="nav"></nav>
   <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
 </header>
-<main>
+<main style="display:none">
   <div id="section-overview" class="section active"></div>
   <div id="section-vendors" class="section"></div>
   <div id="section-products" class="section"></div>
@@ -977,9 +977,6 @@ async function doLogout() {
 }
 
 async function checkAuth() {
-  // Hide main content until auth check
-  document.querySelector("header").style.display = "none";
-  document.querySelector("main").style.display = "none";
   document.getElementById("auth-screen").style.display = "flex";
 
   const {data: {session}} = await getSbAuth().auth.getSession();
