@@ -961,8 +961,10 @@ function addResults(results, columns) {
   meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
   meta.textContent = results.length + " result" + (results.length !== 1 ? "s" : "");
   wrap.appendChild(meta); el.appendChild(wrap); el.scrollTop = el.scrollHeight;
-  addMsg("assistant", "What else would you like to know?");
-  showMainMenu();
+  // Add a back to menu button
+  addButtons([
+    {label: "🔍 New Search", action: () => { addMsg("user","New Search"); showMainMenu(); }},
+  ]);
 }
 
 function showMainMenu() {
