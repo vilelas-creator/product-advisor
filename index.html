@@ -995,7 +995,9 @@ async function checkAuth() {
   });
 }
 
-checkAuth();
+window.addEventListener("load", function() {
+  checkAuth();
+});
 
 // ── CHATBOX ──
 let chatOpen = false;
