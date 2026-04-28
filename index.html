@@ -69,8 +69,54 @@ a:hover{text-decoration:underline;}
 @media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:3px 6px;font-size:10px;}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:32px;margin-bottom:8px">📊</div>
+      <div style="font-weight:700;font-size:20px;color:var(--accent)">Product Advisor</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">CTRM & Risk Management Intelligence</div>
+    </div>
+    <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <button id="tab-login" onclick="showAuthTab('login')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">Sign In</button>
+      <button id="tab-register" onclick="showAuthTab('register')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Register</button>
+    </div>
+    <div id="auth-login">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
+        <input id="login-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
+        <input id="login-password" type="password" placeholder="••••••••" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <button onclick="doLogin()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Sign In</button>
+      <div id="login-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
+      <div style="text-align:center;margin-top:16px">
+        <a onclick="showForgotPassword()" href="#" style="font-size:12px;color:var(--accent)">Forgot password?</a>
+      </div>
+    </div>
+    <div id="auth-register" style="display:none">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Full Name</label>
+        <input id="register-name" type="text" placeholder="Your full name" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
+        <input id="register-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
+        <input id="register-password" type="password" placeholder="Min. 6 characters" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <button onclick="doRegister()" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Create Account</button>
+      <div id="register-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
+      <div id="register-success" style="margin-top:12px;color:var(--green);font-size:12px;text-align:center;display:none"></div>
+    </div>
+  </div>
+</div>
 <header>
   <div><span class="logo">Product Advisor</span><span class="sub">CTRM &amp; Risk Management Intelligence</span></div>
   <nav id="nav"></nav>
@@ -852,6 +898,97 @@ async function init(){
     document.getElementById("section-overview").innerHTML=`<div class="loading" style="color:var(--red)">Connection error: ${e.message}</div>`;
   }
 }
+// ── SUPABASE AUTH ──
+const sbAuth = supabase.createClient(SB_URL, SB_KEY);
+
+function showAuthTab(tab) {
+  document.getElementById("auth-login").style.display = tab === "login" ? "block" : "none";
+  document.getElementById("auth-register").style.display = tab === "register" ? "block" : "none";
+  document.getElementById("tab-login").style.background = tab === "login" ? "var(--accent)" : "var(--bg3)";
+  document.getElementById("tab-login").style.color = tab === "login" ? "#fff" : "var(--muted)";
+  document.getElementById("tab-register").style.background = tab === "register" ? "var(--accent)" : "var(--bg3)";
+  document.getElementById("tab-register").style.color = tab === "register" ? "#fff" : "var(--muted)";
+}
+
+async function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const errEl = document.getElementById("login-error");
+  errEl.style.display = "none";
+  if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
+  const {data, error} = await sbAuth.auth.signInWithPassword({email, password});
+  if (error) { errEl.textContent = error.message; errEl.style.display = "block"; return; }
+  onLogin(data.user);
+}
+
+async function doRegister() {
+  const name = document.getElementById("register-name").value.trim();
+  const email = document.getElementById("register-email").value.trim();
+  const password = document.getElementById("register-password").value;
+  const errEl = document.getElementById("register-error");
+  const sucEl = document.getElementById("register-success");
+  errEl.style.display = "none"; sucEl.style.display = "none";
+  if (!name || !email || !password) { errEl.textContent = "Please fill in all fields."; errEl.style.display = "block"; return; }
+  if (password.length < 6) { errEl.textContent = "Password must be at least 6 characters."; errEl.style.display = "block"; return; }
+  const {data, error} = await sbAuth.auth.signUp({email, password, options: {data: {full_name: name}}});
+  if (error) { errEl.textContent = error.message; errEl.style.display = "block"; return; }
+  sucEl.textContent = "Account created! Please check your email to confirm your account.";
+  sucEl.style.display = "block";
+}
+
+async function showForgotPassword() {
+  const email = prompt("Enter your email address:");
+  if (!email) return;
+  const {error} = await sbAuth.auth.resetPasswordForEmail(email, {redirectTo: "https://vilelas-creator.github.io/product-advisor"});
+  if (error) alert("Error: " + error.message);
+  else alert("Password reset email sent! Check your inbox.");
+}
+
+function onLogin(user) {
+  currentUser = user;
+  const name = user.user_metadata?.full_name || user.email.split("@")[0];
+  localStorage.setItem("pa_username", name);
+  document.getElementById("auth-screen").style.display = "none";
+  document.querySelector("header").style.display = "flex";
+  document.querySelector("main").style.display = "block";
+  // Add user info and logout to header
+  const nav = document.getElementById("nav");
+  const userInfo = document.createElement("div");
+  userInfo.style.cssText = "display:flex;align-items:center;gap:8px;margin-left:8px;padding-left:8px;border-left:1px solid var(--border)";
+  userInfo.innerHTML = `<span style="font-size:11px;color:var(--muted)">👤 ${name}</span><button onclick="doLogout()" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Sign Out</button>`;
+  document.querySelector("header").appendChild(userInfo);
+  init();
+}
+
+async function doLogout() {
+  await sbAuth.auth.signOut();
+  currentUser = null;
+  localStorage.removeItem("pa_username");
+  location.reload();
+}
+
+async function checkAuth() {
+  // Hide main content until auth check
+  document.querySelector("header").style.display = "none";
+  document.querySelector("main").style.display = "none";
+  document.getElementById("auth-screen").style.display = "flex";
+
+  const {data: {session}} = await sbAuth.auth.getSession();
+  if (session?.user) {
+    onLogin(session.user);
+  }
+  // Add enter key support
+  ["login-email","login-password"].forEach(id => {
+    document.getElementById(id)?.addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+  });
+  ["register-name","register-email","register-password"].forEach(id => {
+    document.getElementById(id)?.addEventListener("keydown", e => { if(e.key==="Enter") doRegister(); });
+  });
+}
+
+checkAuth();
+
+
 init();
 
 // ── CHATBOX ──
