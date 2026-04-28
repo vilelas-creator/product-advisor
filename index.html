@@ -861,37 +861,57 @@ async function groqCall(messages, maxTokens=800) {
 
 // Step 1: Ask Groq what to search for (returns structured JSON)
 async function classifyQuestion(question) {
+  // First try to match common patterns directly without API call
+  const q = question.toLowerCase();
+  
+  // Direct pattern matching for common queries
+  if (q.includes("add ") || q.includes("create ") || q.includes("insert ") || q.includes("new ")) {
+    return {table:"products", filters:{}, filter_type:"contains", action:"add"};
+  }
+  
+  // Build dynamic context about actual data
+  const productTypes = [...new Set(state.products.map(p=>p.product_type).filter(Boolean))].join(", ");
+  const commodities = [...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].join(", ");
+  const vendors = state.vendors.map(v=>v.vendor_name).join(", ");
+  const riskCategories = [...new Set(state.risk.map(r=>r.category).filter(Boolean))].join(", ");
+  
   const prompt = `Analyze this question about a CTRM database and return a JSON search instruction.
 
 Question: "${question}"
 
-Available data tables and searchable fields:
-- pcc (product_commodities_coverage): product, commodity, coverage_level (values: "Covered", "Partially Covered", "Not Covered", "Can be covered")
-- products: product_name, vendor, product_type, deployment_model, version_info, notes
-- vendors: vendor_name, headquarters, industries_served, website
-- ctrm (product_function_ctrm): product, function_name, commodity, coverage_level (contains "deployed", "capable", "not currently capable", "not applicable")
-- risk (product_function_risk): product, category, function_name, coverage_level
-- geo (geographic_coverage): product, north_america, europe_russia, south_america, middle_east_africa, asia_australia
-- ct (customer_type_coverage): product, utility, energy_retailer, trader_broker, hedge_fund_cta, bank_financial_institution, generator_non_renewables, renewables_generator, agricultural_producer
-- contacts (product_contacts): contact_name, role_title, email, product, vendor, region
+ACTUAL DATA AVAILABLE:
+- Product types: ${productTypes}
+- Commodities: ${commodities}
+- Vendors: ${vendors}
+- Risk categories: ${riskCategories}
 
-Return ONLY valid JSON, no other text:
+Tables:
+- "pcc": product_commodities_coverage - has fields: product, commodity, coverage_level ("Covered","Partially Covered","Not Covered","Can be covered")
+- "products": has fields: product_name, vendor, product_type ("CTRM Solutions" or "Standalone Risk Management"), deployment_model, version_info, notes
+- "vendors": has fields: vendor_name, headquarters (country/city), industries_served, website
+- "ctrm": product_function_ctrm - has fields: product, function_name, commodity, coverage_level (contains "deployed in production", "capable", "not currently capable", "not applicable")
+- "risk": product_function_risk - has fields: product, category, function_name, coverage_level
+- "geo": geographic_coverage - has fields: product, north_america, europe_russia, south_america, middle_east_africa, asia_australia (0-1 decimals)
+- "ct": customer_type_coverage - has fields: product, utility, energy_retailer, trader_broker, hedge_fund_cta, bank_financial_institution, generator_non_renewables, renewables_generator, agricultural_producer (0-1 decimals)
+- "contacts": product_contacts - has fields: contact_name, role_title, email, product, vendor, region
+
+Return ONLY valid JSON:
 {
   "table": "pcc|products|vendors|ctrm|risk|geo|ct|contacts",
-  "filters": {
-    "field1": "exact_value_to_match",
-    "field2": "value"
-  },
-  "filter_type": "contains|exact|starts_with",
-  "action": "search|count|add",
-  "add_type": "vendor|product|contact"
+  "filters": {"field": "value"},
+  "filter_type": "contains",
+  "action": "search|count|add"
 }
 
-Examples:
-- "which products cover bulk" -> {"table":"pcc","filters":{"commodity":"Bulk","coverage_level":"Covered"},"filter_type":"contains","action":"search"}
-- "how many UK vendors" -> {"table":"vendors","filters":{"headquarters":"UK"},"filter_type":"contains","action":"count"}
-- "ION products" -> {"table":"products","filters":{"vendor":"ION"},"filter_type":"contains","action":"search"}
-- "deployed FX CTRM" -> {"table":"ctrm","filters":{"commodity":"FX","coverage_level":"deployed"},"filter_type":"contains","action":"search"}`;
+IMPORTANT RULES:
+- "risk management products" -> table=products, filters={"product_type":"Risk"}
+- "CTRM products" -> table=products, filters={"product_type":"CTRM"}
+- "products cover X" -> table=pcc, filters={"commodity":"X"}  
+- "products cover X AND covered" -> table=pcc, filters={"commodity":"X","coverage_level":"Covered"}
+- "vendors from UK/London/US" -> table=vendors, filters={"headquarters":"UK or US or London etc"}
+- "ION products" -> table=products, filters={"vendor":"ION"}
+- "deployed X CTRM" -> table=ctrm, filters={"commodity":"X","coverage_level":"deployed"}
+- Always use filter_type="contains" unless exact match needed`;
 
   const reply = await groqCall([{role:"user", content:prompt}], 300);
   try {
