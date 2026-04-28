@@ -848,7 +848,7 @@ init();
 let GROQ_KEY = localStorage.getItem("pa_groq_key") || "";
 let chatHistory = [], chatOpen = false;
 
-async function groqCall(messages, maxTokens=1000) {
+async function groqCall(messages, maxTokens=800) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {"Content-Type":"application/json","Authorization":"Bearer "+GROQ_KEY},
@@ -859,79 +859,88 @@ async function groqCall(messages, maxTokens=1000) {
   return (data.choices?.[0]?.message?.content || "").trim();
 }
 
-function buildDataContext() {
-  // Build a rich context from in-memory data
-  const vendorList = state.vendors.map(v => v.vendor_name + (v.headquarters ? " ("+v.headquarters.split("\n")[0]+")" : "")).join(", ");
-  const productList = state.products.map(p => p.product_name + " ["+p.vendor+"]").join(", ");
+// Step 1: Ask Groq what to search for (returns structured JSON)
+async function classifyQuestion(question) {
+  const prompt = `Analyze this question about a CTRM database and return a JSON search instruction.
+
+Question: "${question}"
+
+Available data tables and searchable fields:
+- pcc (product_commodities_coverage): product, commodity, coverage_level (values: "Covered", "Partially Covered", "Not Covered", "Can be covered")
+- products: product_name, vendor, product_type, deployment_model, version_info, notes
+- vendors: vendor_name, headquarters, industries_served, website
+- ctrm (product_function_ctrm): product, function_name, commodity, coverage_level (contains "deployed", "capable", "not currently capable", "not applicable")
+- risk (product_function_risk): product, category, function_name, coverage_level
+- geo (geographic_coverage): product, north_america, europe_russia, south_america, middle_east_africa, asia_australia
+- ct (customer_type_coverage): product, utility, energy_retailer, trader_broker, hedge_fund_cta, bank_financial_institution, generator_non_renewables, renewables_generator, agricultural_producer
+- contacts (product_contacts): contact_name, role_title, email, product, vendor, region
+
+Return ONLY valid JSON, no other text:
+{
+  "table": "pcc|products|vendors|ctrm|risk|geo|ct|contacts",
+  "filters": {
+    "field1": "exact_value_to_match",
+    "field2": "value"
+  },
+  "filter_type": "contains|exact|starts_with",
+  "action": "search|count|add",
+  "add_type": "vendor|product|contact"
+}
+
+Examples:
+- "which products cover bulk" -> {"table":"pcc","filters":{"commodity":"Bulk","coverage_level":"Covered"},"filter_type":"contains","action":"search"}
+- "how many UK vendors" -> {"table":"vendors","filters":{"headquarters":"UK"},"filter_type":"contains","action":"count"}
+- "ION products" -> {"table":"products","filters":{"vendor":"ION"},"filter_type":"contains","action":"search"}
+- "deployed FX CTRM" -> {"table":"ctrm","filters":{"commodity":"FX","coverage_level":"deployed"},"filter_type":"contains","action":"search"}`;
+
+  const reply = await groqCall([{role:"user", content:prompt}], 300);
+  try {
+    return JSON.parse(reply.replace(/```json|```/g,"").trim());
+  } catch(e) {
+    return null;
+  }
+}
+
+// Step 2: Execute the search on in-memory data
+function executeSearch(instruction) {
+  const {table, filters={}, filter_type="contains"} = instruction;
   
-  // Commodity coverage summary: for each commodity list covered products
-  const covMap = {};
-  state.pcc.forEach(r => {
-    if (!r.commodity) return;
-    if (!covMap[r.commodity]) covMap[r.commodity] = {covered:[], partial:[], not:[]};
-    if ((r.coverage_level||"").includes("Not Covered")) covMap[r.commodity].not.push(r.product);
-    else if ((r.coverage_level||"").includes("Partial")) covMap[r.commodity].partial.push(r.product);
-    else if ((r.coverage_level||"").includes("Covered") || (r.coverage_level||"").includes("can be")) covMap[r.commodity].covered.push(r.product);
-  });
-  const covSummary = Object.entries(covMap).map(([com, v]) =>
-    com + ": covered=[" + v.covered.join(",") + "] partial=[" + v.partial.join(",") + "]"
-  ).join("\n");
+  const match = (val, filter) => {
+    if (!filter) return true;
+    const v = (val||"").toString().toLowerCase();
+    const f = filter.toString().toLowerCase();
+    if (filter_type === "exact") return v === f;
+    return v.includes(f);
+  };
 
-  // CTRM deployed summary by product
-  const ctrmDeployed = {};
-  state.ctrm.forEach(r => {
-    if ((r.coverage_level||"").toLowerCase().includes("deployed")) {
-      if (!ctrmDeployed[r.product]) ctrmDeployed[r.product] = [];
-      ctrmDeployed[r.product].push(r.function_name + " (" + r.commodity + ")");
-    }
-  });
-  const ctrmSummary = Object.entries(ctrmDeployed).slice(0,20).map(([p,fns]) => p+": "+fns.slice(0,5).join(", ")).join("\n");
+  let data = [];
+  if (table === "pcc") data = state.pcc;
+  else if (table === "products") data = state.products;
+  else if (table === "vendors") data = state.vendors;
+  else if (table === "ctrm") data = state.ctrm;
+  else if (table === "risk") data = state.risk;
+  else if (table === "geo") data = state.geo;
+  else if (table === "ct") data = state.ct;
+  else if (table === "contacts") data = state.contacts;
 
-  // Risk summary
-  const riskDeployed = {};
-  state.risk.forEach(r => {
-    if ((r.coverage_level||"").toLowerCase().includes("deployed")) {
-      if (!riskDeployed[r.product]) riskDeployed[r.product] = [];
-      riskDeployed[r.product].push(r.function_name);
-    }
-  });
-  const riskSummary = Object.entries(riskDeployed).slice(0,15).map(([p,fns]) => p+": "+fns.slice(0,5).join(", ")).join("\n");
+  return data.filter(row => 
+    Object.entries(filters).every(([field, value]) => match(row[field], value))
+  );
+}
 
-  // Geographic summary
-  const geoSummary = state.geo.map(g =>
-    g.product + ": NA="+Math.round((g.north_america||0)*100)+"% EU="+Math.round((g.europe_russia||0)*100)+"% SA="+Math.round((g.south_america||0)*100)+"% MEA="+Math.round((g.middle_east_africa||0)*100)+"% ASIA="+Math.round((g.asia_australia||0)*100)+"%"
-  ).join("\n");
+// Step 3: Format the results with Groq
+async function formatResults(question, results, instruction) {
+  if (results.length === 0) return "No results found for your query.";
+  
+  const sample = results.slice(0,100);
+  const prompt = `The user asked: "${question}"
+  
+Search results (${results.length} total records):
+${JSON.stringify(sample, null, 1)}
 
-  // Customer types summary
-  const ctSummary = state.ct.map(g =>
-    g.product + ": utility="+Math.round((g.utility||0)*100)+"% trader="+Math.round((g.trader_broker||0)*100)+"% bank="+Math.round((g.bank_financial_institution||0)*100)+"%"
-  ).join("\n");
+Summarise these results clearly and completely in English. List all items. Be precise.`;
 
-  return `DATABASE CONTEXT:
-
-VENDORS (${state.vendors.length} total):
-${vendorList}
-
-PRODUCTS (${state.products.length} total):
-${productList}
-
-COMMODITY COVERAGE (${state.pcc.length} records):
-${covSummary}
-
-CTRM DEPLOYED FUNCTIONS (${state.ctrm.length} total records, showing deployed only):
-${ctrmSummary}
-
-RISK DEPLOYED FUNCTIONS:
-${riskSummary}
-
-GEOGRAPHIC COVERAGE (% of clients in each region):
-${geoSummary}
-
-CUSTOMER TYPE COVERAGE (% of clients by type):
-${ctSummary}
-
-CONTACTS (${state.contacts.length} total):
-${state.contacts.map(c => c.contact_name+" - "+c.role_title+" at "+c.vendor+" ("+c.product+") - "+c.email).join("\n")}`;
+  return await groqCall([{role:"user", content:prompt}], 600);
 }
 
 function showGroqKeyModal() {
@@ -966,7 +975,7 @@ function toggleChat() {
   document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
   document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
   if (chatOpen && chatHistory.length === 0) {
-    addMsg("assistant", "Hi! Ask me anything about the CTRM database.\n\nExamples:\n• Which products cover Power?\n• How many vendors are from the UK?\n• Which products have deployed FX CTRM functions?\n• Show me all ION Commodities products\n• Which products serve utility customers?\n• Add a new contact for Allegro");
+    addMsg("assistant", "Hi! Ask me anything about the CTRM database.\n\nExamples:\n• Which products cover Bulk?\n• How many vendors are from the UK?\n• Show me all ION Commodities products\n• Which products have deployed FX CTRM functions?\n• Add a new contact for Allegro");
   }
   setTimeout(() => { const e = document.getElementById("chat-messages"); if(e) e.scrollTop = e.scrollHeight; }, 100);
 }
@@ -990,60 +999,84 @@ async function sendChat() {
   const typing = document.createElement("div");
   typing.id = "chat-typing";
   typing.style.cssText = "margin-bottom:10px;color:var(--muted);font-size:11px;padding-left:4px";
-  typing.textContent = "Thinking...";
+  typing.textContent = "Searching...";
   document.getElementById("chat-messages").appendChild(typing);
   document.getElementById("chat-messages").scrollTop = 99999;
 
   try {
-    const systemPrompt = `You are an AI assistant for the Product Advisor CTRM (Commodity Trading & Risk Management) database. Always respond in English. Be concise and accurate.
-
-${buildDataContext()}
-
-INSTRUCTIONS:
-- Answer questions based ONLY on the data provided above
-- Be precise and complete - list ALL matching items, not just a few
-- For lists, use bullet points
-- If asked to add data, ask for all required fields before confirming
-- For ADD requests with all fields provided, respond with exactly:
-  ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
-  ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
-  ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"E","phone_number":"P","region":"R"}`;
-
-    const reply = await groqCall([
-      {role:"system", content:systemPrompt},
-      ...chatHistory.slice(-6)
-    ], 1000);
-
-    document.getElementById("chat-typing")?.remove();
-
-    // Check for ACTION
-    const actionMatch = reply.match(/ACTION:(\w+):(\{.*?\})/s);
-    if (actionMatch) {
-      const cleanReply = reply.replace(/ACTION:.*$/s, "").trim();
-      if (cleanReply) addMsg("assistant", cleanReply);
-      try {
-        const rec = JSON.parse(actionMatch[2]);
-        const hasEmpty = Object.entries(rec).some(([k,v]) => ["contact_name","vendor_name","product_name"].includes(k) && (!v || v.length < 2));
-        if (hasEmpty) {
-          addMsg("assistant", "Please provide the required fields with real values.");
-          return;
-        }
-        const tbl = actionMatch[1]==="ADD_VENDOR"?"vendors":actionMatch[1]==="ADD_PRODUCT"?"products":"product_contacts";
-        await apiFetch(tbl, {method:"POST", body:rec});
-        if (tbl==="vendors") state.vendors = await getAll("vendors");
-        else if (tbl==="products") state.products = await getAll("products");
-        else state.contacts = await getAll("product_contacts");
-        logAction("INSERT", tbl, null, rec.vendor_name||rec.product_name||rec.contact_name, {via:"chatbox"});
-        addMsg("assistant", "Done! Record added to " + tbl.replace(/_/g," ") + ".");
-        render();
-      } catch(e) {
-        addMsg("assistant", "Error adding record: " + e.message);
-      }
-    } else {
+    // Step 1: Classify the question
+    const instruction = await classifyQuestion(msg);
+    
+    if (!instruction) {
+      document.getElementById("chat-typing")?.remove();
+      // No clear search intent - answer conversationally
+      const reply = await groqCall([
+        {role:"system", content:"You are a helpful assistant for a CTRM database. Answer in English. Be concise."},
+        ...chatHistory.slice(-4)
+      ], 400);
       addMsg("assistant", reply);
+      chatHistory.push({role:"assistant", content:reply});
+      return;
     }
 
-    chatHistory.push({role:"assistant", content:reply});
+    // Handle ADD actions
+    if (instruction.action === "add") {
+      document.getElementById("chat-typing")?.remove();
+      const addPrompt = `The user wants to add data. User said: "${msg}"
+Available products: ${state.products.slice(0,20).map(p=>p.product_name).join(", ")}
+Available vendors: ${state.vendors.map(v=>v.vendor_name).join(", ")}
+
+If all required fields are provided with real values, respond with ONLY:
+ACTION:ADD_VENDOR:{"vendor_name":"X","headquarters":"Y","website":"Z","industries_served":"W"}
+ACTION:ADD_PRODUCT:{"product_name":"X","product_type":"CTRM Solutions","vendor":"Y","deployment_model":"Z","version_info":"","notes":""}
+ACTION:ADD_CONTACT:{"product":"X","vendor":"Y","contact_name":"Z","role_title":"W","email":"E","phone_number":"P","region":"R"}
+
+If fields are missing, ask for them. Never use placeholder values like X, Y, Z.`;
+
+      const addReply = await groqCall([{role:"user", content:addPrompt}], 400);
+      const actionMatch = addReply.match(/ACTION:(\w+):(\{.*?\})/s);
+      if (actionMatch) {
+        try {
+          const rec = JSON.parse(actionMatch[2]);
+          const tbl = actionMatch[1]==="ADD_VENDOR"?"vendors":actionMatch[1]==="ADD_PRODUCT"?"products":"product_contacts";
+          await apiFetch(tbl, {method:"POST", body:rec});
+          if (tbl==="vendors") state.vendors = await getAll("vendors");
+          else if (tbl==="products") state.products = await getAll("products");
+          else state.contacts = await getAll("product_contacts");
+          logAction("INSERT", tbl, null, rec.vendor_name||rec.product_name||rec.contact_name, {via:"chatbox"});
+          addMsg("assistant", "Done! Record added to " + tbl.replace(/_/g," ") + ".");
+          render();
+        } catch(e) { addMsg("assistant", "Error: " + e.message); }
+      } else {
+        addMsg("assistant", addReply);
+      }
+      chatHistory.push({role:"assistant", content:addReply});
+      return;
+    }
+
+    // Step 2: Execute search on real data
+    const results = executeSearch(instruction);
+    document.getElementById("chat-typing")?.remove();
+
+    if (results.length === 0) {
+      addMsg("assistant", "No results found. Try rephrasing your question.");
+      chatHistory.push({role:"assistant", content:"No results found."});
+      return;
+    }
+
+    // Step 3: Format with Groq
+    if (instruction.action === "count") {
+      const countReply = await groqCall([
+        {role:"user", content:`The user asked: "${msg}". The answer is: ${results.length} records found.`}
+      ], 150);
+      addMsg("assistant", countReply);
+      chatHistory.push({role:"assistant", content:countReply});
+    } else {
+      const formatted = await formatResults(msg, results, instruction);
+      addMsg("assistant", formatted);
+      chatHistory.push({role:"assistant", content:formatted});
+    }
+
   } catch(e) {
     document.getElementById("chat-typing")?.remove();
     addMsg("assistant", "Error: " + e.message);
