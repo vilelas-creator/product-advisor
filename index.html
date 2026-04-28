@@ -899,7 +899,16 @@ async function init(){
   }
 }
 // ── SUPABASE AUTH ──
-const sbAuth = supabase.createClient(SB_URL, SB_KEY);
+let sbAuth = null;
+function getSbAuth() {
+  if (!sbAuth) {
+    // Try both possible export names from the CDN
+    const client = window.supabase || window.Supabase;
+    if (!client) { console.error("Supabase not loaded"); return null; }
+    sbAuth = client.createClient(SB_URL, SB_KEY);
+  }
+  return sbAuth;
+}
 
 function showAuthTab(tab) {
   document.getElementById("auth-login").style.display = tab === "login" ? "block" : "none";
@@ -916,7 +925,7 @@ async function doLogin() {
   const errEl = document.getElementById("login-error");
   errEl.style.display = "none";
   if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
-  const {data, error} = await sbAuth.auth.signInWithPassword({email, password});
+  const {data, error} = await getSbAuth().auth.signInWithPassword({email, password});
   if (error) { errEl.textContent = error.message; errEl.style.display = "block"; return; }
   onLogin(data.user);
 }
@@ -930,7 +939,7 @@ async function doRegister() {
   errEl.style.display = "none"; sucEl.style.display = "none";
   if (!name || !email || !password) { errEl.textContent = "Please fill in all fields."; errEl.style.display = "block"; return; }
   if (password.length < 6) { errEl.textContent = "Password must be at least 6 characters."; errEl.style.display = "block"; return; }
-  const {data, error} = await sbAuth.auth.signUp({email, password, options: {data: {full_name: name}}});
+  const {data, error} = await getSbAuth().auth.signUp({email, password, options: {data: {full_name: name}}});
   if (error) { errEl.textContent = error.message; errEl.style.display = "block"; return; }
   sucEl.textContent = "Account created! Please check your email to confirm your account.";
   sucEl.style.display = "block";
@@ -939,7 +948,7 @@ async function doRegister() {
 async function showForgotPassword() {
   const email = prompt("Enter your email address:");
   if (!email) return;
-  const {error} = await sbAuth.auth.resetPasswordForEmail(email, {redirectTo: "https://vilelas-creator.github.io/product-advisor"});
+  const {error} = await getSbAuth().auth.resetPasswordForEmail(email, {redirectTo: "https://vilelas-creator.github.io/product-advisor"});
   if (error) alert("Error: " + error.message);
   else alert("Password reset email sent! Check your inbox.");
 }
@@ -961,7 +970,7 @@ function onLogin(user) {
 }
 
 async function doLogout() {
-  await sbAuth.auth.signOut();
+  await getSbAuth().auth.signOut();
   currentUser = null;
   localStorage.removeItem("pa_username");
   location.reload();
@@ -973,7 +982,7 @@ async function checkAuth() {
   document.querySelector("main").style.display = "none";
   document.getElementById("auth-screen").style.display = "flex";
 
-  const {data: {session}} = await sbAuth.auth.getSession();
+  const {data: {session}} = await getSbAuth().auth.getSession();
   if (session?.user) {
     onLogin(session.user);
   }
@@ -987,9 +996,6 @@ async function checkAuth() {
 }
 
 checkAuth();
-
-
-init();
 
 // ── CHATBOX ──
 let chatOpen = false;
