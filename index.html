@@ -188,9 +188,16 @@ function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 function navToProduct(name, type) {
   const decoded = decodeURIComponent(name.replace(/%27/g,"'"));
   if (type && type.includes('Risk')) {
-    navToTab('risk', 'risk_prod', decoded);
+    // Risk: multiselect array filter
+    state.filters['risk_prod'] = [decoded];
+    state.pages = {};
+    setTab('risk');
   } else {
-    navToTab('ctrm', 'ctrm_prod', decoded);
+    // CTRM: go to Commodity Coverage tab with product pre-filtered
+    state.filters['pcc_prod'] = [decoded];
+    state.filters['com_view'] = 'coverage';
+    state.pages = {};
+    setTab('commodities');
   }
 }
 
