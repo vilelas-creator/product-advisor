@@ -237,15 +237,24 @@ document.addEventListener('click', e => {
   navToCTRMByCommodity(link.dataset.prod, link.dataset.com);
 });
 function navToProductsByVendorType(vendor, type){
+  // Find exact vendor name as it appears in products table
+  const vn = normName(vendor);
+  const exactVendor = [...new Set((state.products||[]).map(p=>p.vendor).filter(Boolean))]
+    .find(pv => normName(pv)===vn || normName(pv).includes(vn.slice(0,12)) || vn.includes(normName(pv).slice(0,12)))
+    || vendor;
   Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
-  state.filters['p_vendor'] = vendor;
-  state.filters['p_type'] = type; // "CTRM" or "Risk" — used as includes() match
+  state.filters['p_vendor'] = exactVendor;
+  state.filters['p_type'] = type;
   state.pages = {};
   setTab('products');
 }
 function navToContactsByVendor(vendor){
+  const vn = normName(vendor);
+  const exactVendor = [...new Set((state.contacts||[]).map(c=>c.vendor).filter(Boolean))]
+    .find(cv => normName(cv)===vn || normName(cv).includes(vn.slice(0,12)) || vn.includes(normName(cv).slice(0,12)))
+    || vendor;
   Object.keys(state.filters).forEach(k=>{if(k.startsWith('con_'))delete state.filters[k];});
-  state.filters['con_vendor'] = vendor;
+  state.filters['con_vendor'] = exactVendor;
   state.pages = {};
   setTab('contacts');
 }
@@ -922,20 +931,22 @@ function renderReportVendor(el, backBtn, report){
   const contacts = state.contacts || [];
 
   const data = vendors.map(v=>{
-    const vProds = products.filter(p=>p.vendor===v.vendor_name);
+    // Use normalized matching to handle name inconsistencies between tables
+    const vn = normName(v.vendor_name);
+    const vProds = products.filter(p=>normName(p.vendor)===vn || normName(p.vendor).includes(vn.slice(0,12)) || vn.includes(normName(p.vendor).slice(0,12)));
     const ctrmProds = vProds.filter(p=>(p.product_type||"").toLowerCase().includes("ctrm"));
     const riskProds = vProds.filter(p=>(p.product_type||"").toLowerCase().includes("risk"));
-    const vPcc = pcc.filter(p=>vProds.some(vp=>vp.product_name===p.product));
+    const vPcc = pcc.filter(p=>vProds.some(vp=>normName(vp.product_name)===normName(p.product)));
     const covTotal = vPcc.length;
     const covCovered = vPcc.filter(p=>p.coverage_level==="Covered").length;
     const covPartial = vPcc.filter(p=>p.coverage_level&&p.coverage_level.includes("Partial")).length;
     const covNot = vPcc.filter(p=>p.coverage_level==="Not Covered").length;
     const covPct = covTotal ? Math.round(covCovered/covTotal*100) : 0;
     const coms = [...new Set(vPcc.map(p=>p.commodity))].filter(Boolean);
-    const vGeo = geo.filter(g=>vProds.some(vp=>vp.product_name===g.product));
+    const vGeo = geo.filter(g=>vProds.some(vp=>normName(vp.product_name)===normName(g.product)));
     const regionCols = Object.keys(vGeo[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
     const covRegions = regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE"));
-    const vContacts = contacts.filter(c=>c.vendor===v.vendor_name);
+    const vContacts = contacts.filter(c=>normName(c.vendor)===vn || normName(c.vendor).includes(vn.slice(0,12)));
     const deployModels = [...new Set(vProds.map(p=>p.deployment_model).filter(Boolean))];
     return {v, vProds, ctrmProds, riskProds, covPct, covCovered, covPartial, covNot, covTotal, coms, covRegions, vContacts, deployModels};
   }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
