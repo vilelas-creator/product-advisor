@@ -1071,6 +1071,120 @@ function renderReportVendor(el, backBtn, report){
       </div>`;
 
     grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  el.appendChild(wrap);
+}
+
+
+// ── REPORT: Market Coverage by Commodity ──
+function renderReportMarket(el, backBtn, report){
+  const pcc = state.pcc || [];
+  const products = state.products || [];
+  const commodities = [...new Set(pcc.map(r=>r.commodity))].filter(Boolean).sort();
+
+  const data = commodities.map(c=>{
+    const entries = pcc.filter(r=>r.commodity===c);
+    const covered = entries.filter(r=>r.coverage_level==="Covered").length;
+    const partial = entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
+    const notCov  = entries.filter(r=>r.coverage_level==="Not Covered").length;
+    const total   = entries.length;
+    const covPct  = total ? Math.round(covered/total*100) : 0;
+    const prods   = [...new Set(entries.map(r=>r.product).filter(Boolean))];
+    const ctrmCount = prods.filter(p=>{ const pr=products.find(x=>x.product_name===p); return (pr?.product_type||"").toLowerCase().includes("ctrm"); }).length;
+    const riskCount = prods.filter(p=>{ const pr=products.find(x=>x.product_name===p); return (pr?.product_type||"").toLowerCase().includes("risk"); }).length;
+    const vendors = [...new Set(entries.map(r=>{ const pr=products.find(p=>p.product_name===r.product); return pr?.vendor; }).filter(Boolean))];
+    return {c, total, covered, partial, notCov, covPct, prods, ctrmCount, riskCount, vendors};
+  }).sort((a,b)=>b.covered-a.covered);
+
+  el.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "padding:16px";
+
+  const hdr = document.createElement("div");
+  hdr.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
+  hdr.innerHTML = `${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} commodities</span>`;
+  wrap.appendChild(hdr);
+
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px";
+
+  data.forEach(d=>{
+    const {c, total, covered, partial, notCov, covPct, prods, ctrmCount, riskCount, vendors} = d;
+    const cid = "mcard-"+c.replace(/[^a-z0-9]/gi,"_");
+
+    const barCov     = total ? Math.round(covered/total*100) : 0;
+    const barPartial = total ? Math.round(partial/total*100) : 0;
+    const barNot     = total ? 100-barCov-barPartial : 0;
+
+    // Vendors — first 3 visible, rest expandable
+    const vendorsVisible = vendors.slice(0,3).map(v=>
+      `<a href="#" onclick="navToProductsByVendorCom('${escAttr(v)}','${escAttr(c)}');return false;" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33;text-decoration:none">${v}</a>`
+    ).join(" ");
+    const vendorsHidden = vendors.slice(3);
+    const vendorsMore = vendorsHidden.length
+      ? `<span id="${cid}-more" onclick="document.getElementById('${cid}-hidden').style.display='flex';this.style.display='none'" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent)44;cursor:pointer">+${vendorsHidden.length} more</span>` : "";
+    const vendorsHiddenHtml = vendorsHidden.length
+      ? `<div id="${cid}-hidden" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">${vendorsHidden.map(v=>`<a href="#" onclick="navToProductsByVendorCom('${escAttr(v)}','${escAttr(c)}');return false;" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33;text-decoration:none">${v}</a>`).join(" ")}</div>` : "";
+
+    const card = document.createElement("div");
+    card.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
+    card.onmouseover = ()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)";
+    card.onmouseout  = ()=>card.style.boxShadow="";
+
+    card.innerHTML = `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <a href="#" onclick="navToPccByCommodity('${escAttr(c)}');return false;" style="font-weight:700;font-size:14px;color:var(--text);text-decoration:none">${c}</a>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Covered</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          ${ctrmCount ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)44">⚡ CTRM: ${ctrmCount}</span>` : ""}
+          ${riskCount ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--purple)22;color:var(--purple);border:1px solid var(--purple)44">🛡 Risk: ${riskCount}</span>` : ""}
+        </div>
+      </div>
+
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+
+        <!-- Coverage bar -->
+        <div>
+          <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">
+            ${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}
+            ${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}
+            ${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}
+            ${!total?`<div style="flex:1;background:var(--border)"></div>`:""}
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--green)">● Covered: ${covered}</span>
+            <span style="font-size:10px;color:var(--yellow)">● Partial: ${partial}</span>
+            <span style="font-size:10px;color:var(--red)">● Not Covered: ${notCov}</span>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;text-align:center">
+          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
+            <div style="font-size:16px;font-weight:700;color:var(--accent)">${total}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
+            <div style="font-size:16px;font-weight:700;color:var(--purple)">${vendors.length}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Vendors</div>
+          </div>
+        </div>
+
+        <!-- Vendors -->
+        ${vendors.length ? `<div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Vendors</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${vendorsVisible} ${vendorsMore}</div>
+          ${vendorsHiddenHtml}
+        </div>` : ""}
+
+      </div>`;
 
     grid.appendChild(card);
   });
@@ -1079,54 +1193,21 @@ function renderReportVendor(el, backBtn, report){
   el.appendChild(wrap);
 }
 
-
-// ── REPORT: Market Coverage por Commodity ──
-function renderReportMarket(el, backBtn, report){
-  const pcc = state.pcc || [];
-  const commodities = [...new Set(pcc.map(r=>r.commodity))].filter(Boolean).sort();
-
-  const rows = commodities.map(c=>{
-    const entries = pcc.filter(r=>r.commodity===c);
-    const covered = entries.filter(r=>r.coverage_level==="Covered").length;
-    const partial = entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
-    const notCov = entries.filter(r=>r.coverage_level==="Not Covered").length;
-    const vendors = [...new Set(entries.map(r=>{
-      const prod = (state.products||[]).find(p=>p.product_name===r.product);
-      return prod?.vendor;
-    }).filter(Boolean))];
-    return {c, total:entries.length, covered, partial, notCov, vendors};
-  }).sort((a,b)=>b.covered-a.covered);
-
-  el.innerHTML=`<div style="padding:16px">${backBtn}
-    <div class="card">
-      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span class="card-meta">${rows.length} commodities</span></div>
-      <div style="overflow:auto">
-        <table>
-          <thead><tr>
-            <th>Commodity</th><th style="text-align:center">Total Products</th><th style="text-align:center">Covered</th><th style="text-align:center">Partial</th><th style="text-align:center">Not Covered</th><th style="text-align:center">Distribution</th><th>Vendors</th>
-          </tr></thead>
-          <tbody>
-            ${rows.map(r=>`<tr>
-              <td style="font-weight:600">${r.c}</td>
-              <td style="text-align:center">${r.total}</td>
-              <td style="text-align:center;color:var(--green);font-weight:600">${r.covered}</td>
-              <td style="text-align:center;color:var(--yellow);font-weight:600">${r.partial}</td>
-              <td style="text-align:center;color:var(--red);font-weight:600">${r.notCov}</td>
-              <td style="min-width:120px">
-                <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px">
-                  ${r.covered?`<div style="flex:${r.covered};background:var(--green)"></div>`:""}
-                  ${r.partial?`<div style="flex:${r.partial};background:var(--yellow)"></div>`:""}
-                  ${r.notCov?`<div style="flex:${r.notCov};background:var(--red)"></div>`:""}
-                </div>
-              </td>
-              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.vendors.join(', ')}">${r.vendors.slice(0,3).join(", ")}${r.vendors.length>3?" +"+(r.vendors.length-3):""}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
+function navToPccByCommodity(commodity){
+  Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
+  state.filters['pcc_com'] = [commodity];
+  state.filters['com_view'] = 'coverage';
+  state.pages = {};
+  setTab('commodities');
 }
+
+function navToProductsByVendorCom(vendor, commodity){
+  Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
+  state.filters['p_vendor'] = vendor;
+  state.pages = {};
+  setTab('products');
+}
+
 
 // ── REPORT: Geographic Coverage ──
 function renderReportGeo(el, backBtn, report){
