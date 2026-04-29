@@ -906,47 +906,144 @@ function renderReportVendor(el, backBtn, report){
   const products = state.products || [];
   const pcc = state.pcc || [];
   const geo = state.geo || [];
-  const ct = state.ct || [];
+  const contacts = state.contacts || [];
 
-  const rows = vendors.map(v=>{
+  const data = vendors.map(v=>{
     const vProds = products.filter(p=>p.vendor===v.vendor_name);
-    const vPcc = pcc.filter(p=>p.product && vProds.some(vp=>vp.product_name===p.product));
+    const ctrmProds = vProds.filter(p=>(p.product_type||"").toLowerCase().includes("ctrm"));
+    const riskProds = vProds.filter(p=>(p.product_type||"").toLowerCase().includes("risk"));
+    const vPcc = pcc.filter(p=>vProds.some(vp=>vp.product_name===p.product));
+    const covTotal = vPcc.length;
+    const covCovered = vPcc.filter(p=>p.coverage_level==="Covered").length;
+    const covPartial = vPcc.filter(p=>p.coverage_level&&p.coverage_level.includes("Partial")).length;
+    const covNot = vPcc.filter(p=>p.coverage_level==="Not Covered").length;
+    const covPct = covTotal ? Math.round(covCovered/covTotal*100) : 0;
     const coms = [...new Set(vPcc.map(p=>p.commodity))].filter(Boolean);
-    const covPct = vPcc.length ? Math.round(vPcc.filter(p=>p.coverage_level==="Covered").length/vPcc.length*100) : 0;
     const vGeo = geo.filter(g=>vProds.some(vp=>vp.product_name===g.product));
     const regionCols = Object.keys(vGeo[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
-    const regions = regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE")).length;
-    return {name:v.vendor_name, hq:v.headquarters, prods:vProds.length, coms:coms.length, covPct, regions};
-  }).sort((a,b)=>b.prods-a.prods);
+    const covRegions = regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE"));
+    const vContacts = contacts.filter(c=>c.vendor===v.vendor_name);
+    const deployModels = [...new Set(vProds.map(p=>p.deployment_model).filter(Boolean))];
+    return {v, vProds, ctrmProds, riskProds, covPct, covCovered, covPartial, covNot, covTotal, coms, covRegions, vContacts, deployModels};
+  }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
 
-  el.innerHTML=`<div style="padding:16px">${backBtn}
-    <div class="card">
-      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span class="card-meta">${rows.length} vendors</span></div>
-      <div style="overflow:auto">
-        <table>
-          <thead><tr>
-            <th>Vendor</th><th>HQ</th><th style="text-align:center">Products</th><th style="text-align:center">Commodities</th><th style="text-align:center">Coverage %</th><th style="text-align:center">Regions Covered</th>
-          </tr></thead>
-          <tbody>
-            ${rows.map(r=>`<tr>
-              <td style="font-weight:600">${r.name}</td>
-              <td style="color:var(--muted)">${r.hq||"–"}</td>
-              <td style="text-align:center"><span style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${r.prods}</span></td>
-              <td style="text-align:center">${r.coms}</td>
-              <td style="text-align:center">
-                <div style="display:flex;align-items:center;gap:6px;justify-content:center">
-                  <div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:${r.covPct}%;height:100%;background:${r.covPct>70?"var(--green)":r.covPct>40?"var(--yellow)":"var(--red)"};border-radius:3px"></div></div>
-                  <span style="font-size:11px;font-weight:600">${r.covPct}%</span>
-                </div>
-              </td>
-              <td style="text-align:center">${r.regions}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
+  el.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "padding:16px";
+
+  // Header
+  const hdr = document.createElement("div");
+  hdr.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
+  hdr.innerHTML = `${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} vendors</span>`;
+  wrap.appendChild(hdr);
+
+  // Grid of cards
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px";
+
+  data.forEach(d => {
+    const {v, vProds, ctrmProds, riskProds, covPct, covCovered, covPartial, covNot, covTotal, coms, covRegions, vContacts, deployModels} = d;
+    const card = document.createElement("div");
+    card.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
+    card.onmouseover = ()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)";
+    card.onmouseout  = ()=>card.style.boxShadow="";
+
+    // Coverage bar segments
+    const barCov     = covTotal ? Math.round(covCovered/covTotal*100) : 0;
+    const barPartial = covTotal ? Math.round(covPartial/covTotal*100) : 0;
+    const barNot     = covTotal ? 100-barCov-barPartial : 0;
+
+    const typeBadges = [
+      ctrmProds.length ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)44">⚡ CTRM (${ctrmProds.length})</span>` : "",
+      riskProds.length ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--purple)22;color:var(--purple);border:1px solid var(--purple)44">🛡 Risk (${riskProds.length})</span>` : ""
+    ].filter(Boolean).join(" ");
+
+    const deployBadges = deployModels.map(d=>
+      `<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">${d}</span>`
+    ).join(" ");
+
+    const comsDisplay = coms.slice(0,4).map(c=>
+      `<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--green)22;color:var(--green);border:1px solid var(--green)33">${c}</span>`
+    ).join(" ") + (coms.length>4 ? `<span style="font-size:10px;color:var(--muted)"> +${coms.length-4} more</span>` : "");
+
+    const regDisplay = covRegions.slice(0,3).map(r=>
+      `<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">${r.replace(/_/g," ")}</span>`
+    ).join(" ") + (covRegions.length>3 ? `<span style="font-size:10px;color:var(--muted)"> +${covRegions.length-3}</span>` : "");
+
+    card.innerHTML = `
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--text)">${v.vendor_name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${v.headquarters||"–"}${v.website?` · <a href="${v.website.startsWith("http")?v.website:"https://"+v.website}" target="_blank" style="color:var(--accent);text-decoration:none">🌐 Website</a>`:""}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Coverage</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${typeBadges}</div>
       </div>
-    </div>
-  </div>`;
+
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+
+        <!-- Coverage bar -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Commodity Coverage</span>
+            <span style="font-size:10px;color:var(--muted)">${covCovered}C · ${covPartial}P · ${covNot}N</span>
+          </div>
+          <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px">
+            ${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}
+            ${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}
+            ${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}
+            ${!covTotal?`<div style="flex:1;background:var(--border)"></div>`:""}
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
+            <div style="font-size:16px;font-weight:700;color:var(--accent)">${vProds.length}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
+            <div style="font-size:16px;font-weight:700;color:var(--green)">${coms.length}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Commodities</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
+            <div style="font-size:16px;font-weight:700;color:var(--purple)">${covRegions.length}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Regions</div>
+          </div>
+        </div>
+
+        <!-- Commodities -->
+        ${coms.length ? `<div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Commodities</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${comsDisplay}</div>
+        </div>` : ""}
+
+        <!-- Regions -->
+        ${covRegions.length ? `<div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regions Present</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${regDisplay}</div>
+        </div>` : ""}
+
+        <!-- Deployment + Contacts -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding-top:4px;border-top:1px solid var(--border)">
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${deployBadges||`<span style="font-size:10px;color:var(--muted)">–</span>`}</div>
+          ${vContacts.length ? `<span style="font-size:10px;color:var(--muted)">👤 ${vContacts.length} contact${vContacts.length>1?"s":""}</span>` : ""}
+        </div>
+
+      </div>`;
+
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  el.appendChild(wrap);
 }
+
 
 // ── REPORT: Market Coverage por Commodity ──
 function renderReportMarket(el, backBtn, report){
