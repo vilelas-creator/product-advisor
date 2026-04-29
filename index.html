@@ -952,7 +952,7 @@ async function doRegister() {
   if (password.length < 6) { errEl.textContent = "Password must be at least 6 characters."; errEl.style.display = "block"; return; }
   try {
     await authFetch("/signup", {body: {email, password, data: {full_name: name}}});
-    sucEl.textContent = "Account created! Please check your email to confirm your account, then sign in.";
+    sucEl.textContent = "Account created! You can now sign in with your email and password.";
     sucEl.style.display = "block";
   } catch(e) {
     errEl.textContent = e.message;
