@@ -185,24 +185,34 @@ function pagerHtml(id,page,total,per){
 }
 function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 
+function normName(s){ return (s||"").toLowerCase().replace(/\s+/g," ").trim(); }
+
+function findExact(arr, field, val) {
+  // 1. exact match
+  let m = arr.find(r => r[field] === val);
+  if (m) return m[field];
+  // 2. case-insensitive
+  const v = normName(val);
+  m = arr.find(r => normName(r[field]) === v);
+  if (m) return m[field];
+  // 3. one contains the other (handles typos like Platfrom vs Platform)
+  m = arr.find(r => normName(r[field]).includes(v.slice(0,20)) );
+  if (m) return m[field];
+  return val;
+}
+
 function navToProduct(name, type) {
   const decoded = decodeURIComponent(name.replace(/%27/g,"'"));
   if (type && type.includes('Risk')) {
-    // Find exact name in risk table
-    const exactRisk = state.risk.map(r=>r.product).find(p=>p===decoded)
-      || state.risk.map(r=>r.product).find(p=>(p||"").toLowerCase()===decoded.toLowerCase());
-    console.log('[navToProduct Risk] decoded:', decoded, '| exact match:', exactRisk);
+    const exact = findExact(state.risk, 'product', decoded);
     Object.keys(state.filters).forEach(k=>{if(k.startsWith('risk_'))delete state.filters[k];});
-    state.filters['risk_prod'] = [exactRisk || decoded];
+    state.filters['risk_prod'] = [exact];
     state.pages = {};
     setTab('risk');
   } else {
-    // Find exact name in pcc table
-    const exactPcc = state.pcc.map(r=>r.product).find(p=>p===decoded)
-      || state.pcc.map(r=>r.product).find(p=>(p||"").toLowerCase()===decoded.toLowerCase());
-    console.log('[navToProduct PCC] decoded:', decoded, '| exact match:', exactPcc);
+    const exact = findExact(state.pcc, 'product', decoded);
     Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
-    state.filters['pcc_prod'] = [exactPcc || decoded];
+    state.filters['pcc_prod'] = [exact];
     state.filters['com_view'] = 'coverage';
     state.pages = {};
     setTab('commodities');
@@ -210,16 +220,11 @@ function navToProduct(name, type) {
 }
 
 function navToCTRMByCommodity(product, commodity) {
-  // Find exact names in ctrm table
-  const exactProd = state.ctrm.map(r=>r.product).find(p=>p===product)
-    || state.ctrm.map(r=>r.product).find(p=>(p||"").toLowerCase()===product.toLowerCase());
-  const exactCom = state.ctrm.map(r=>r.commodity).find(c=>c===commodity)
-    || state.ctrm.map(r=>r.commodity).find(c=>(c||"").toLowerCase()===commodity.toLowerCase());
-  console.log('[navToCTRM] product:', product, '| exact:', exactProd);
-  console.log('[navToCTRM] commodity:', commodity, '| exact:', exactCom);
+  const exactProd = findExact(state.ctrm, 'product', product);
+  const exactCom  = findExact(state.ctrm, 'commodity', commodity);
   Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
-  state.filters['ctrm_prod'] = [exactProd || product];
-  state.filters['ctrm_com'] = [exactCom || commodity];
+  state.filters['ctrm_prod'] = [exactProd];
+  state.filters['ctrm_com']  = [exactCom];
   state.pages = {};
   setTab('ctrm');
 }
