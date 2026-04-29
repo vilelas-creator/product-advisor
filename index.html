@@ -479,17 +479,17 @@ function renderCommCoverage(){
   const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
   const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
   const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  const rows=state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); rows=msFilter(rows,'coverage_level','pcc_cov');
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
-      <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
-      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,covF,"All Coverage")}</select>
+      ${createMultiSelect('pcc_prod', prods, state.filters.pcc_prod||[], 'All Products', 'pcc_prod')}
+      ${createMultiSelect('pcc_com', coms, state.filters.pcc_com||[], 'All Commodities', 'pcc_com')}
+      ${createMultiSelect('pcc_cov', covs, state.filters.pcc_cov||[], 'All Coverage', 'pcc_cov')}
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
@@ -503,7 +503,7 @@ function renderCTRM(){
   const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
   const prods=[...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
   const coms=[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-  const rows=state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))); rows=msFilter(rows,'product','ctrm_prod'); rows=msFilter(rows,'commodity','ctrm_com'); const ctrmCovSel=state.filters.ctrm_cov||[]; if(ctrmCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=ctrmCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
   const page=state.pages.ctrm||0;const PER=50;
   const paged=rows.slice(page*PER,(page+1)*PER);
   const loading=state.ctrmLoading;
@@ -512,9 +512,9 @@ function renderCTRM(){
     ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
     <div class="filters">
       <input id="search-ctrm_q" value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('ctrm_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
-      <select onchange="sf('ctrm_com',this.value)">${selOpts(coms,cF,"All Commodities")}</select>
-      <select onchange="sf('ctrm_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
+      ${createMultiSelect('ctrm_prod', prods, state.filters.ctrm_prod||[], 'All Products', 'ctrm_prod')}
+      ${createMultiSelect('ctrm_com', coms, state.filters.ctrm_com||[], 'All Commodities', 'ctrm_com')}
+      ${createMultiSelect('ctrm_cov', ['Deployed','Capable','Not Capable','N/A'], state.filters.ctrm_cov||[], 'All Coverage', 'ctrm_cov')}
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
@@ -529,16 +529,16 @@ function renderRisk(){
   const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
   const prods=[...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
   const cats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-  const rows=state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.risk.filter(r=>(!catF||r.category===catF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','risk_prod'); const riskCovSel=state.filters.risk_cov||[]; if(riskCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=riskCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
   const page=state.pages.risk||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-risk").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredRisk(),'risk_coverage','Risk Coverage')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('risk_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
+      ${createMultiSelect('risk_prod', prods, state.filters.risk_prod||[], 'All Products', 'risk_prod')}
       <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
-      <select onchange="sf('risk_cov',this.value)"><option value="">All Coverage</option><option ${covF==="D"?"selected":""} value="D">Deployed</option><option ${covF==="C"?"selected":""} value="C">Capable</option><option ${covF==="N"?"selected":""} value="N">Not Capable</option><option ${covF==="X"?"selected":""} value="X">N/A</option></select>
+      ${createMultiSelect('risk_cov', ['Deployed','Capable','Not Capable','N/A'], state.filters.risk_cov||[], 'All Coverage', 'risk_cov')}
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
@@ -553,14 +553,14 @@ function renderGeo(){
   const typeF=state.filters.geo_type||"";const prodF=state.filters.geo_prod||"";
   const types=[...new Set(state.geo.map(g=>g.product_type).filter(Boolean))].sort();
   const prods=[...new Set(state.geo.map(g=>g.product).filter(Boolean))].sort();
-  const rows=state.geo.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.geo.filter(g=>(!typeF||g.product_type===typeF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','geo_prod');
   const COLS=[{k:"north_america",l:"N. America"},{k:"europe_russia",l:"Europe & Russia"},{k:"south_america",l:"S. America"},{k:"middle_east_africa",l:"ME & Africa"},{k:"asia_australia",l:"Asia & Australia"}];
   const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(v*100);const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600;margin-bottom:2px">${p}%</div>${bar(p,col)}</div>`;};
   document.getElementById("section-geo").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredGeo(),'geographic_coverage','Geographic')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-geo_q" value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('geo_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
+      ${createMultiSelect('geo_prod', prods, state.filters.geo_prod||[], 'All Products', 'geo_prod')}
       <select onchange="sf('geo_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${resetBtn('geo_')}
     </div>
@@ -576,14 +576,14 @@ function renderCustomerType(){
   const typeF=state.filters.ct_type||"";const prodF=state.filters.ct_prod||"";
   const types=[...new Set(state.ct.map(g=>g.product_type).filter(Boolean))].sort();
   const prods=[...new Set(state.ct.map(g=>g.product).filter(Boolean))].sort();
-  const rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','ct_prod');
   const CT_COLS=[{k:"utility",l:"Utility"},{k:"energy_retailer",l:"Energy Retailer"},{k:"generator_non_renewables",l:"Generator - Non-Renewables"},{k:"renewables_generator",l:"Renewables Generator"},{k:"trader_broker",l:"Trader/Broker"},{k:"hedge_fund_cta",l:"Hedge Fund/CTA"},{k:"bank_financial_institution",l:"Bank/Financial Institution"},{k:"consultant_analyst",l:"Consultant/Analyst"},{k:"agricultural_producer",l:"Agricultural Producer"},{k:"biofuels",l:"Biofuels"},{k:"producer_marketer",l:"Producer/Producer Marketer"},{k:"refining_petrochemical",l:"Refining/Petrochemical"},{k:"merchant_energy_firm",l:"Merchant Energy Firm"},{k:"industrial_consumer",l:"Industrial Consumer"},{k:"other",l:"Other"}];
   const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(parseFloat(v)*100);if(isNaN(p))return'<span style="color:var(--muted)">—</span>';const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600">${p}%</div>${bar(p,col)}</div>`;};
   document.getElementById("section-customertype").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCt(),'customer_type_coverage','Customer Types')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-ct_q" value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('ct_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
+      ${createMultiSelect('ct_prod', prods, state.filters.ct_prod||[], 'All Products', 'ct_prod')}
       <select onchange="sf('ct_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${resetBtn('ct_')}
     </div>
@@ -599,12 +599,12 @@ function renderContacts(){
   const prodF=state.filters.con_prod||"";const vendorF=state.filters.con_vendor||"";
   const prods=[...new Set(state.contacts.map(c=>c.product).filter(Boolean))].sort();
   const vendors=[...new Set(state.contacts.map(c=>c.vendor).filter(Boolean))].sort();
-  const rows=state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.contacts.filter(c=>(!vendorF||c.vendor===vendorF)&&(!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','con_prod');
   document.getElementById("section-contacts").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredContacts(),'contacts','Contacts')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-con_q" value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('con_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
+      ${createMultiSelect('con_prod', prods, state.filters.con_prod||[], 'All Products', 'con_prod')}
       <select onchange="sf('con_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('con_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openContactModal(null)">+ Add Contact</button>
     </div>
@@ -857,17 +857,17 @@ function renderCommoditiesView(){
   const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
   const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
   const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  const rows=state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); rows=msFilter(rows,'coverage_level','pcc_cov');
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
-      <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
-      <select onchange="sf('pcc_com',this.value)">${selOpts(coms,comF,"All Commodities")}</select>
-      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,covF,"All Coverage")}</select>
+      ${createMultiSelect('pcc_prod', prods, state.filters.pcc_prod||[], 'All Products', 'pcc_prod')}
+      ${createMultiSelect('pcc_com', coms, state.filters.pcc_com||[], 'All Commodities', 'pcc_com')}
+      ${createMultiSelect('pcc_cov', covs, state.filters.pcc_cov||[], 'All Coverage', 'pcc_cov')}
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
@@ -944,6 +944,104 @@ function getFilteredContacts() {
   const q=(state.filters.con_q||"").toLowerCase();
   const prodF=state.filters.con_prod||"";const vendorF=state.filters.con_vendor||"";
   return state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+
+
+// ── MULTI-SELECT DROPDOWN ──
+function createMultiSelect(id, options, selectedValues, placeholder, onChangeKey) {
+  const selected = selectedValues || [];
+  const isOpen = false;
+  const allSelected = selected.length === 0;
+  
+  const label = allSelected ? placeholder : 
+    selected.length === 1 ? selected[0] : 
+    selected.length + " selected";
+
+  return `<div class="ms-wrap" id="ms-${id}" style="position:relative;display:inline-block">
+    <button class="ms-btn" onclick="toggleMultiSelect('${id}')" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 28px 5px 9px;font-size:12px;font-family:inherit;cursor:pointer;min-width:130px;text-align:left;position:relative;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis">
+      ${label}
+      <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">▼</span>
+    </button>
+    <div class="ms-dropdown" id="ms-drop-${id}" style="display:none;position:absolute;top:100%;left:0;z-index:999;background:var(--bg2);border:1px solid var(--border);border-radius:6px;min-width:200px;max-height:280px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.3);margin-top:2px">
+      <div style="padding:6px 8px;border-bottom:1px solid var(--border);display:flex;gap:6px">
+        <button onclick="msSelectAll('${id}','${onChangeKey}')" style="flex:1;padding:3px 6px;font-size:10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted);font-family:inherit">All</button>
+        <button onclick="msClearAll('${id}','${onChangeKey}')" style="flex:1;padding:3px 6px;font-size:10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted);font-family:inherit">Clear</button>
+      </div>
+      ${options.map(opt => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+          <input type="checkbox" value="${opt}" ${selected.includes(opt)?'checked':''} onchange="msChange('${id}','${onChangeKey}')" style="cursor:pointer;accent-color:var(--accent)">
+          <span>${opt}</span>
+        </label>`).join('')}
+    </div>
+  </div>`;
+}
+
+function toggleMultiSelect(id) {
+  // Close all other dropdowns first
+  document.querySelectorAll('.ms-dropdown').forEach(d => {
+    if (d.id !== 'ms-drop-' + id) d.style.display = 'none';
+  });
+  const drop = document.getElementById('ms-drop-' + id);
+  if (drop) drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ms-wrap')) {
+    document.querySelectorAll('.ms-dropdown').forEach(d => d.style.display = 'none');
+  }
+});
+
+function msGetSelected(id) {
+  const drop = document.getElementById('ms-drop-' + id);
+  if (!drop) return [];
+  return [...drop.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+}
+
+function msChange(id, filterKey) {
+  const selected = msGetSelected(id);
+  state.filters[filterKey] = selected;
+  state.pages = {};
+  // Update button label
+  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
+  if (btn) {
+    const label = selected.length === 0 ? getPlaceholder(filterKey) :
+      selected.length === 1 ? selected[0] :
+      selected.length + ' selected';
+    btn.childNodes[0].textContent = label + ' ';
+  }
+  render();
+}
+
+function msSelectAll(id, filterKey) {
+  const drop = document.getElementById('ms-drop-' + id);
+  if (!drop) return;
+  drop.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+  state.filters[filterKey] = [];
+  state.pages = {};
+  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
+  if (btn) btn.childNodes[0].textContent = getPlaceholder(filterKey) + ' ';
+  render();
+}
+
+function msClearAll(id, filterKey) {
+  msSelectAll(id, filterKey);
+}
+
+function getPlaceholder(key) {
+  const map = {
+    'pcc_prod':'All Products','pcc_com':'All Commodities','pcc_cov':'All Coverage',
+    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_cov':'All Coverage',
+    'risk_prod':'All Products','risk_cov':'All Coverage',
+    'geo_prod':'All Products','ct_prod':'All Products','con_prod':'All Products'
+  };
+  return map[key] || 'All';
+}
+
+function msFilter(data, field, filterKey) {
+  const selected = state.filters[filterKey];
+  if (!selected || selected.length === 0) return data;
+  return data.filter(r => selected.includes(r[field]));
 }
 
 
