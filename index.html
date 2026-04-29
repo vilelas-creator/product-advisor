@@ -947,78 +947,189 @@ function getFilteredContacts() {
 }
 
 
-// ── MULTI-SELECT DROPDOWN ──
-function createMultiSelect(id, options, selectedValues, placeholder, onChangeKey) {
+// ── MULTI-SELECT DROPDOWN (Excel-style) ──
+// Pending selections per dropdown (staged before OK is clicked)
+const msPending = {};
+
+function createMultiSelect(id, options, selectedValues, placeholder, filterKey) {
   const selected = selectedValues || [];
   const label = selected.length === 0 ? placeholder :
     selected.length === 1 ? selected[0] :
     selected.length + ' selected';
-
+  // Store options list so we can rebuild the dropdown on search
+  window['_msOpts_' + id] = options;
+  window['_msFKey_' + id] = filterKey;
   return `<div class="ms-wrap" id="ms-${id}" style="position:relative;display:inline-block">
-    <button class="ms-btn" onclick="toggleMultiSelect('${id}')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:120px;justify-content:space-between">
-      <span>${label}</span><span style="font-size:9px;color:var(--muted)">▼</span>
+    <button class="ms-btn" onclick="toggleMultiSelect(event,'${id}')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:${selected.length>0?'var(--accent)':'var(--text)'};padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:130px;justify-content:space-between${selected.length>0?';border-color:var(--accent)':''}">
+      <span class="ms-label">${label}</span><span style="font-size:9px;color:var(--muted)">▼</span>
     </button>
-    <div class="ms-dropdown" id="ms-drop-${id}" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:4px;max-height:260px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.4);min-width:160px">
-      <div style="display:flex;border-bottom:1px solid var(--border)">
-        <button onclick="msSelectAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;color:var(--accent);font-family:inherit">(All)</button>
-        <button onclick="msClearAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:inherit">Clear</button>
-      </div>
-      ${options.map(opt => `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border);white-space:nowrap" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><input type="checkbox" value="${opt}" ${selected.includes(opt)?'checked':''} onchange="msChange('${id}','${onChangeKey}')" style="margin:0;cursor:pointer;accent-color:var(--accent)">${opt}</label>`).join('')}
-    </div>
   </div>`;
 }
 
+function toggleMultiSelect(e, id) {
+  e.stopPropagation();
+  // If already open, close it
+  const existing = document.getElementById('ms-portal-' + id);
+  if (existing) { existing.remove(); return; }
+  // Close any other open dropdowns
+  document.querySelectorAll('[id^="ms-portal-"]').forEach(el => el.remove());
 
-function toggleMultiSelect(id) {
-  // Close all other dropdowns first
-  document.querySelectorAll('.ms-dropdown').forEach(d => {
-    if (d.id !== 'ms-drop-' + id) d.style.display = 'none';
+  const filterKey = window['_msFKey_' + id];
+  const allOptions = window['_msOpts_' + id] || [];
+  const currentSelected = state.filters[filterKey] || [];
+  // Init pending as copy of current
+  msPending[id] = [...currentSelected];
+
+  const wrap = document.getElementById('ms-' + id);
+  const rect = wrap.getBoundingClientRect();
+
+  const portal = document.createElement('div');
+  portal.id = 'ms-portal-' + id;
+  portal.style.cssText = `position:fixed;top:${rect.bottom + 2}px;left:${rect.left}px;z-index:99999;
+    background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+    box-shadow:0 6px 24px rgba(0,0,0,.5);min-width:${Math.max(rect.width, 200)}px;max-width:320px;
+    font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:var(--text);overflow:hidden`;
+
+  // Search box
+  const searchRow = document.createElement('div');
+  searchRow.style.cssText = 'padding:6px 8px;border-bottom:1px solid var(--border);background:var(--bg3)';
+  const searchInput = document.createElement('input');
+  searchInput.placeholder = 'Search...';
+  searchInput.style.cssText = 'width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box';
+  searchRow.appendChild(searchInput);
+  portal.appendChild(searchRow);
+
+  // Select All row
+  const allRow = document.createElement('div');
+  allRow.style.cssText = 'display:flex;align-items:center;gap:7px;padding:5px 10px;border-bottom:2px solid var(--border);background:var(--bg3);cursor:pointer';
+  const allCb = document.createElement('input');
+  allCb.type = 'checkbox';
+  allCb.style.cssText = 'cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0';
+  const allLbl = document.createElement('span');
+  allLbl.textContent = '(Select All)';
+  allLbl.style.cssText = 'font-weight:600;user-select:none';
+  allRow.appendChild(allCb);
+  allRow.appendChild(allLbl);
+  portal.appendChild(allRow);
+
+  // List container
+  const listDiv = document.createElement('div');
+  listDiv.style.cssText = 'max-height:240px;overflow-y:auto';
+  portal.appendChild(listDiv);
+
+  // OK / Cancel footer
+  const footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;gap:6px;padding:7px 10px;border-top:1px solid var(--border);background:var(--bg3);justify-content:flex-end';
+  const okBtn = document.createElement('button');
+  okBtn.textContent = 'OK';
+  okBtn.style.cssText = 'padding:4px 18px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'padding:4px 12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit';
+  footer.appendChild(cancelBtn);
+  footer.appendChild(okBtn);
+  portal.appendChild(footer);
+
+  document.body.appendChild(portal);
+
+  function buildList(opts) {
+    listDiv.innerHTML = '';
+    opts.forEach(opt => {
+      const row = document.createElement('label');
+      row.style.cssText = 'display:flex;align-items:center;gap:7px;padding:4px 10px;cursor:pointer;border-bottom:1px solid var(--row-border);white-space:nowrap;overflow:hidden';
+      row.onmouseover = () => row.style.background = 'var(--bg3)';
+      row.onmouseout = () => row.style.background = '';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = opt;
+      cb.checked = msPending[id].includes(opt);
+      cb.style.cssText = 'cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0';
+      cb.addEventListener('change', () => {
+        if (cb.checked) { if (!msPending[id].includes(opt)) msPending[id].push(opt); }
+        else { msPending[id] = msPending[id].filter(v => v !== opt); }
+        syncAllCheckbox();
+      });
+      const lbl = document.createElement('span');
+      lbl.textContent = opt;
+      lbl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;user-select:none';
+      row.appendChild(cb);
+      row.appendChild(lbl);
+      listDiv.appendChild(row);
+    });
+    syncAllCheckbox();
+  }
+
+  function syncAllCheckbox() {
+    const visibleOpts = getCurrentVisibleOpts();
+    const checkedVisible = visibleOpts.filter(o => msPending[id].includes(o));
+    if (checkedVisible.length === 0) { allCb.checked = false; allCb.indeterminate = false; }
+    else if (checkedVisible.length === visibleOpts.length) { allCb.checked = true; allCb.indeterminate = false; }
+    else { allCb.checked = false; allCb.indeterminate = true; }
+  }
+
+  function getCurrentVisibleOpts() {
+    return [...listDiv.querySelectorAll('input[type=checkbox]')].map(cb => cb.value);
+  }
+
+  allCb.addEventListener('change', () => {
+    const visOpts = getCurrentVisibleOpts();
+    if (allCb.checked) {
+      visOpts.forEach(o => { if (!msPending[id].includes(o)) msPending[id].push(o); });
+    } else {
+      msPending[id] = msPending[id].filter(o => !visOpts.includes(o));
+    }
+    listDiv.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.checked = msPending[id].includes(cb.value);
+    });
   });
-  const drop = document.getElementById('ms-drop-' + id);
-  if (drop) drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
-}
+  allRow.addEventListener('click', e => { if (e.target !== allCb) { allCb.checked = !allCb.checked; allCb.dispatchEvent(new Event('change')); } });
 
-// Close dropdowns when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.ms-wrap')) {
-    document.querySelectorAll('.ms-dropdown').forEach(d => d.style.display = 'none');
-  }
-});
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase();
+    buildList(q ? allOptions.filter(o => o.toLowerCase().includes(q)) : allOptions);
+  });
 
-function msGetSelected(id) {
-  const drop = document.getElementById('ms-drop-' + id);
-  if (!drop) return [];
-  return [...drop.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
-}
+  okBtn.addEventListener('click', () => {
+    state.filters[filterKey] = [...msPending[id]];
+    state.pages = {};
+    portal.remove();
+    // Update button label & style
+    const sel = state.filters[filterKey];
+    const btnEl = document.querySelector('#ms-' + id + ' .ms-btn');
+    const lblEl = document.querySelector('#ms-' + id + ' .ms-label');
+    if (lblEl) {
+      const ph = getPlaceholder(filterKey);
+      lblEl.textContent = sel.length === 0 ? ph : sel.length === 1 ? sel[0] : sel.length + ' selected';
+    }
+    if (btnEl) {
+      btnEl.style.color = sel.length > 0 ? 'var(--accent)' : 'var(--text)';
+      btnEl.style.borderColor = sel.length > 0 ? 'var(--accent)' : 'var(--border)';
+    }
+    render();
+  });
 
-function msChange(id, filterKey) {
-  const selected = msGetSelected(id);
-  state.filters[filterKey] = selected;
-  state.pages = {};
-  // Update button label
-  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
-  if (btn) {
-    const label = selected.length === 0 ? getPlaceholder(filterKey) :
-      selected.length === 1 ? selected[0] :
-      selected.length + ' selected';
-    btn.childNodes[0].textContent = label + ' ';
-  }
-  render();
-}
+  cancelBtn.addEventListener('click', () => { portal.remove(); });
 
-function msSelectAll(id, filterKey) {
-  const drop = document.getElementById('ms-drop-' + id);
-  if (!drop) return;
-  drop.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
-  state.filters[filterKey] = [];
-  state.pages = {};
-  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
-  if (btn) btn.childNodes[0].textContent = getPlaceholder(filterKey) + ' ';
-  render();
-}
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function outsideClick(ev) {
+      if (!portal.contains(ev.target) && !wrap.contains(ev.target)) {
+        portal.remove();
+        document.removeEventListener('click', outsideClick);
+      }
+    });
+  }, 0);
 
-function msClearAll(id, filterKey) {
-  msSelectAll(id, filterKey);
+  // Reposition if off-screen bottom
+  requestAnimationFrame(() => {
+    const pr = portal.getBoundingClientRect();
+    if (pr.bottom > window.innerHeight - 10) {
+      portal.style.top = (rect.top - pr.height - 2) + 'px';
+    }
+  });
+
+  buildList(allOptions);
+  searchInput.focus();
 }
 
 function getPlaceholder(key) {
