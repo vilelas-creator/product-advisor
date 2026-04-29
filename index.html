@@ -188,13 +188,13 @@ function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 function navToProduct(name, type) {
   const decoded = decodeURIComponent(name.replace(/%27/g,"'"));
   if (type && type.includes('Risk')) {
-    // Risk: multiselect array filter
-    state.filters['risk_prod'] = [decoded];
+    Object.keys(state.filters).forEach(k=>{if(k.startsWith('risk_'))delete state.filters[k];});
+    state.filters['risk_q'] = decoded;
     state.pages = {};
     setTab('risk');
   } else {
-    // CTRM: go to Commodity Coverage tab with product pre-filtered
-    state.filters['pcc_prod'] = [decoded];
+    Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
+    state.filters['pcc_q'] = decoded;
     state.filters['com_view'] = 'coverage';
     state.pages = {};
     setTab('commodities');
@@ -202,10 +202,8 @@ function navToProduct(name, type) {
 }
 
 function navToCTRMByCommodity(product, commodity) {
-  console.log('navToCTRM:', JSON.stringify(product), JSON.stringify(commodity));
-  console.log('ctrm products available:', [...new Set(state.ctrm.map(r=>r.product))].filter(p=>(p||"").toLowerCase().includes('fis')));
-  state.filters['ctrm_prod'] = product ? [product] : [];
-  state.filters['ctrm_com'] = commodity ? [commodity] : [];
+  Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
+  state.filters['ctrm_q'] = product || '';
   state.pages = {};
   setTab('ctrm');
 }
