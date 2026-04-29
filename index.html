@@ -202,6 +202,8 @@ function navToProduct(name, type) {
 }
 
 function navToCTRMByCommodity(product, commodity) {
+  console.log('navToCTRM:', JSON.stringify(product), JSON.stringify(commodity));
+  console.log('ctrm products available:', [...new Set(state.ctrm.map(r=>r.product))].filter(p=>(p||"").toLowerCase().includes('fis')));
   state.filters['ctrm_prod'] = product ? [product] : [];
   state.filters['ctrm_com'] = commodity ? [commodity] : [];
   state.pages = {};
