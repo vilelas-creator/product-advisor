@@ -239,7 +239,7 @@ document.addEventListener('click', e => {
 function navToProductsByVendorType(vendor, type){
   Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
   state.filters['p_vendor'] = vendor;
-  state.filters['p_type'] = type;
+  state.filters['p_type'] = type; // "CTRM" or "Risk" — used as includes() match
   state.pages = {};
   setTab('products');
 }
@@ -497,7 +497,7 @@ function renderProducts(){
   const vendorF=state.filters.p_vendor||"";
   const types=[...new Set(state.products.map(p=>p.product_type).filter(Boolean))].sort();
   const vendors=[...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
-  const rows=state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  const rows=state.products.filter(p=>(!typeF||(p.product_type||"").toLowerCase().includes(typeF.toLowerCase()))&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const page=state.pages.products||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-products").innerHTML=`<div class="card">
@@ -1007,6 +1007,7 @@ function renderReportVendor(el, backBtn, report){
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
             <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Commodity Coverage</span>
+            <span style="font-size:10px;color:var(--muted)">${covTotal} combinations</span>
           </div>
           <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">
             ${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}
@@ -1019,6 +1020,7 @@ function renderReportVendor(el, backBtn, report){
             <span style="font-size:10px;color:var(--yellow)">● Partial: ${covPartial}</span>
             <span style="font-size:10px;color:var(--red)">● Not Covered: ${covNot}</span>
           </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">Product × Commodity combinations</div>
         </div>
 
         <!-- Stats row -->
@@ -1558,7 +1560,7 @@ function getFilteredProducts() {
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
-  return state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  return state.products.filter(p=>(!typeF||(p.product_type||"").toLowerCase().includes(typeF.toLowerCase()))&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
 }
 function getFilteredPcc() {
   const q=(state.filters.pcc_q||"").toLowerCase();
