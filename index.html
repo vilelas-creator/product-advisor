@@ -131,6 +131,7 @@ a:hover{text-decoration:underline;}
   <div id="section-geo" class="section"></div>
   <div id="section-customertype" class="section"></div>
   <div id="section-contacts" class="section"></div>
+  <div id="section-reporting" class="section"></div>
   <div id="section-import" class="section"></div>
   <div id="section-logs" class="section"></div>
 </main>
@@ -439,6 +440,7 @@ const TABS=[
   {id:"geo",label:"🌍 Geographic"},
   {id:"customertype",label:"👥 Customer Types"},
   {id:"contacts",label:"👤 Contacts"},
+  {id:"reporting",label:"📈 Reporting"},
   {id:"import",label:"📥 Import Data"},
   {id:"logs",label:"📋 Activity Logs"}
 ];
@@ -675,7 +677,351 @@ const ALL_TABLES=[
   {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
-function renderImport(){
+function renderReporting(){
+  const activeReport = state.activeReport || null;
+  const el = document.getElementById("section-reporting");
+
+  const REPORTS = [
+    {id:"heatmap",    icon:"🔥", title:"Coverage Heatmap",         desc:"Matriz Produto × Commodity com níveis de cobertura"},
+    {id:"vendor",     icon:"🏢", title:"Vendor Landscape",          desc:"Comparação lado a lado de vendors com métricas chave"},
+    {id:"market",     icon:"🌾", title:"Market Coverage por Commodity", desc:"Quantos produtos cobrem cada commodity e quais os vendors"},
+    {id:"geo",        icon:"🗺️", title:"Geographic Coverage",        desc:"Cobertura geográfica por produto e região"},
+    {id:"competitive",icon:"⚡", title:"CTRM vs Risk Positioning",   desc:"Comparação de produtos CTRM vs Risk por cobertura"},
+    {id:"gap",        icon:"🔍", title:"Gap Analysis",               desc:"Produtos com maior % de lacunas de cobertura"},
+  ];
+
+  if(!activeReport){
+    el.innerHTML=`<div style="padding:20px">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700;color:var(--text)">📈 Reporting</h2>
+        <p style="color:var(--muted);font-size:12px;margin-top:4px">Seleciona um report para visualizar</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+        ${REPORTS.map(r=>`
+          <div onclick="state.activeReport='${r.id}';renderReporting()" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+            <div style="font-size:28px;margin-bottom:10px">${r.icon}</div>
+            <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${r.title}</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.desc}</div>
+            <div style="margin-top:14px;display:inline-block;padding:4px 12px;background:var(--accent);color:#fff;border-radius:5px;font-size:11px;font-weight:600">Ver Report →</div>
+          </div>`).join("")}
+      </div>
+    </div>`;
+    return;
+  }
+
+  const report = REPORTS.find(r=>r.id===activeReport);
+  const backBtn = `<button onclick="state.activeReport=null;renderReporting()" class="btn" style="margin-bottom:16px;display:flex;align-items:center;gap:5px">← Voltar</button>`;
+
+  if(activeReport==="heatmap") renderReportHeatmap(el, backBtn, report);
+  else if(activeReport==="vendor") renderReportVendor(el, backBtn, report);
+  else if(activeReport==="market") renderReportMarket(el, backBtn, report);
+  else if(activeReport==="geo") renderReportGeo(el, backBtn, report);
+  else if(activeReport==="competitive") renderReportCompetitive(el, backBtn, report);
+  else if(activeReport==="gap") renderReportGap(el, backBtn, report);
+}
+
+// ── REPORT: Coverage Heatmap ──
+function renderReportHeatmap(el, backBtn, report){
+  const pcc = state.pcc || [];
+  const products = [...new Set(pcc.map(r=>r.product))].sort();
+  const commodities = [...new Set(pcc.map(r=>r.commodity))].sort();
+  const map = {};
+  pcc.forEach(r=>{ map[r.product+"||"+r.commodity] = r.coverage_level; });
+  const covColor = v => v==="Covered"?"var(--green)":v&&v.includes("Partial")?"var(--yellow)":v==="Not Covered"?"var(--red)":"var(--border)";
+  const covLetter = v => v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
+  el.innerHTML=`<div style="padding:16px">${backBtn}
+    <div class="card">
+      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered</span>
+      </div>
+      <div style="overflow:auto;max-height:72vh">
+        <table style="font-size:11px;border-collapse:collapse;min-width:100%">
+          <thead><tr>
+            <th style="position:sticky;left:0;background:var(--bg3);z-index:2;padding:6px 10px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:180px">PRODUCT</th>
+            ${commodities.map(c=>`<th style="padding:4px 6px;font-size:9px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;background:var(--bg3)">${c}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${products.map(p=>`<tr>
+              <td style="position:sticky;left:0;background:var(--bg2);z-index:1;padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);font-weight:600;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}">${p}</td>
+              ${commodities.map(c=>{const v=map[p+"||"+c];return`<td style="text-align:center;padding:4px;border-bottom:1px solid var(--row-border)"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${covColor(v)};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${v?'1':'.15'}">${covLetter(v)}</span></td>`;}).join("")}
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── REPORT: Vendor Landscape ──
+function renderReportVendor(el, backBtn, report){
+  const vendors = state.vendors || [];
+  const products = state.products || [];
+  const pcc = state.pcc || [];
+  const geo = state.geo || [];
+  const ct = state.ct || [];
+
+  const rows = vendors.map(v=>{
+    const vProds = products.filter(p=>p.vendor===v.vendor_name);
+    const vPcc = pcc.filter(p=>p.product && vProds.some(vp=>vp.product_name===p.product));
+    const coms = [...new Set(vPcc.map(p=>p.commodity))].filter(Boolean);
+    const covPct = vPcc.length ? Math.round(vPcc.filter(p=>p.coverage_level==="Covered").length/vPcc.length*100) : 0;
+    const vGeo = geo.filter(g=>vProds.some(vp=>vp.product_name===g.product));
+    const regions = [...new Set(vGeo.map(g=>g.region||g.country).filter(Boolean))].length;
+    return {name:v.vendor_name, hq:v.headquarters, prods:vProds.length, coms:coms.length, covPct, regions, deploy:vProds.map(p=>p.deployment_model).filter(Boolean).join(", ")};
+  }).sort((a,b)=>b.prods-a.prods);
+
+  el.innerHTML=`<div style="padding:16px">${backBtn}
+    <div class="card">
+      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span class="card-meta">${rows.length} vendors</span></div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr>
+            <th>Vendor</th><th>HQ</th><th style="text-align:center">Products</th><th style="text-align:center">Commodities</th><th style="text-align:center">Coverage %</th><th style="text-align:center">Regions</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(r=>`<tr>
+              <td style="font-weight:600">${r.name}</td>
+              <td style="color:var(--muted)">${r.hq||"–"}</td>
+              <td style="text-align:center"><span style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${r.prods}</span></td>
+              <td style="text-align:center">${r.coms}</td>
+              <td style="text-align:center">
+                <div style="display:flex;align-items:center;gap:6px;justify-content:center">
+                  <div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:${r.covPct}%;height:100%;background:${r.covPct>70?"var(--green)":r.covPct>40?"var(--yellow)":"var(--red)"};border-radius:3px"></div></div>
+                  <span style="font-size:11px;font-weight:600">${r.covPct}%</span>
+                </div>
+              </td>
+              <td style="text-align:center">${r.regions}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── REPORT: Market Coverage por Commodity ──
+function renderReportMarket(el, backBtn, report){
+  const pcc = state.pcc || [];
+  const commodities = [...new Set(pcc.map(r=>r.commodity))].filter(Boolean).sort();
+
+  const rows = commodities.map(c=>{
+    const entries = pcc.filter(r=>r.commodity===c);
+    const covered = entries.filter(r=>r.coverage_level==="Covered").length;
+    const partial = entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
+    const notCov = entries.filter(r=>r.coverage_level==="Not Covered").length;
+    const vendors = [...new Set(entries.map(r=>{
+      const prod = (state.products||[]).find(p=>p.product_name===r.product);
+      return prod?.vendor;
+    }).filter(Boolean))];
+    return {c, total:entries.length, covered, partial, notCov, vendors};
+  }).sort((a,b)=>b.covered-a.covered);
+
+  el.innerHTML=`<div style="padding:16px">${backBtn}
+    <div class="card">
+      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span class="card-meta">${rows.length} commodities</span></div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr>
+            <th>Commodity</th><th style="text-align:center">Total Produtos</th><th style="text-align:center">Covered</th><th style="text-align:center">Partial</th><th style="text-align:center">Not Covered</th><th style="text-align:center">Distribuição</th><th>Vendors</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(r=>`<tr>
+              <td style="font-weight:600">${r.c}</td>
+              <td style="text-align:center">${r.total}</td>
+              <td style="text-align:center;color:var(--green);font-weight:600">${r.covered}</td>
+              <td style="text-align:center;color:var(--yellow);font-weight:600">${r.partial}</td>
+              <td style="text-align:center;color:var(--red);font-weight:600">${r.notCov}</td>
+              <td style="min-width:120px">
+                <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px">
+                  ${r.covered?`<div style="flex:${r.covered};background:var(--green)"></div>`:""}
+                  ${r.partial?`<div style="flex:${r.partial};background:var(--yellow)"></div>`:""}
+                  ${r.notCov?`<div style="flex:${r.notCov};background:var(--red)"></div>`:""}
+                </div>
+              </td>
+              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.vendors.join(', ')}">${r.vendors.slice(0,3).join(", ")}${r.vendors.length>3?` +${r.vendors.length-3}`:""}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── REPORT: Geographic Coverage ──
+function renderReportGeo(el, backBtn, report){
+  const geo = state.geo || [];
+  const products = [...new Set(geo.map(r=>r.product))].filter(Boolean).sort();
+  const allCols = ["N. AMERICA","S. AMERICA","EUROPE","AFRICA","MIDDLE EAST","ASIA PACIFIC"];
+
+  // Map column names from data
+  function findCol(row, name){
+    const key = Object.keys(row).find(k=>k.toUpperCase().replace(/[^A-Z]/g," ").trim()===name.trim() || k.toUpperCase().includes(name.split(" ")[0]));
+    return key ? row[key] : null;
+  }
+
+  // Get all actual region columns from first row
+  const sampleRow = geo[0] || {};
+  const regionCols = Object.keys(sampleRow).filter(k=>!["id","product","product_type","vendor"].includes(k));
+
+  el.innerHTML=`<div style="padding:16px">${backBtn}
+    <div class="card">
+      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span class="card-meta">${products.length} produtos</span></div>
+      <div style="overflow:auto;max-height:72vh">
+        <table style="font-size:11px">
+          <thead><tr>
+            <th style="position:sticky;left:0;background:var(--bg3);z-index:2;min-width:180px">PRODUCT</th>
+            ${regionCols.map(c=>`<th style="text-align:center;white-space:nowrap">${c.replace(/_/g," ").toUpperCase()}</th>`).join("")}
+          </tr></thead>
+          <tbody>
+            ${products.map(p=>{
+              const rows = geo.filter(r=>r.product===p);
+              const row = rows[0]||{};
+              return `<tr>
+                <td style="position:sticky;left:0;background:var(--bg2);z-index:1;font-weight:600;white-space:nowrap;border-right:1px solid var(--border);padding:5px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}">${p}</td>
+                ${regionCols.map(c=>{
+                  const v=row[c];
+                  const yes = v&&(v==="Yes"||v==="TRUE"||v===true||v==="1"||v===1||v==="yes");
+                  const no = v&&(v==="No"||v==="FALSE"||v===false||v==="0"||v===0||v==="no");
+                  return `<td style="text-align:center;padding:5px"><span style="font-size:14px">${yes?"✅":no?"❌":"–"}</span></td>`;
+                }).join("")}
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── REPORT: CTRM vs Risk Competitive ──
+function renderReportCompetitive(el, backBtn, report){
+  const products = state.products || [];
+  const pcc = state.pcc || [];
+  const geo = state.geo || [];
+
+  const ctrmProds = products.filter(p=>(p.product_type||"").includes("CTRM")||(p.product_type||"").includes("ctrm"));
+  const riskProds = products.filter(p=>(p.product_type||"").includes("Risk"));
+
+  function metrics(prods){
+    const allPcc = pcc.filter(p=>prods.some(vp=>vp.product_name===p.product));
+    const coms = [...new Set(allPcc.map(p=>p.commodity))].filter(Boolean).length;
+    const covered = allPcc.length ? Math.round(allPcc.filter(p=>p.coverage_level==="Covered").length/allPcc.length*100) : 0;
+    const vendors = [...new Set(prods.map(p=>p.vendor).filter(Boolean))].length;
+    const geoRows = geo.filter(g=>prods.some(vp=>vp.product_name===g.product));
+    const regionCols = Object.keys(geoRows[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
+    const regCovered = regionCols.filter(c=>geoRows.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE")).length;
+    return {prods:prods.length, vendors, coms, covered, regCovered, totalReg:regionCols.length};
+  }
+
+  const cm = metrics(ctrmProds);
+  const rm = metrics(riskProds);
+
+  function bar(val, max, color){
+    const pct = max>0?Math.round(val/max*100):0;
+    return `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px">${val}</span></div>`;
+  }
+
+  const metrics_list = [
+    {label:"Nº de Produtos",       ctrm:cm.prods,      risk:rm.prods,      max:Math.max(cm.prods,rm.prods)},
+    {label:"Nº de Vendors",        ctrm:cm.vendors,    risk:rm.vendors,    max:Math.max(cm.vendors,rm.vendors)},
+    {label:"Commodities Cobertas", ctrm:cm.coms,       risk:rm.coms,       max:Math.max(cm.coms,rm.coms)},
+    {label:"Coverage % (Covered)", ctrm:cm.covered,    risk:rm.covered,    max:100, suffix:"%"},
+    {label:"Regiões com Presença", ctrm:cm.regCovered, risk:rm.regCovered, max:Math.max(cm.regCovered,rm.regCovered)},
+  ];
+
+  el.innerHTML=`<div style="padding:16px">${backBtn}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="card" style="padding:18px;text-align:center">
+        <div style="font-size:28px">⚡</div>
+        <div style="font-size:22px;font-weight:700;color:var(--accent);margin:6px 0">${cm.prods}</div>
+        <div style="font-size:12px;color:var(--muted)">Produtos CTRM</div>
+      </div>
+      <div class="card" style="padding:18px;text-align:center">
+        <div style="font-size:28px">🛡</div>
+        <div style="font-size:22px;font-weight:700;color:var(--purple);margin:6px 0">${rm.prods}</div>
+        <div style="font-size:12px;color:var(--muted)">Produtos Risk</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span></div>
+      <table>
+        <thead><tr>
+          <th>Métrica</th>
+          <th style="text-align:center;color:var(--accent)">⚡ CTRM</th>
+          <th style="text-align:center;color:var(--purple)">🛡 Risk</th>
+        </tr></thead>
+        <tbody>
+          ${metrics_list.map(m=>`<tr>
+            <td style="font-weight:600">${m.label}</td>
+            <td style="padding:8px 12px">${bar(m.ctrm,m.max,"var(--accent)")}</td>
+            <td style="padding:8px 12px">${bar(m.risk,m.max,"var(--purple)")}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── REPORT: Gap Analysis ──
+function renderReportGap(el, backBtn, report){
+  const pcc = state.pcc || [];
+  const products = [...new Set(pcc.map(r=>r.product))].filter(Boolean).sort();
+
+  const rows = products.map(p=>{
+    const entries = pcc.filter(r=>r.product===p);
+    const total = entries.length;
+    const covered = entries.filter(r=>r.coverage_level==="Covered").length;
+    const partial = entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
+    const notCov = entries.filter(r=>r.coverage_level==="Not Covered").length;
+    const gaps = notCov + partial;
+    const gapPct = total>0?Math.round(gaps/total*100):0;
+    const prod = (state.products||[]).find(vp=>vp.product_name===p);
+    const missingComs = entries.filter(r=>r.coverage_level==="Not Covered").map(r=>r.commodity).filter(Boolean);
+    return {p, total, covered, partial, notCov, gapPct, type:prod?.product_type||"–", vendor:prod?.vendor||"–", missingComs};
+  }).sort((a,b)=>b.gapPct-a.gapPct);
+
+  el.innerHTML=`<div style="padding:16px">${backBtn}
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">${report.icon} ${report.title}</span>
+        <span class="card-meta">${rows.filter(r=>r.gapPct>0).length} produtos com lacunas</span>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr>
+            <th>Produto</th><th>Vendor</th><th>Tipo</th>
+            <th style="text-align:center">Total Com.</th>
+            <th style="text-align:center">✅ Covered</th>
+            <th style="text-align:center">⚠️ Partial</th>
+            <th style="text-align:center">❌ Not Cov.</th>
+            <th style="min-width:140px">Gap %</th>
+            <th>Commodities em falta</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(r=>`<tr>
+              <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.p}">${r.p}</td>
+              <td style="color:var(--muted);font-size:11px">${r.vendor}</td>
+              <td>${r.type?`<span style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;background:${r.type.includes("Risk")?"var(--purple)33":"var(--accent)33"};color:${r.type.includes("Risk")?"var(--purple)":"var(--accent)"}">${r.type}</span>`:""}</td>
+              <td style="text-align:center">${r.total}</td>
+              <td style="text-align:center;color:var(--green);font-weight:600">${r.covered}</td>
+              <td style="text-align:center;color:var(--yellow);font-weight:600">${r.partial}</td>
+              <td style="text-align:center;color:var(--red);font-weight:600">${r.notCov}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:${r.gapPct}%;height:100%;background:${r.gapPct>70?"var(--red)":r.gapPct>40?"var(--yellow)":"var(--green)"};border-radius:3px"></div></div>
+                  <span style="font-size:11px;font-weight:600;min-width:32px">${r.gapPct}%</span>
+                </div>
+              </td>
+              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.missingComs.join(', ')}">${r.missingComs.slice(0,3).join(", ")}${r.missingComs.length>3?` +${r.missingComs.length-3}`:""}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+
   document.getElementById("section-import").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📥 Import Data</span></div>
     <div style="padding:16px">
@@ -887,6 +1233,7 @@ function render(){
   else if(activeTab==="geo")renderGeo();
   else if(activeTab==="customertype")renderCustomerType();
   else if(activeTab==="contacts")renderContacts();
+  else if(activeTab==="reporting")renderReporting();
   else if(activeTab==="import")renderImport();
   else if(activeTab==="logs")renderLogs();
 }
