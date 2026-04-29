@@ -846,7 +846,7 @@ function renderReportMarket(el, backBtn, report){
                   ${r.notCov?`<div style="flex:${r.notCov};background:var(--red)"></div>`:""}
                 </div>
               </td>
-              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.vendors.join(', ')}">${r.vendors.slice(0,3).join(", ")}${r.vendors.length>3?` +${r.vendors.length-3}`:""}</td>
+              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.vendors.join(', ')}">${r.vendors.slice(0,3).join(", ")}${r.vendors.length>3?" +"+(r.vendors.length-3):""}</td>
             </tr>`).join("")}
           </tbody>
         </table>
@@ -1009,7 +1009,7 @@ function renderReportGap(el, backBtn, report){
                   <span style="font-size:11px;font-weight:600;min-width:32px">${r.gapPct}%</span>
                 </div>
               </td>
-              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.missingComs.join(', ')}">${r.missingComs.slice(0,3).join(", ")}${r.missingComs.length>3?` +${r.missingComs.length-3}`:""}</td>
+              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.missingComs.join(', ')}">${r.missingComs.slice(0,3).join(", ")}${r.missingComs.length>3?" +"+(r.missingComs.length-3):""}</td>
             </tr>`).join("")}
           </tbody>
         </table>
