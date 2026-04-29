@@ -682,42 +682,50 @@ function renderReporting(){
   const el = document.getElementById("section-reporting");
 
   const REPORTS = [
-    {id:"heatmap",    icon:"🔥", title:"Coverage Heatmap",         desc:"Matriz Produto × Commodity com níveis de cobertura"},
-    {id:"vendor",     icon:"🏢", title:"Vendor Landscape",          desc:"Comparação lado a lado de vendors com métricas chave"},
-    {id:"market",     icon:"🌾", title:"Market Coverage por Commodity", desc:"Quantos produtos cobrem cada commodity e quais os vendors"},
-    {id:"geo",        icon:"🗺️", title:"Geographic Coverage",        desc:"Cobertura geográfica por produto e região"},
-    {id:"competitive",icon:"⚡", title:"CTRM vs Risk Positioning",   desc:"Comparação de produtos CTRM vs Risk por cobertura"},
-    {id:"gap",        icon:"🔍", title:"Gap Analysis",               desc:"Produtos com maior % de lacunas de cobertura"},
+    {id:"heatmap",    icon:"🔥", title:"Coverage Heatmap",             desc:"Matriz Produto × Commodity com níveis de cobertura"},
+    {id:"vendor",     icon:"🏢", title:"Vendor Landscape",              desc:"Comparação lado a lado de vendors com métricas chave"},
+    {id:"market",     icon:"🌾", title:"Market Coverage por Commodity",  desc:"Quantos produtos cobrem cada commodity e quais os vendors"},
+    {id:"geo",        icon:"🗺️", title:"Geographic Coverage",            desc:"Cobertura geográfica por produto e região"},
+    {id:"competitive",icon:"⚡", title:"CTRM vs Risk Positioning",       desc:"Comparação de produtos CTRM vs Risk por cobertura"},
+    {id:"gap",        icon:"🔍", title:"Gap Analysis",                   desc:"Produtos com maior % de lacunas de cobertura"},
   ];
 
   if(!activeReport){
-    el.innerHTML=`<div style="padding:20px">
-      <div style="margin-bottom:20px">
-        <h2 style="font-size:18px;font-weight:700;color:var(--text)">📈 Reporting</h2>
-        <p style="color:var(--muted);font-size:12px;margin-top:4px">Seleciona um report para visualizar</p>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
-        ${REPORTS.map(r=>`
-          <div onclick="state.activeReport='${r.id}';renderReporting()" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-            <div style="font-size:28px;margin-bottom:10px">${r.icon}</div>
-            <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${r.title}</div>
-            <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.desc}</div>
-            <div style="margin-top:14px;display:inline-block;padding:4px 12px;background:var(--accent);color:#fff;border-radius:5px;font-size:11px;font-weight:600">Ver Report →</div>
-          </div>`).join("")}
-      </div>
+    el.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "padding:20px";
+    wrap.innerHTML = `<div style="margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:700;color:var(--text)">📈 Reporting</h2>
+      <p style="color:var(--muted);font-size:12px;margin-top:4px">Seleciona um report para visualizar</p>
     </div>`;
+    const grid = document.createElement("div");
+    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px";
+    REPORTS.forEach(r => {
+      const card = document.createElement("div");
+      card.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all .15s";
+      card.innerHTML = `<div style="font-size:28px;margin-bottom:10px">${r.icon}</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${r.title}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.desc}</div>
+        <div style="margin-top:14px;display:inline-block;padding:4px 12px;background:var(--accent);color:#fff;border-radius:5px;font-size:11px;font-weight:600">Ver Report →</div>`;
+      card.onmouseover = () => { card.style.borderColor = "var(--accent)"; card.style.transform = "translateY(-2px)"; };
+      card.onmouseout  = () => { card.style.borderColor = "var(--border)"; card.style.transform = ""; };
+      card.onclick = () => { state.activeReport = r.id; renderReporting(); };
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+    el.appendChild(wrap);
     return;
   }
 
   const report = REPORTS.find(r=>r.id===activeReport);
-  const backBtn = `<button onclick="state.activeReport=null;renderReporting()" class="btn" style="margin-bottom:16px;display:flex;align-items:center;gap:5px">← Voltar</button>`;
+  const backBtn = `<button onclick="state.activeReport=null;renderReporting()" class="btn" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:5px">← Voltar</button>`;
 
-  if(activeReport==="heatmap") renderReportHeatmap(el, backBtn, report);
-  else if(activeReport==="vendor") renderReportVendor(el, backBtn, report);
-  else if(activeReport==="market") renderReportMarket(el, backBtn, report);
-  else if(activeReport==="geo") renderReportGeo(el, backBtn, report);
+  if(activeReport==="heatmap")      renderReportHeatmap(el, backBtn, report);
+  else if(activeReport==="vendor")  renderReportVendor(el, backBtn, report);
+  else if(activeReport==="market")  renderReportMarket(el, backBtn, report);
+  else if(activeReport==="geo")     renderReportGeo(el, backBtn, report);
   else if(activeReport==="competitive") renderReportCompetitive(el, backBtn, report);
-  else if(activeReport==="gap") renderReportGap(el, backBtn, report);
+  else if(activeReport==="gap")     renderReportGap(el, backBtn, report);
 }
 
 // ── REPORT: Coverage Heatmap ──
@@ -851,15 +859,6 @@ function renderReportMarket(el, backBtn, report){
 function renderReportGeo(el, backBtn, report){
   const geo = state.geo || [];
   const products = [...new Set(geo.map(r=>r.product))].filter(Boolean).sort();
-  const allCols = ["N. AMERICA","S. AMERICA","EUROPE","AFRICA","MIDDLE EAST","ASIA PACIFIC"];
-
-  // Map column names from data
-  function findCol(row, name){
-    const key = Object.keys(row).find(k=>k.toUpperCase().replace(/[^A-Z]/g," ").trim()===name.trim() || k.toUpperCase().includes(name.split(" ")[0]));
-    return key ? row[key] : null;
-  }
-
-  // Get all actual region columns from first row
   const sampleRow = geo[0] || {};
   const regionCols = Object.keys(sampleRow).filter(k=>!["id","product","product_type","vendor"].includes(k));
 
@@ -894,39 +893,37 @@ function renderReportGeo(el, backBtn, report){
 }
 
 // ── REPORT: CTRM vs Risk Competitive ──
+function reportMetrics(prods, pcc, geo){
+  const allPcc = pcc.filter(p=>prods.some(vp=>vp.product_name===p.product));
+  const coms = [...new Set(allPcc.map(p=>p.commodity))].filter(Boolean).length;
+  const covered = allPcc.length ? Math.round(allPcc.filter(p=>p.coverage_level==="Covered").length/allPcc.length*100) : 0;
+  const vendors = [...new Set(prods.map(p=>p.vendor).filter(Boolean))].length;
+  const geoRows = geo.filter(g=>prods.some(vp=>vp.product_name===g.product));
+  const regionCols = Object.keys(geoRows[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
+  const regCovered = regionCols.filter(c=>geoRows.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE")).length;
+  return {prods:prods.length, vendors, coms, covered, regCovered};
+}
+function reportBar(val, max, color){
+  const pct = max>0?Math.round(val/max*100):0;
+  return `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px">${val}</span></div>`;
+}
 function renderReportCompetitive(el, backBtn, report){
   const products = state.products || [];
   const pcc = state.pcc || [];
   const geo = state.geo || [];
 
-  const ctrmProds = products.filter(p=>(p.product_type||"").includes("CTRM")||(p.product_type||"").includes("ctrm"));
-  const riskProds = products.filter(p=>(p.product_type||"").includes("Risk"));
+  const ctrmProds = products.filter(p=>(p.product_type||"").toLowerCase().includes("ctrm"));
+  const riskProds = products.filter(p=>(p.product_type||"").toLowerCase().includes("risk"));
 
-  function metrics(prods){
-    const allPcc = pcc.filter(p=>prods.some(vp=>vp.product_name===p.product));
-    const coms = [...new Set(allPcc.map(p=>p.commodity))].filter(Boolean).length;
-    const covered = allPcc.length ? Math.round(allPcc.filter(p=>p.coverage_level==="Covered").length/allPcc.length*100) : 0;
-    const vendors = [...new Set(prods.map(p=>p.vendor).filter(Boolean))].length;
-    const geoRows = geo.filter(g=>prods.some(vp=>vp.product_name===g.product));
-    const regionCols = Object.keys(geoRows[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
-    const regCovered = regionCols.filter(c=>geoRows.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE")).length;
-    return {prods:prods.length, vendors, coms, covered, regCovered, totalReg:regionCols.length};
-  }
+  const cm = reportMetrics(ctrmProds, pcc, geo);
+  const rm = reportMetrics(riskProds, pcc, geo);
 
-  const cm = metrics(ctrmProds);
-  const rm = metrics(riskProds);
-
-  function bar(val, max, color){
-    const pct = max>0?Math.round(val/max*100):0;
-    return `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px">${val}</span></div>`;
-  }
-
-  const metrics_list = [
-    {label:"Nº de Produtos",       ctrm:cm.prods,      risk:rm.prods,      max:Math.max(cm.prods,rm.prods)},
-    {label:"Nº de Vendors",        ctrm:cm.vendors,    risk:rm.vendors,    max:Math.max(cm.vendors,rm.vendors)},
-    {label:"Commodities Cobertas", ctrm:cm.coms,       risk:rm.coms,       max:Math.max(cm.coms,rm.coms)},
-    {label:"Coverage % (Covered)", ctrm:cm.covered,    risk:rm.covered,    max:100, suffix:"%"},
-    {label:"Regiões com Presença", ctrm:cm.regCovered, risk:rm.regCovered, max:Math.max(cm.regCovered,rm.regCovered)},
+  const mlist = [
+    {label:"Nº de Produtos",       ctrm:cm.prods,      risk:rm.prods,      max:Math.max(cm.prods,rm.prods)||1},
+    {label:"Nº de Vendors",        ctrm:cm.vendors,    risk:rm.vendors,    max:Math.max(cm.vendors,rm.vendors)||1},
+    {label:"Commodities Cobertas", ctrm:cm.coms,       risk:rm.coms,       max:Math.max(cm.coms,rm.coms)||1},
+    {label:"Coverage % (Covered)", ctrm:cm.covered,    risk:rm.covered,    max:100},
+    {label:"Regiões com Presença", ctrm:cm.regCovered, risk:rm.regCovered, max:Math.max(cm.regCovered,rm.regCovered)||1},
   ];
 
   el.innerHTML=`<div style="padding:16px">${backBtn}
@@ -951,10 +948,10 @@ function renderReportCompetitive(el, backBtn, report){
           <th style="text-align:center;color:var(--purple)">🛡 Risk</th>
         </tr></thead>
         <tbody>
-          ${metrics_list.map(m=>`<tr>
+          ${mlist.map(m=>`<tr>
             <td style="font-weight:600">${m.label}</td>
-            <td style="padding:8px 12px">${bar(m.ctrm,m.max,"var(--accent)")}</td>
-            <td style="padding:8px 12px">${bar(m.risk,m.max,"var(--purple)")}</td>
+            <td style="padding:8px 12px">${reportBar(m.ctrm,m.max,"var(--accent)")}</td>
+            <td style="padding:8px 12px">${reportBar(m.risk,m.max,"var(--purple)")}</td>
           </tr>`).join("")}
         </tbody>
       </table>
@@ -1021,7 +1018,7 @@ function renderReportGap(el, backBtn, report){
   </div>`;
 }
 
-
+function renderImport(){
   document.getElementById("section-import").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📥 Import Data</span></div>
     <div style="padding:16px">
