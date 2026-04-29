@@ -731,34 +731,174 @@ function renderReporting(){
 // ── REPORT: Coverage Heatmap ──
 function renderReportHeatmap(el, backBtn, report){
   const pcc = state.pcc || [];
-  const products = [...new Set(pcc.map(r=>r.product))].sort();
-  const commodities = [...new Set(pcc.map(r=>r.commodity))].sort();
+  const products = [...new Set(pcc.map(r=>r.product))].filter(Boolean).sort();
+
+  // Defined column order (from reference image)
+  const COL_ORDER = [
+    "Power","Natural Gas","HC Liquids","PetroChem / Chemicals","Coal","LNG",
+    "Bulk","Break Bulk","Container",
+    "Base Metals","Ferrous","Concentrates","Precious Metals",
+    "North America CO2 & Emissions","Europe CO2 & Emissions",
+    "FX"
+  ];
+
+  // Get all commodities from data
+  const allComs = [...new Set(pcc.map(r=>r.commodity))].filter(Boolean);
+
+  // Deduplicate: normalize commodity names for matching
+  const normCom = s => (s||"").trim().toLowerCase();
+
+  // Build ordered list: first COL_ORDER items (if they exist in data), then remaining sorted
+  const orderedComs = [];
+  const usedNorm = new Set();
+  COL_ORDER.forEach(col => {
+    // Find exact or close match in data
+    const match = allComs.find(c => normCom(c) === normCom(col));
+    if(match && !usedNorm.has(normCom(match))){
+      orderedComs.push(match);
+      usedNorm.add(normCom(match));
+    }
+  });
+  // Add remaining commodities not in COL_ORDER
+  allComs.sort().forEach(c => {
+    if(!usedNorm.has(normCom(c))){
+      orderedComs.push(c);
+      usedNorm.add(normCom(c));
+    }
+  });
+
   const map = {};
   pcc.forEach(r=>{ map[r.product+"||"+r.commodity] = r.coverage_level; });
-  const covColor = v => v==="Covered"?"var(--green)":v&&v.includes("Partial")?"var(--yellow)":v==="Not Covered"?"var(--red)":"var(--border)";
+
+  const covColor  = v => v==="Covered"?"#22c55e":v&&v.includes("Partial")?"#f59e0b":v==="Not Covered"?"#ef4444":"transparent";
   const covLetter = v => v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
+  const covOpacity= v => v?"1":".18";
+
+  const thStyle = `padding:4px 5px;font-size:9px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;background:var(--bg3);max-width:80px;overflow:hidden;text-overflow:ellipsis`;
+
   el.innerHTML=`<div style="padding:16px">${backBtn}
     <div class="card">
-      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:auto">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered</span>
+      <div class="card-head">
+        <span class="card-title">${report.icon} ${report.title}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:8px">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered</span>
+        <button onclick="exportHeatmapExcel()" class="btn btn-success" style="margin-left:auto;font-size:11px;padding:4px 10px">⬇ Excel</button>
       </div>
-      <div style="overflow:auto;max-height:72vh">
-        <table style="font-size:11px;border-collapse:collapse;min-width:100%">
+      <div style="overflow:auto;max-height:74vh">
+        <table id="heatmap-table" style="font-size:11px;border-collapse:collapse;min-width:100%">
           <thead><tr>
-            <th style="position:sticky;left:0;background:var(--bg3);z-index:2;padding:6px 10px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:180px">PRODUCT</th>
-            ${commodities.map(c=>`<th style="padding:4px 6px;font-size:9px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;background:var(--bg3)">${c}</th>`).join("")}
+            <th style="position:sticky;left:0;z-index:3;background:var(--bg3);padding:6px 10px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:190px">PRODUCT</th>
+            ${orderedComs.map(c=>`<th style="${thStyle}" title="${c}">${c}</th>`).join("")}
           </tr></thead>
           <tbody>
             ${products.map(p=>`<tr>
-              <td style="position:sticky;left:0;background:var(--bg2);z-index:1;padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);font-weight:600;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}">${p}</td>
-              ${commodities.map(c=>{const v=map[p+"||"+c];return`<td style="text-align:center;padding:4px;border-bottom:1px solid var(--row-border)"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${covColor(v)};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${v?'1':'.15'}">${covLetter(v)}</span></td>`;}).join("")}
+              <td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}">
+                <a href="#" onclick="navToPccFromHeatmap('${escAttr(p)}');return false;" style="font-weight:600;color:var(--accent);text-decoration:none">${p}</a>
+              </td>
+              ${orderedComs.map(c=>{
+                const v=map[p+"||"+c];
+                const col=covColor(v);
+                const op=covOpacity(v);
+                return `<td style="text-align:center;padding:3px;border-bottom:1px solid var(--row-border)">
+                  <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${p} · ${c}: ${v||'–'}" style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${op};cursor:${v?'pointer':'default'}">${covLetter(v)}</span>
+                </td>`;
+              }).join("")}
             </tr>`).join("")}
           </tbody>
         </table>
       </div>
     </div>
   </div>`;
+
+  // Store for export
+  window._heatmapData = {products, commodities: orderedComs, map};
 }
+
+function navToPccFromHeatmap(product){
+  const exact = findExact(state.pcc, 'product', product);
+  Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
+  state.filters['pcc_prod'] = [exact || product];
+  state.filters['com_view'] = 'coverage';
+  state.pages = {};
+  setTab('commodities');
+}
+
+function navToCtrmFromHeatmap(product, commodity){
+  const exactProd = findExact(state.ctrm, 'product', product);
+  const exactCom  = findExact(state.ctrm, 'commodity', commodity);
+  Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
+  state.filters['ctrm_prod'] = [exactProd || product];
+  state.filters['ctrm_com']  = [exactCom  || commodity];
+  state.pages = {};
+  setTab('ctrm');
+}
+
+function exportHeatmapExcel(){
+  if(typeof XLSX==="undefined"){alert("Excel library not loaded, please try again.");return;}
+  const {products, commodities, map} = window._heatmapData || {};
+  if(!products) return;
+
+  const wb = XLSX.utils.book_new();
+  const wsData = [];
+
+  // Header row
+  wsData.push(["Product", ...commodities]);
+
+  // Data rows
+  products.forEach(p => {
+    wsData.push([p, ...commodities.map(c => {
+      const v = map[p+"||"+c];
+      return v==="Covered"?"C": v&&v.includes("Partial")?"P": v==="Not Covered"?"✗": "–";
+    })]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = [{wch:30}, ...commodities.map(()=>({wch:10}))];
+
+  // Apply cell colors
+  const greenFill  = {type:"pattern",patternType:"solid",fgColor:{rgb:"22C55E"}};
+  const yellowFill = {type:"pattern",patternType:"solid",fgColor:{rgb:"F59E0B"}};
+  const redFill    = {type:"pattern",patternType:"solid",fgColor:{rgb:"EF4444"}};
+  const headerFill = {type:"pattern",patternType:"solid",fgColor:{rgb:"1E293B"}};
+  const whiteTxt   = {color:{rgb:"FFFFFF"}};
+  const boldWhite  = {bold:true, color:{rgb:"FFFFFF"}};
+  const centerAlign= {horizontal:"center",vertical:"center"};
+  const boldCenter = {alignment:centerAlign, font:boldWhite};
+
+  // Style header row
+  for(let c=0; c<=commodities.length; c++){
+    const cell = XLSX.utils.encode_cell({r:0, c});
+    if(!ws[cell]) continue;
+    ws[cell].s = {fill:headerFill, font:boldWhite, alignment:{...centerAlign, wrapText:true}};
+  }
+
+  // Style data cells
+  products.forEach((p, ri) => {
+    // Product name cell
+    const pCell = XLSX.utils.encode_cell({r:ri+1, c:0});
+    if(ws[pCell]) ws[pCell].s = {font:{bold:true}, alignment:{vertical:"center"}};
+
+    commodities.forEach((com, ci) => {
+      const v = map[p+"||"+com];
+      const cell = XLSX.utils.encode_cell({r:ri+1, c:ci+1});
+      if(!ws[cell]) return;
+      let fill = null;
+      if(v==="Covered") fill = greenFill;
+      else if(v&&v.includes("Partial")) fill = yellowFill;
+      else if(v==="Not Covered") fill = redFill;
+      ws[cell].s = {
+        fill: fill || {type:"pattern",patternType:"none"},
+        font: fill ? {bold:true,color:{rgb:"FFFFFF"}} : {color:{rgb:"94A3B8"}},
+        alignment: centerAlign
+      };
+    });
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, "Coverage Heatmap");
+  XLSX.writeFile(wb, "coverage_heatmap.xlsx");
+}
+
 
 // ── REPORT: Vendor Landscape ──
 function renderReportVendor(el, backBtn, report){
