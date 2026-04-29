@@ -427,7 +427,7 @@ function renderVendors(){
   const page=state.pages.vendors||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-vendors").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span></div>
+    <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
     ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${commentCell("vendors",v)}<td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
@@ -445,7 +445,7 @@ function renderProducts(){
   const page=state.pages.products||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-products").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span></div>
+    <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredProducts(),'products','Products')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-p_q" value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
@@ -483,7 +483,7 @@ function renderCommCoverage(){
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
@@ -508,7 +508,7 @@ function renderCTRM(){
   const paged=rows.slice(page*PER,(page+1)*PER);
   const loading=state.ctrmLoading;
   document.getElementById("section-ctrm").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span></div>
+    <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCtrm(),'ctrm_coverage','CTRM Coverage')">⬇ Excel</button></div>
     ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
     <div class="filters">
       <input id="search-ctrm_q" value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
@@ -533,7 +533,7 @@ function renderRisk(){
   const page=state.pages.risk||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-risk").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span></div>
+    <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredRisk(),'risk_coverage','Risk Coverage')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('risk_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
@@ -557,7 +557,7 @@ function renderGeo(){
   const COLS=[{k:"north_america",l:"N. America"},{k:"europe_russia",l:"Europe & Russia"},{k:"south_america",l:"S. America"},{k:"middle_east_africa",l:"ME & Africa"},{k:"asia_australia",l:"Asia & Australia"}];
   const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(v*100);const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600;margin-bottom:2px">${p}%</div>${bar(p,col)}</div>`;};
   document.getElementById("section-geo").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span></div>
+    <div class="card-head"><span class="card-title">🌍 Geographic Coverage</span><span class="card-meta">${rows.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredGeo(),'geographic_coverage','Geographic')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-geo_q" value="${q}" oninput="sf('geo_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('geo_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
@@ -580,7 +580,7 @@ function renderCustomerType(){
   const CT_COLS=[{k:"utility",l:"Utility"},{k:"energy_retailer",l:"Energy Retailer"},{k:"generator_non_renewables",l:"Generator - Non-Renewables"},{k:"renewables_generator",l:"Renewables Generator"},{k:"trader_broker",l:"Trader/Broker"},{k:"hedge_fund_cta",l:"Hedge Fund/CTA"},{k:"bank_financial_institution",l:"Bank/Financial Institution"},{k:"consultant_analyst",l:"Consultant/Analyst"},{k:"agricultural_producer",l:"Agricultural Producer"},{k:"biofuels",l:"Biofuels"},{k:"producer_marketer",l:"Producer/Producer Marketer"},{k:"refining_petrochemical",l:"Refining/Petrochemical"},{k:"merchant_energy_firm",l:"Merchant Energy Firm"},{k:"industrial_consumer",l:"Industrial Consumer"},{k:"other",l:"Other"}];
   const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(parseFloat(v)*100);if(isNaN(p))return'<span style="color:var(--muted)">—</span>';const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600">${p}%</div>${bar(p,col)}</div>`;};
   document.getElementById("section-customertype").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span></div>
+    <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCt(),'customer_type_coverage','Customer Types')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-ct_q" value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('ct_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
@@ -601,7 +601,7 @@ function renderContacts(){
   const vendors=[...new Set(state.contacts.map(c=>c.vendor).filter(Boolean))].sort();
   const rows=state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q))));
   document.getElementById("section-contacts").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span></div>
+    <div class="card-head"><span class="card-title">👤 Contacts</span><span class="card-meta">${state.contacts.length} contacts</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredContacts(),'contacts','Contacts')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-con_q" value="${q}" oninput="sf('con_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('con_prod',this.value)">${selOpts(prods,prodF,"All Products")}</select>
@@ -861,7 +861,7 @@ function renderCommoditiesView(){
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_prod',this.value)">${selOpts(prods,pF,"All Products")}</select>
@@ -877,6 +877,76 @@ function renderCommoditiesView(){
 }
 
 // ── INIT ──
+// ── EXPORT TO EXCEL ──
+function exportToExcel(data, filename, sheetName) {
+  if (!data || data.length === 0) { alert("No data to export."); return; }
+  if (typeof XLSX === "undefined") { alert("Excel library not loaded. Please refresh."); return; }
+  // Clean data - remove internal fields
+  const clean = data.map(row => {
+    const r = {};
+    Object.entries(row).forEach(([k,v]) => {
+      if (k.startsWith("_")) return;
+      // Format numeric percentage fields
+      if (typeof v === "number" && v >= 0 && v <= 1 && k !== "id") {
+        r[k] = Math.round(v * 100) + "%";
+      } else {
+        r[k] = v ?? "";
+      }
+    });
+    return r;
+  });
+  const ws = XLSX.utils.json_to_sheet(clean);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || "Data");
+  XLSX.writeFile(wb, filename + ".xlsx");
+}
+
+function exportBtn(label, onClick) {
+  return `<button class="btn btn-success" style="font-size:11px;padding:4px 10px" onclick="${onClick}">⬇ Excel</button>`;
+}
+
+function getFilteredVendors() {
+  const q=(state.filters.v_q||"").toLowerCase();
+  return state.vendors.filter(v=>!q||Object.values(v).some(val=>(val||"").toString().toLowerCase().includes(q)));
+}
+function getFilteredProducts() {
+  const q=(state.filters.p_q||"").toLowerCase();
+  const typeF=state.filters.p_type||"";
+  const vendorF=state.filters.p_vendor||"";
+  return state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+function getFilteredPcc() {
+  const q=(state.filters.pcc_q||"").toLowerCase();
+  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
+  return state.pcc.filter(p=>(!pF||p.product===pF)&&(!typeF||p.product_type===typeF)&&(!covF||p.coverage_level===covF)&&(!comF||p.commodity===comF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+function getFilteredCtrm() {
+  const q=(state.filters.ctrm_q||"").toLowerCase();
+  const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
+  return state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+function getFilteredRisk() {
+  const q=(state.filters.risk_q||"").toLowerCase();
+  const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
+  return state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+function getFilteredGeo() {
+  const q=(state.filters.geo_q||"").toLowerCase();
+  const typeF=state.filters.geo_type||"";const prodF=state.filters.geo_prod||"";
+  return state.geo.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+function getFilteredCt() {
+  const q=(state.filters.ct_q||"").toLowerCase();
+  const typeF=state.filters.ct_type||"";const prodF=state.filters.ct_prod||"";
+  return state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!prodF||g.product===prodF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+function getFilteredContacts() {
+  const q=(state.filters.con_q||"").toLowerCase();
+  const prodF=state.filters.con_prod||"";const vendorF=state.filters.con_vendor||"";
+  return state.contacts.filter(c=>(!prodF||c.product===prodF)&&(!vendorF||c.vendor===vendorF)&&(!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q))));
+}
+
+
 async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
