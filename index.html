@@ -160,7 +160,7 @@ let currentUser="User";
 
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
 
-let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
+let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],clients:[],pages:{},filters:{},ctrmLoading:true};
 let modalSaveFn=null;
 
 async function apiFetch(table,opts={}){
@@ -500,7 +500,199 @@ function renderVendors(){
 }
 
 // ── PRODUCTS ──
-function renderProducts(){
+// ── PRODUCT DETAIL SIDE PANEL ──
+function openProductDetail(productName){
+  // Close any existing panel
+  const existing = document.getElementById("product-detail-panel");
+  if(existing) existing.remove();
+
+  const prod = state.products.find(p=>p.product_name===productName);
+  if(!prod) return;
+
+  // Overlay
+  const overlay = document.createElement("div");
+  overlay.id = "product-detail-overlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000";
+  overlay.onclick = closeProductDetail;
+  document.body.appendChild(overlay);
+
+  // Panel
+  const panel = document.createElement("div");
+  panel.id = "product-detail-panel";
+  panel.style.cssText = "position:fixed;top:0;right:0;width:480px;max-width:95vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4);animation:slideIn .2s ease";
+
+  const pccEntries = state.pcc.filter(r=>r.product===productName);
+  const covPct = pccEntries.length ? Math.round(pccEntries.filter(r=>r.coverage_level==="Covered").length/pccEntries.length*100) : null;
+  const clients = state.clients.filter(c=>c.product===productName);
+
+  panel.innerHTML = `
+    <style>@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}</style>
+    <!-- Header -->
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">${prod.product_name}</div>
+        <div style="font-size:11px;color:var(--muted)">${prod.vendor||""} ${prod.product_type?`· ${bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)")}`:""}</div>
+      </div>
+      <button onclick="closeProductDetail()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
+    </div>
+
+    <!-- Product info strip -->
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;background:var(--bg3)">
+      ${prod.deployment_model?`<div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Deployment</div><div style="font-size:11px;color:var(--text);margin-top:2px">${prod.deployment_model}</div></div>`:""}
+      ${prod.version_info?`<div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Version</div><div style="font-size:11px;color:var(--yellow);font-weight:600;margin-top:2px">${prod.version_info}</div></div>`:""}
+      ${covPct!==null?`<div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Commodity Coverage</div><div style="font-size:11px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"};margin-top:2px">${covPct}%</div></div>`:""}
+    </div>
+
+    <!-- Clients section -->
+    <div style="flex:1;overflow-y:auto;padding:16px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">👥 Clients & Commodities</div>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openClientForm('${escAttr(productName)}',null)">+ Add Client</button>
+      </div>
+      <div id="clients-list-${escAttr(productName).replace(/[^a-z0-9]/gi,'_')}">
+        ${renderClientsList(productName, clients)}
+      </div>
+    </div>`;
+
+  document.body.appendChild(panel);
+}
+
+function renderClientsList(productName, clients){
+  if(!clients.length) return `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">No clients added yet.<br><span style="font-size:11px">Click "+ Add Client" to add the first one.</span></div>`;
+
+  return clients.map(c=>{
+    const coms = (c.commodities||"").split(",").map(s=>s.trim()).filter(Boolean);
+    const listId = "clients-list-"+productName.replace(/[^a-z0-9]/gi,'_');
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px;color:var(--text)">${c.client_name}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="openClientForm('${escAttr(productName)}',${c.id})">Edit</button>
+          <button class="btn" style="font-size:10px;padding:2px 7px;color:var(--red);border-color:var(--red)44" onclick="deleteClient(${c.id},'${escAttr(productName)}')">Delete</button>
+        </div>
+      </div>
+      ${coms.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${coms.map(com=>`<span style="padding:1px 7px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33">${com}</span>`).join("")}</div>`:""}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+        ${c.region?`<span>📍 ${c.region}</span>`:""}
+        ${c.since_year?`<span>📅 Since ${c.since_year}</span>`:""}
+        ${c.created_by?`<span>👤 ${c.created_by}</span>`:""}
+      </div>
+      ${c.notes?`<div style="margin-top:6px;font-size:11px;color:var(--muted);font-style:italic">${c.notes}</div>`:""}
+    </div>`;
+  }).join("");
+}
+
+function closeProductDetail(){
+  document.getElementById("product-detail-panel")?.remove();
+  document.getElementById("product-detail-overlay")?.remove();
+  document.getElementById("client-form-panel")?.remove();
+}
+
+function openClientForm(productName, clientId){
+  document.getElementById("client-form-panel")?.remove();
+
+  const existing = clientId ? state.clients.find(c=>c.id===clientId) : null;
+  const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
+
+  const form = document.createElement("div");
+  form.id = "client-form-panel";
+  form.style.cssText = "position:fixed;top:0;right:480px;width:360px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3);animation:slideIn .15s ease";
+
+  // Build commodities checkboxes from pcc data
+  const selectedComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : [];
+
+  form.innerHTML = `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-weight:700;font-size:14px">${clientId?"Edit Client":"New Client"}</div>
+      <button onclick="document.getElementById('client-form-panel').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Client Name *</label>
+        <input id="cf-client" value="${escAttr(existing?.client_name||"")}" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label>
+        <div style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:8px;max-height:180px;overflow-y:auto">
+          ${pccComs.length ? pccComs.map(com=>`
+            <label style="display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer;font-size:12px;color:var(--text)">
+              <input type="checkbox" value="${escAttr(com)}" ${selectedComs.includes(com)?"checked":""} style="accent-color:var(--accent);cursor:pointer">
+              ${com}
+            </label>`).join("") :
+            `<input id="cf-coms-text" value="${escAttr(existing?.commodities||"")}" placeholder="e.g. Power, Natural Gas, FX" style="width:100%;padding:4px;background:none;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">`
+          }
+        </div>
+        ${pccComs.length?`<div style="font-size:10px;color:var(--muted);margin-top:3px">Based on product's commodity coverage</div>`:""}
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
+        <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Since Year</label>
+        <input id="cf-year" type="number" value="${existing?.since_year||""}" placeholder="e.g. 2020" min="1990" max="2099" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Notes</label>
+        <textarea id="cf-notes" placeholder="Additional notes..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box">${existing?.notes||""}</textarea>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.getElementById('client-form-panel').remove()" class="btn" style="font-size:12px">Cancel</button>
+      <button onclick="saveClient('${escAttr(productName)}',${clientId||"null"})" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>
+    </div>`;
+
+  document.body.appendChild(form);
+  setTimeout(()=>document.getElementById("cf-client")?.focus(),100);
+}
+
+async function saveClient(productName, clientId){
+  const clientName = document.getElementById("cf-client")?.value?.trim();
+  if(!clientName){alert("Client name is required.");return;}
+
+  // Get selected commodities — either from checkboxes or text input
+  const checkboxes = document.querySelectorAll("#client-form-panel input[type=checkbox]:checked");
+  let commodities;
+  if(checkboxes.length > 0 || document.querySelectorAll("#client-form-panel input[type=checkbox]").length > 0){
+    commodities = [...checkboxes].map(cb=>cb.value).join(", ");
+  } else {
+    commodities = document.getElementById("cf-coms-text")?.value?.trim()||"";
+  }
+
+  const region    = document.getElementById("cf-region")?.value?.trim()||null;
+  const sinceYear = parseInt(document.getElementById("cf-year")?.value)||null;
+  const notes     = document.getElementById("cf-notes")?.value?.trim()||null;
+  const userName  = localStorage.getItem("pa_username") || "User";
+
+  const body = {product:productName, client_name:clientName, commodities, region, since_year:sinceYear, notes, created_by:userName};
+
+  try{
+    if(clientId){
+      await apiFetch("product_clients", {method:"PATCH", body, params:{id:"eq."+clientId}});
+      const idx = state.clients.findIndex(c=>c.id===clientId);
+      if(idx>-1) state.clients[idx] = {...state.clients[idx], ...body};
+    } else {
+      const res = await apiFetch("product_clients", {method:"POST", body});
+      if(res[0]) state.clients.push(res[0]);
+    }
+    document.getElementById("client-form-panel")?.remove();
+    // Refresh clients list in panel
+    const listEl = document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
+    if(listEl) listEl.innerHTML = renderClientsList(productName, state.clients.filter(c=>c.product===productName));
+  } catch(e){ alert("Error saving: "+e.message); }
+}
+
+async function deleteClient(clientId, productName){
+  if(!confirm("Delete this client record?")) return;
+  try{
+    await apiFetch("product_clients", {method:"DELETE", params:{id:"eq."+clientId}});
+    state.clients = state.clients.filter(c=>c.id!==clientId);
+    const listEl = document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
+    if(listEl) listEl.innerHTML = renderClientsList(productName, state.clients.filter(c=>c.product===productName));
+  } catch(e){ alert("Error deleting: "+e.message); }
+}
+
+
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
@@ -517,8 +709,19 @@ function renderProducts(){
       <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToProduct('${(p.product_name||"").replace(/'/g,'%27')}','${p.product_type||""}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>${commentCell("products",p)}<td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
+    <div style="overflow-x:auto"><table><thead><tr><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr>
+      <td style="font-weight:600"><a onclick="navToProduct('${(p.product_name||"").replace(/'/g,'%27')}','${p.product_type||""}');return false;" href="#">${p.product_name||""}</a></td>
+      <td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
+      <td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td>
+      <td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td>
+      <td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td>
+      <td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product_name)}')">Detail</button>
+        <button class="btn" onclick="openProductModal(${p.id})">Edit</button>
+      </td>
+    </tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
@@ -1805,13 +2008,14 @@ async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
   try{
-    const[v,p,ct_data,g,pcc,risk,ct,com]=await Promise.all([
+    const[v,p,ct_data,g,pcc,risk,ct,com,clients]=await Promise.all([
       getAll("vendors"),getAll("products"),getAll("product_contacts"),
       getAll("geographic_coverage"),getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities")
+      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities"),
+      getAll("product_clients")
     ]);
     state.vendors=v;state.products=p;state.contacts=ct_data;
-    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
     state.ctrmLoading=true;
     render();
     const ctrm=await getAll("product_function_ctrm");
