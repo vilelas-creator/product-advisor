@@ -690,7 +690,7 @@ async function deleteClient(clientId, productName){
   } catch(e){ alert("Error deleting: "+e.message); }
 }
 
-
+function renderProducts(){
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
