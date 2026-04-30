@@ -565,20 +565,26 @@ function renderCommCoverage(){
 // ── CTRM ──
 function renderCTRM(){
   const q=(state.filters.ctrm_q||"").toLowerCase();
-  const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
   const prods=[...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
   const coms=[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))); rows=msFilter(rows,'product','ctrm_prod'); rows=msFilter(rows,'commodity','ctrm_com'); const ctrmCovSel=state.filters.ctrm_cov||[]; if(ctrmCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=ctrmCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
+  const funcs=[...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
+  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  rows=msFilter(rows,'product','ctrm_prod');
+  rows=msFilter(rows,'commodity','ctrm_com');
+  rows=msFilter(rows,'function_name','ctrm_func');
+  const ctrmCovSel=state.filters.ctrm_cov||[];
+  if(ctrmCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=ctrmCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
   const page=state.pages.ctrm||0;const PER=50;
   const paged=rows.slice(page*PER,(page+1)*PER);
   const loading=state.ctrmLoading;
   document.getElementById("section-ctrm").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCtrm(),'ctrm_coverage','CTRM Coverage')">⬇ Excel</button></div>
-    ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
+    ${loading&&state.ctrm.length===0?'<div class="loading">Loading CTRM records...</div>':`
     <div class="filters">
       <input id="search-ctrm_q" value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
       ${createMultiSelect('ctrm_prod', prods, state.filters.ctrm_prod||[], 'All Products', 'ctrm_prod')}
       ${createMultiSelect('ctrm_com', coms, state.filters.ctrm_com||[], 'All Commodities', 'ctrm_com')}
+      ${createMultiSelect('ctrm_func', funcs, state.filters.ctrm_func||[], 'All Functions', 'ctrm_func')}
       ${createMultiSelect('ctrm_cov', ['Deployed','Capable','Not Capable','N/A'], state.filters.ctrm_cov||[], 'All Coverage', 'ctrm_cov')}
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
@@ -591,10 +597,15 @@ function renderCTRM(){
 // ── RISK ──
 function renderRisk(){
   const q=(state.filters.risk_q||"").toLowerCase();
-  const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
   const prods=[...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
   const cats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-  let rows=state.risk.filter(r=>(!catF||r.category===catF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','risk_prod'); const riskCovSel=state.filters.risk_cov||[]; if(riskCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=riskCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
+  const funcs=[...new Set(state.risk.map(r=>r.function_name).filter(Boolean))].sort();
+  let rows=state.risk.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  rows=msFilter(rows,'product','risk_prod');
+  rows=msFilter(rows,'category','risk_cat');
+  rows=msFilter(rows,'function_name','risk_func');
+  const riskCovSel=state.filters.risk_cov||[];
+  if(riskCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=riskCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
   const page=state.pages.risk||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-risk").innerHTML=`<div class="card">
@@ -602,7 +613,8 @@ function renderRisk(){
     <div class="filters">
       <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       ${createMultiSelect('risk_prod', prods, state.filters.risk_prod||[], 'All Products', 'risk_prod')}
-      <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
+      ${createMultiSelect('risk_cat', cats, state.filters.risk_cat||[], 'All Categories', 'risk_cat')}
+      ${createMultiSelect('risk_func', funcs, state.filters.risk_func||[], 'All Functions', 'risk_func')}
       ${createMultiSelect('risk_cov', ['Deployed','Capable','Not Capable','N/A'], state.filters.risk_cov||[], 'All Coverage', 'risk_cov')}
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
@@ -704,12 +716,10 @@ function renderReporting(){
   const el = document.getElementById("section-reporting");
 
   const REPORTS = [
-    {id:"heatmap",    icon:"🔥", title:"Coverage Heatmap",             desc:"Product × Commodity matrix with coverage levels"},
-    {id:"vendor",     icon:"🏢", title:"Vendor Landscape",              desc:"Side-by-side vendor comparison with key metrics"},
-    {id:"market",     icon:"🌾", title:"Market Coverage by Commodity",  desc:"How many products cover each commodity and which vendors"},
-    {id:"geo",        icon:"🗺️", title:"Geographic Coverage",           desc:"Geographic coverage by product and region"},
-    {id:"competitive",icon:"⚡", title:"CTRM vs Risk Positioning",      desc:"CTRM vs Risk product comparison by coverage"},
-    {id:"gap",        icon:"🔍", title:"Gap Analysis",                  desc:"Products ranked by highest coverage gaps"},
+    {id:"heatmap", icon:"🔥", title:"Coverage Heatmap",            desc:"Product × Commodity matrix with coverage levels"},
+    {id:"vendor",  icon:"🏢", title:"Vendor Landscape",             desc:"Side-by-side vendor comparison with key metrics"},
+    {id:"market",  icon:"🌾", title:"Market Coverage by Commodity", desc:"How many products cover each commodity and which vendors"},
+    {id:"gap",     icon:"🔍", title:"Gap Analysis",                 desc:"Products ranked by highest coverage gaps"},
   ];
 
   if(!activeReport){
@@ -742,12 +752,10 @@ function renderReporting(){
   const report = REPORTS.find(r=>r.id===activeReport);
   const backBtn = `<button onclick="state.activeReport=null;renderReporting()" class="btn" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:5px">← Back</button>`;
 
-  if(activeReport==="heatmap")      renderReportHeatmap(el, backBtn, report);
-  else if(activeReport==="vendor")  renderReportVendor(el, backBtn, report);
-  else if(activeReport==="market")  renderReportMarket(el, backBtn, report);
-  else if(activeReport==="geo")     renderReportGeo(el, backBtn, report);
-  else if(activeReport==="competitive") renderReportCompetitive(el, backBtn, report);
-  else if(activeReport==="gap")     renderReportGap(el, backBtn, report);
+  if(activeReport==="heatmap")     renderReportHeatmap(el, backBtn, report);
+  else if(activeReport==="vendor") renderReportVendor(el, backBtn, report);
+  else if(activeReport==="market") renderReportMarket(el, backBtn, report);
+  else if(activeReport==="gap")    renderReportGap(el, backBtn, report);
 }
 
 // ── REPORT: Coverage Heatmap ──
@@ -1208,111 +1216,6 @@ function navToProductsByVendorCom(vendor, commodity){
   setTab('products');
 }
 
-
-// ── REPORT: Geographic Coverage ──
-function renderReportGeo(el, backBtn, report){
-  const geo = state.geo || [];
-  const products = [...new Set(geo.map(r=>r.product))].filter(Boolean).sort();
-  const sampleRow = geo[0] || {};
-  const regionCols = Object.keys(sampleRow).filter(k=>!["id","product","product_type","vendor"].includes(k));
-
-  el.innerHTML=`<div style="padding:16px">${backBtn}
-    <div class="card">
-      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span class="card-meta">${products.length} products</span></div>
-      <div style="overflow:auto;max-height:72vh">
-        <table style="font-size:11px">
-          <thead><tr>
-            <th style="position:sticky;left:0;background:var(--bg3);z-index:2;min-width:180px">PRODUCT</th>
-            ${regionCols.map(c=>`<th style="text-align:center;white-space:nowrap">${c.replace(/_/g," ").toUpperCase()}</th>`).join("")}
-          </tr></thead>
-          <tbody>
-            ${products.map(p=>{
-              const rows = geo.filter(r=>r.product===p);
-              const row = rows[0]||{};
-              return `<tr>
-                <td style="position:sticky;left:0;background:var(--bg2);z-index:1;font-weight:600;white-space:nowrap;border-right:1px solid var(--border);padding:5px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}">${p}</td>
-                ${regionCols.map(c=>{
-                  const v=row[c];
-                  const yes = v&&(v==="Yes"||v==="TRUE"||v===true||v==="1"||v===1||v==="yes");
-                  const no = v&&(v==="No"||v==="FALSE"||v===false||v==="0"||v===0||v==="no");
-                  return `<td style="text-align:center;padding:5px"><span style="font-size:14px">${yes?"✅":no?"❌":"–"}</span></td>`;
-                }).join("")}
-              </tr>`;
-            }).join("")}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
-}
-
-// ── REPORT: CTRM vs Risk Competitive ──
-function reportMetrics(prods, pcc, geo){
-  const allPcc = pcc.filter(p=>prods.some(vp=>vp.product_name===p.product));
-  const coms = [...new Set(allPcc.map(p=>p.commodity))].filter(Boolean).length;
-  const covered = allPcc.length ? Math.round(allPcc.filter(p=>p.coverage_level==="Covered").length/allPcc.length*100) : 0;
-  const vendors = [...new Set(prods.map(p=>p.vendor).filter(Boolean))].length;
-  const geoRows = geo.filter(g=>prods.some(vp=>vp.product_name===g.product));
-  const regionCols = Object.keys(geoRows[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
-  const regCovered = regionCols.filter(c=>geoRows.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE")).length;
-  return {prods:prods.length, vendors, coms, covered, regCovered};
-}
-function reportBar(val, max, color){
-  const pct = max>0?Math.round(val/max*100):0;
-  return `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px">${val}</span></div>`;
-}
-function renderReportCompetitive(el, backBtn, report){
-  const products = state.products || [];
-  const pcc = state.pcc || [];
-  const geo = state.geo || [];
-
-  const ctrmProds = products.filter(p=>(p.product_type||"").toLowerCase().includes("ctrm"));
-  const riskProds = products.filter(p=>(p.product_type||"").toLowerCase().includes("risk"));
-
-  const cm = reportMetrics(ctrmProds, pcc, geo);
-  const rm = reportMetrics(riskProds, pcc, geo);
-
-  const mlist = [
-    {label:"No. of Products",        ctrm:cm.prods,      risk:rm.prods,      max:Math.max(cm.prods,rm.prods)||1},
-    {label:"No. of Vendors",         ctrm:cm.vendors,    risk:rm.vendors,    max:Math.max(cm.vendors,rm.vendors)||1},
-    {label:"Commodities Covered",    ctrm:cm.coms,       risk:rm.coms,       max:Math.max(cm.coms,rm.coms)||1},
-    {label:"Coverage % (Covered)",   ctrm:cm.covered,    risk:rm.covered,    max:100},
-    {label:"Regions with Presence",  ctrm:cm.regCovered, risk:rm.regCovered, max:Math.max(cm.regCovered,rm.regCovered)||1},
-  ];
-
-  el.innerHTML=`<div style="padding:16px">${backBtn}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
-      <div class="card" style="padding:18px;text-align:center">
-        <div style="font-size:28px">⚡</div>
-        <div style="font-size:22px;font-weight:700;color:var(--accent);margin:6px 0">${cm.prods}</div>
-        <div style="font-size:12px;color:var(--muted)">CTRM Products</div>
-      </div>
-      <div class="card" style="padding:18px;text-align:center">
-        <div style="font-size:28px">🛡</div>
-        <div style="font-size:22px;font-weight:700;color:var(--purple);margin:6px 0">${rm.prods}</div>
-        <div style="font-size:12px;color:var(--muted)">Risk Products</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><span class="card-title">${report.icon} ${report.title}</span></div>
-      <table>
-        <thead><tr>
-          <th>Metric</th>
-          <th style="text-align:center;color:var(--accent)">⚡ CTRM</th>
-          <th style="text-align:center;color:var(--purple)">🛡 Risk</th>
-        </tr></thead>
-        <tbody>
-          ${mlist.map(m=>`<tr>
-            <td style="font-weight:600">${m.label}</td>
-            <td style="padding:8px 12px">${reportBar(m.ctrm,m.max,"var(--accent)")}</td>
-            <td style="padding:8px 12px">${reportBar(m.risk,m.max,"var(--purple)")}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-}
-
 // ── REPORT: Gap Analysis ──
 function renderReportGap(el, backBtn, report){
   const pcc = state.pcc || [];
@@ -1661,13 +1564,23 @@ function getFilteredPcc() {
 }
 function getFilteredCtrm() {
   const q=(state.filters.ctrm_q||"").toLowerCase();
-  const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
-  return state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  rows=msFilter(rows,'product','ctrm_prod');
+  rows=msFilter(rows,'commodity','ctrm_com');
+  rows=msFilter(rows,'function_name','ctrm_func');
+  const covSel=state.filters.ctrm_cov||[];
+  if(covSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=covSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
+  return rows;
 }
 function getFilteredRisk() {
   const q=(state.filters.risk_q||"").toLowerCase();
-  const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
-  return state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  let rows=state.risk.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  rows=msFilter(rows,'product','risk_prod');
+  rows=msFilter(rows,'category','risk_cat');
+  rows=msFilter(rows,'function_name','risk_func');
+  const covSel=state.filters.risk_cov||[];
+  if(covSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=covSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
+  return rows;
 }
 function getFilteredGeo() {
   const q=(state.filters.geo_q||"").toLowerCase();
@@ -1874,8 +1787,8 @@ function toggleMultiSelect(e, id) {
 function getPlaceholder(key) {
   const map = {
     'pcc_prod':'All Products','pcc_com':'All Commodities','pcc_cov':'All Coverage',
-    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_cov':'All Coverage',
-    'risk_prod':'All Products','risk_cov':'All Coverage',
+    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_func':'All Functions','ctrm_cov':'All Coverage',
+    'risk_prod':'All Products','risk_cat':'All Categories','risk_func':'All Functions','risk_cov':'All Coverage',
     'geo_prod':'All Products','ct_prod':'All Products','con_prod':'All Products'
   };
   return map[key] || 'All';
