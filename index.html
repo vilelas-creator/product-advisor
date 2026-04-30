@@ -599,6 +599,7 @@ function openClientForm(productName, clientId){
   form.style.cssText = "position:fixed;top:0;right:480px;width:360px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3);animation:slideIn .15s ease";
 
   // Store selected commodities in a temporary state for the form
+  const selectedComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : [];
   window._cfSelectedComs = [...selectedComs];
   window._cfAllComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
 
