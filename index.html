@@ -945,7 +945,245 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const pcc = (state.pcc||[]).filter(r=>r.product===productName);
   const ctrm = (state.ctrm||[]).filter(r=>r.product===productName);
   const risk = (state.risk||[]).filter(r=>r.product===productName);
+  // Only clients for this product
   const clients = (state.clients||[]).filter(c=>c.product===productName);
+  // Split feedback by source type based on what fields are populated
+  const fbPcc  = clients.filter(c=> c.commodities && !c.function_name && !c.category);
+  const fbCtrm = clients.filter(c=> c.function_name && !c.category);
+  const fbRisk = clients.filter(c=> c.category);
+
+  const activeSection = state._intSection || "pcc";
+  const fPccCom  = state._intFPccCom  || "";
+  const fPccCov  = state._intFPccCov  || "";
+  const fCtrmFn  = state._intFCtrmFn  || "";
+  const fCtrmCom = state._intFCtrmCom || "";
+  const fCtrmCov = state._intFCtrmCov || "";
+  const fRiskCat = state._intFRiskCat || "";
+  const fRiskFn  = state._intFRiskFn  || "";
+  const fRiskCov = state._intFRiskCov || "";
+
+  const covPct = pcc.length ? Math.round(pcc.filter(r=>r.coverage_level==="Covered").length/pcc.length*100) : null;
+
+  el.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "padding:16px";
+
+  // Back + product header
+  const hdr = document.createElement("div");
+  hdr.innerHTML = `
+    <button onclick="state._intProd=null;state._intSection=null;renderReporting()" class="btn" style="margin-bottom:12px;display:inline-flex;align-items:center;gap:5px">← Back to Products</button>
+    <div class="card" style="margin-bottom:14px">
+      <div style="padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:17px;font-weight:700;color:var(--text)">
+            <a href="#" onclick="navToTab('products','p_q','${escAttr(productName)}');return false;" style="color:var(--accent)">${productName}</a>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">${prod.vendor||""} ${prod.product_type?"· "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):""}</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          ${covPct!==null?`<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Coverage</div></div>`:""}
+          <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${clients.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Feedbacks</div></div>
+        </div>
+      </div>
+    </div>`;
+  wrap.appendChild(hdr);
+
+  // Section tabs
+  const tabsDiv = document.createElement("div");
+  tabsDiv.style.cssText = "display:flex;gap:4px;margin-bottom:14px";
+  [["pcc","🌾 Commodity"],["ctrm","⚡ CTRM"],["risk","🛡 Risk"]].forEach(([id,label])=>{
+    const btn = document.createElement("button");
+    btn.className = "tab"+(activeSection===id?" active":"");
+    btn.textContent = label;
+    btn.onclick = ()=>{ state._intSection=id; renderReporting(); };
+    tabsDiv.appendChild(btn);
+  });
+  wrap.appendChild(tabsDiv);
+
+  const content = document.createElement("div");
+
+  function fbCard(f){
+    return `<div style="background:var(--bg2);border-left:3px solid var(--accent);padding:8px 12px;margin:4px 0;font-size:11px;border-radius:0 6px 6px 0">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:3px">
+        <span style="font-weight:700;color:var(--text)">${f.client_name}</span>
+        ${f.coverage_level?`<span style="font-weight:600;color:${f.coverage_level==="Covered"||f.coverage_level==="Deployed"?"var(--green)":f.coverage_level.includes("Partial")||f.coverage_level==="Capable"?"var(--yellow)":"var(--red)"}">● ${f.coverage_level}</span>`:""}
+        ${f.region?`<span style="color:var(--muted)">📍 ${f.region}</span>`:""}
+        ${f.since_year?`<span style="color:var(--muted)">📅 ${f.since_year}</span>`:""}
+        ${f.created_by?`<span style="color:var(--muted)">👤 ${f.created_by}</span>`:""}
+      </div>
+      ${f.notes?`<div style="color:var(--muted);font-style:italic">${f.notes}</div>`:""}
+    </div>`;
+  }
+
+  if(activeSection==="pcc"){
+    const coms = [...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
+    const covs = [...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
+    let rows = pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
+    content.innerHTML = `
+      <div class="filters" style="border-radius:8px;margin-bottom:10px">
+        <select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Commodities</option>
+          ${coms.map(c=>`<option value="${c}" ${c===fPccCom?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <select onchange="state._intFPccCov=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Coverage</option>
+          ${covs.map(c=>`<option value="${c}" ${c===fPccCov?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <button class="btn btn-reset" onclick="state._intFPccCom='';state._intFPccCov='';renderReporting()">↺ Reset</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows · ${fbPcc.length} feedbacks</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Commodity</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Official Coverage</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Feedbacks</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>{
+            // Match feedback by commodity
+            const fb = fbPcc.filter(f=>f.commodities&&f.commodities.split(",").map(s=>s.trim()).includes(r.commodity));
+            const covColor = r.coverage_level==="Covered"?"var(--green)":r.coverage_level?.includes("Partial")?"var(--yellow)":"var(--red)";
+            const rowId = "irow-"+r.id;
+            return `<tr>
+              <td style="padding:8px 12px;font-weight:600;border-bottom:1px solid var(--row-border)">${r.commodity||""}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)"><span style="color:${covColor};font-weight:600">${r.coverage_level||""}</span></td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">
+                ${fb.length===0
+                  ?`<span style="color:var(--muted);font-size:11px">No feedback</span>`
+                  :`<button onclick="toggleIntRow('${rowId}')" style="background:none;border:1px solid var(--accent)44;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit">💬 ${fb.length} ▼</button>`}
+              </td>
+            </tr>
+            ${fb.length>0?`<tr id="${rowId}" style="display:none;background:var(--bg3)">
+              <td colspan="3" style="padding:8px 16px 12px;border-bottom:1px solid var(--border)">
+                ${fb.map(f=>fbCard(f)).join("")}
+              </td>
+            </tr>`:""}`;
+          }).join("")}
+        </tbody>
+      </table>`;
+
+  } else if(activeSection==="ctrm"){
+    const fns  = [...new Set(ctrm.map(r=>r.function_name).filter(Boolean))].sort();
+    const coms = [...new Set(ctrm.map(r=>r.commodity).filter(Boolean))].sort();
+    const covs = ["Deployed","Capable","Not Capable","N/A"];
+    let rows = ctrm.filter(r=>{
+      if(fCtrmFn  && r.function_name!==fCtrmFn)  return false;
+      if(fCtrmCom && r.commodity!==fCtrmCom)      return false;
+      if(fCtrmCov && COV_LABEL[getCode(r.coverage_level)]!==fCtrmCov) return false;
+      return true;
+    });
+    content.innerHTML = `
+      <div class="filters" style="border-radius:8px;margin-bottom:10px">
+        <select onchange="state._intFCtrmFn=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Functions</option>
+          ${fns.map(f=>`<option value="${f}" ${f===fCtrmFn?"selected":""}>${f}</option>`).join("")}
+        </select>
+        <select onchange="state._intFCtrmCom=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Commodities</option>
+          ${coms.map(c=>`<option value="${c}" ${c===fCtrmCom?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <select onchange="state._intFCtrmCov=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Coverage</option>
+          ${covs.map(c=>`<option value="${c}" ${c===fCtrmCov?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <button class="btn btn-reset" onclick="state._intFCtrmFn='';state._intFCtrmCom='';state._intFCtrmCov='';renderReporting()">↺ Reset</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows · ${fbCtrm.length} feedbacks</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Function</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Commodity</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Official Coverage</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Feedbacks</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>{
+            const code = getCode(r.coverage_level);
+            // Match by function_name
+            const fb = fbCtrm.filter(f=>f.function_name===r.function_name);
+            const rowId = "ictrm-"+r.id;
+            return `<tr>
+              <td style="padding:8px 12px;font-weight:600;border-bottom:1px solid var(--row-border)">${r.function_name||""}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">${bdg(r.commodity,"var(--accent)")}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">${bdg(COV_LABEL[code],COV_COLOR[code])}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">
+                ${fb.length===0
+                  ?`<span style="color:var(--muted);font-size:11px">No feedback</span>`
+                  :`<button onclick="toggleIntRow('${rowId}')" style="background:none;border:1px solid var(--accent)44;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit">💬 ${fb.length} ▼</button>`}
+              </td>
+            </tr>
+            ${fb.length>0?`<tr id="${rowId}" style="display:none;background:var(--bg3)">
+              <td colspan="4" style="padding:8px 16px 12px;border-bottom:1px solid var(--border)">
+                ${fb.map(f=>fbCard(f)).join("")}
+              </td>
+            </tr>`:""}`;
+          }).join("")}
+        </tbody>
+      </table>`;
+
+  } else if(activeSection==="risk"){
+    const cats = [...new Set(risk.map(r=>r.category).filter(Boolean))].sort();
+    const fns  = [...new Set(risk.map(r=>r.function_name).filter(Boolean))].sort();
+    const covs = ["Deployed","Capable","Not Capable","N/A"];
+    let rows = risk.filter(r=>{
+      if(fRiskCat && r.category!==fRiskCat)    return false;
+      if(fRiskFn  && r.function_name!==fRiskFn) return false;
+      if(fRiskCov && COV_LABEL[getCode(r.coverage_level)]!==fRiskCov) return false;
+      return true;
+    });
+    content.innerHTML = `
+      <div class="filters" style="border-radius:8px;margin-bottom:10px">
+        <select onchange="state._intFRiskCat=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Categories</option>
+          ${cats.map(c=>`<option value="${c}" ${c===fRiskCat?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <select onchange="state._intFRiskFn=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Functions</option>
+          ${fns.map(f=>`<option value="${f}" ${f===fRiskFn?"selected":""}>${f}</option>`).join("")}
+        </select>
+        <select onchange="state._intFRiskCov=this.value;renderReporting()" style="font-size:12px">
+          <option value="">All Coverage</option>
+          ${covs.map(c=>`<option value="${c}" ${c===fRiskCov?"selected":""}>${c}</option>`).join("")}
+        </select>
+        <button class="btn btn-reset" onclick="state._intFRiskCat='';state._intFRiskFn='';state._intFRiskCov='';renderReporting()">↺ Reset</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows · ${fbRisk.length} feedbacks</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Category</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Function</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Official Coverage</th>
+          <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Feedbacks</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>{
+            const code = getCode(r.coverage_level);
+            // Match by category + function_name
+            const fb = fbRisk.filter(f=>f.category===r.category&&f.function_name===r.function_name);
+            const rowId = "irisk-"+r.id;
+            return `<tr>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">${bdg(r.category,"var(--purple)")}</td>
+              <td style="padding:8px 12px;font-weight:600;border-bottom:1px solid var(--row-border)">${r.function_name||""}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">${bdg(COV_LABEL[code],COV_COLOR[code])}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">
+                ${fb.length===0
+                  ?`<span style="color:var(--muted);font-size:11px">No feedback</span>`
+                  :`<button onclick="toggleIntRow('${rowId}')" style="background:none;border:1px solid var(--accent)44;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit">💬 ${fb.length} ▼</button>`}
+              </td>
+            </tr>
+            ${fb.length>0?`<tr id="${rowId}" style="display:none;background:var(--bg3)">
+              <td colspan="4" style="padding:8px 16px 12px;border-bottom:1px solid var(--border)">
+                ${fb.map(f=>fbCard(f)).join("")}
+              </td>
+            </tr>`:""}`;
+          }).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  wrap.appendChild(content);
+  el.appendChild(wrap);
+}
 
   const activeSection = state._intSection || "pcc";
 
