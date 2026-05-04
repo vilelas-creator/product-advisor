@@ -622,13 +622,13 @@ function openClientForm(productName, clientId, ctx){
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label>
         <div id="cf-coms-ms-wrap"></div>
       </div>`:""}
-      ${prefillFunction?`<div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
-        <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
-      </div>`:""}
       ${prefillCategory?`<div>
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Category</label>
         <input id="cf-category" value="${escAttr(prefillCategory)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>`:""}
+      ${prefillFunction?`<div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
+        <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
       </div>`:""}
       <div>
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
@@ -933,7 +933,7 @@ function renderCTRM(){
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th><th></th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity)}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity)}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -963,7 +963,7 @@ function renderRisk(){
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th><th></th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
@@ -1799,6 +1799,44 @@ function openPCCModal(id){
     if(!vals.id)delete vals.id;
     try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);}
     else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
+function openCTRMModal(id){
+  const r=id?state.ctrm.find(x=>x.id===id):null;
+  const prods=[...new Set(state.products.map(x=>x.product_name).filter(Boolean))].sort();
+  const coms=[...new Set(state.commodities.map(x=>x.commodity_name).filter(Boolean))].sort();
+  const covs=["Deployed","Capable","Not Capable","N/A"];
+  openModal(r?"Edit CTRM Coverage":"Add CTRM Coverage",[
+    {label:"ID",value:r?.id||"",ro:true},
+    {label:"Product",type:"select",value:r?.product||"",options:prods},
+    {label:"Function Name",value:r?.function_name||""},
+    {label:"Commodity",type:"select",value:r?.commodity||"",options:coms},
+    {label:"Coverage Level",type:"select",value:r?.coverage_level||"",options:covs}
+  ],async()=>{
+    const vals=getVals(["id","product","function_name","commodity","coverage_level"]);
+    if(!vals.id)delete vals.id;
+    try{if(r){await apiFetch(`product_function_ctrm?id=eq.${r.id}`,{method:"PATCH",body:vals});state.ctrm=state.ctrm.map(x=>x.id===r.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("product_function_ctrm",{method:"POST",body:vals});state.ctrm=[...state.ctrm,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+  });
+}
+
+function openRiskModal(id){
+  const r=id?state.risk.find(x=>x.id===id):null;
+  const prods=[...new Set(state.products.map(x=>x.product_name).filter(Boolean))].sort();
+  const cats=[...new Set(state.risk.map(x=>x.category).filter(Boolean))].sort();
+  const covs=["Deployed","Capable","Not Capable","N/A"];
+  openModal(r?"Edit Risk Coverage":"Add Risk Coverage",[
+    {label:"ID",value:r?.id||"",ro:true},
+    {label:"Product",type:"select",value:r?.product||"",options:prods},
+    {label:"Category",type:"select",value:r?.category||"",options:cats},
+    {label:"Function Name",value:r?.function_name||""},
+    {label:"Coverage Level",type:"select",value:r?.coverage_level||"",options:covs}
+  ],async()=>{
+    const vals=getVals(["id","product","category","function_name","coverage_level"]);
+    if(!vals.id)delete vals.id;
+    try{if(r){await apiFetch(`product_function_risk?id=eq.${r.id}`,{method:"PATCH",body:vals});state.risk=state.risk.map(x=>x.id===r.id?{...x,...vals}:x);}
+    else{const res=await apiFetch("product_function_risk",{method:"POST",body:vals});state.risk=[...state.risk,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
   });
 }
 
