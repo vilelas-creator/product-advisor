@@ -1319,42 +1319,33 @@ function closeProductDetail(){
 function openClientForm(productName, clientId, ctx){
   document.getElementById("client-form-panel")?.remove();
   const existing = clientId ? (state.clients||[]).find(c=>c.id===clientId) : null;
-  const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
-  const selectedComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : ctx?.commodity ? [ctx.commodity] : [];
-  window._cfSelectedComs = [...selectedComs];
-  window._cfAllComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
   window._cfCtx = ctx || null;
-  const showCommodities = !(ctx?.category && !ctx?.commodity);
-  const prefillFunction = existing?.function_name || ctx?.function_name || "";
-  const prefillCategory = existing?.category || ctx?.category || "";
-  const prefillCoverage = existing?.coverage_level || ctx?.coverage_level || "";
-  const coverageOpts = ctx?.coverage_opts === 'pcc'
-    ? ["Covered","Partially Covered","Not Covered","Can be covered"]
-    : ctx?.coverage_opts === 'ctrm' || ctx?.coverage_opts === 'risk'
-    ? ["Deployed","Capable","Not Capable","N/A"]
-    : prefillCoverage ? ["Covered","Partially Covered","Not Covered","Can be covered","Deployed","Capable","Not Capable","N/A"] : [];
+  window._cfProductName = productName;
+  window._cfClientId = clientId;
+  window._cfExisting = existing;
+  const initType = ctx?.source_table || existing?.source_table || 'products';
 
   const form = document.createElement("div");
   form.id = "client-form-panel";
-  form.style.cssText = "position:fixed;top:0;right:480px;width:360px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3)";
+  form.style.cssText = "position:fixed;top:0;right:480px;width:380px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3)";
   form.innerHTML = `
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
       <div style="font-weight:700;font-size:14px">${clientId?"Edit Client Feedback":"New Client Feedback"}</div>
       <button onclick="document.getElementById('client-form-panel').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Feedback Type</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap" id="cf-type-btns">
+          <button type="button" id="cftype-products" onclick="cfSetType('products')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">📦 Product</button>
+          <button type="button" id="cftype-pcc" onclick="cfSetType('pcc')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">🌾 Commodity</button>
+          <button type="button" id="cftype-ctrm" onclick="cfSetType('ctrm')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">⚡ CTRM</button>
+          <button type="button" id="cftype-risk" onclick="cfSetType('risk')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">🛡 Risk</button>
+        </div>
+      </div>
       <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Client Name *</label>
         <input id="cf-client" value="${escAttr(existing?.client_name||"")}" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
-      ${showCommodities?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label><div id="cf-coms-ms-wrap"></div></div>`:""}
-      ${prefillCategory?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Category</label>
-        <input id="cf-category" value="${escAttr(prefillCategory)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"></div>`:""}
-      ${prefillFunction?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
-        <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"></div>`:""}
-      ${coverageOpts.length?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Coverage Level</label>
-        <select id="cf-coverage" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
-          <option value="">— Select —</option>
-          ${coverageOpts.map(o=>`<option value="${o}" ${o===prefillCoverage?"selected":""}>${o}</option>`).join("")}
-        </select></div>`:""}
+      <div id="cf-dynamic-fields"></div>
       <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
         <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
       <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Since Year</label>
@@ -1367,9 +1358,47 @@ function openClientForm(productName, clientId, ctx){
       <button onclick="saveClient('${escAttr(productName)}',${clientId||"null"})" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>
     </div>`;
   document.body.appendChild(form);
-  if(showCommodities) buildCfComsMultiselect();
+  window._cfType = initType;
+  cfSetType(initType);
   setTimeout(()=>document.getElementById("cf-client")?.focus(),100);
 }
+
+function cfSetType(type){
+  window._cfType = type;
+  const productName = window._cfProductName;
+  const existing = window._cfExisting;
+  const ctx = window._cfCtx;
+  ['products','pcc','ctrm','risk'].forEach(t=>{
+    const b=document.getElementById('cftype-'+t);
+    if(b){b.style.background=t===type?'var(--accent)':'var(--bg3)';b.style.color=t===type?'#fff':'var(--muted)';}
+  });
+  const container=document.getElementById('cf-dynamic-fields');
+  if(!container)return;
+  const inpHtml=(id,lbl,val,ph,ro)=>`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${lbl}</label><input id="${id}" value="${escAttr(val||'')}" placeholder="${ph||''}" ${ro?'readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"':'style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"'}></div>`;
+  const selHtml=(id,lbl,opts,val)=>`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${lbl}</label><select id="${id}" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>${opts.map(o=>`<option value="${escAttr(o)}" ${o===(val||'')?'selected':''}>${o}</option>`).join('')}</select></div>`;
+  if(type==='products'||type==='pcc'){
+    const pccComs=[...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
+    const allComs=pccComs.length?pccComs:[...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
+    const selComs=existing?(existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean):ctx?.commodity?[ctx.commodity]:[];
+    window._cfSelectedComs=[...selComs];window._cfAllComs=allComs;
+    const covOpts=["Covered","Partially Covered","Not Covered","Can be covered"];
+    container.innerHTML=`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label><div id="cf-coms-ms-wrap"></div></div>`+selHtml('cf-coverage','Coverage Level',covOpts,existing?.coverage_level||ctx?.coverage_level||'');
+    buildCfComsMultiselect();
+  } else if(type==='ctrm'){
+    const fns=[...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.function_name).filter(Boolean))].sort();
+    const allFns=fns.length?fns:[...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
+    const coms=[...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.commodity).filter(Boolean))].sort();
+    const allComs=coms.length?coms:[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
+    const covOpts=["Deployed","Capable","Not Capable","N/A"];
+    container.innerHTML=selHtml('cf-function','Function',allFns,existing?.function_name||ctx?.function_name||'')+selHtml('cf-commodity-sel','Commodity',allComs,existing?.commodities||ctx?.commodity||'')+selHtml('cf-coverage','Coverage Level',covOpts,existing?.coverage_level||ctx?.coverage_level||'');
+  } else if(type==='risk'){
+    const allCats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
+    const allFns=[...new Set(state.risk.map(r=>r.function_name).filter(Boolean))].sort();
+    const covOpts=["Deployed","Capable","Not Capable","N/A"];
+    container.innerHTML=selHtml('cf-category','Category',allCats,existing?.category||ctx?.category||'')+selHtml('cf-function','Function',allFns,existing?.function_name||ctx?.function_name||'')+selHtml('cf-coverage','Coverage Level',covOpts,existing?.coverage_level||ctx?.coverage_level||'');
+  }
+}
+
 
 function buildCfComsMultiselect(){
   const wrap = document.getElementById("cf-coms-ms-wrap");
@@ -1453,14 +1482,15 @@ function openCfComsDropdown(btn, allComs){
 async function saveClient(productName, clientId){
   const clientName = document.getElementById("cf-client")?.value?.trim();
   if(!clientName){alert("Client name is required.");return;}
-  const commodities = (window._cfSelectedComs||[]).join(", ");
+  const comSel = document.getElementById("cf-commodity-sel")?.value?.trim();
+  const commodities = comSel || (window._cfSelectedComs||[]).join(", ");
   const region = document.getElementById("cf-region")?.value?.trim()||null;
   const sinceYear = parseInt(document.getElementById("cf-year")?.value)||null;
   const notes = document.getElementById("cf-notes")?.value?.trim()||null;
   const functionName = document.getElementById("cf-function")?.value?.trim()||null;
   const category = document.getElementById("cf-category")?.value?.trim()||null;
   const coverageLevel = document.getElementById("cf-coverage")?.value||null;
-  const sourceTable = window._cfCtx?.source_table || null;
+  const sourceTable = window._cfType || window._cfCtx?.source_table || null;
   const userName = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
   const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,coverage_level:coverageLevel,source_table:sourceTable,created_by:userName};
   try{
