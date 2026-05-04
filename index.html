@@ -179,6 +179,7 @@ async function getAll(table){
 
 function bdg(label,color){return`<span class="badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${label||""}</span>`;}
 function bar(pct,color){return`<div class="bar-wrap"><div class="bar-inner" style="width:${Math.min(pct,100)}%;background:${color||"var(--accent)"}"></div></div>`;}
+function escAttr(s){return(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;");}
 function pagerHtml(id,page,total,per){
   const pages=Math.ceil(total/per);if(pages<=1)return"";
   return`<div class="pager"><button class="btn" onclick="changePage('${id}',${page-1})" ${page===0?"disabled":""}>← Prev</button><span>Page ${page+1} / ${pages} · ${total.toLocaleString()} records</span><button class="btn" onclick="changePage('${id}',${page+1})" ${page>=pages-1?"disabled":""}>Next →</button></div>`;
