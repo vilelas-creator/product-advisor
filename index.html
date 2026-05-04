@@ -764,6 +764,243 @@ function getVals(keys){
   const r={};keys.forEach((k,i)=>{const v=els[i]?.value||"";r[k]=(k==="id"&&v==="")?null:v;});return r;
 }
 
+// ── PRODUCT DETAIL SIDE PANEL ──
+function openProductDetail(productName, ctx){
+  document.getElementById("product-detail-panel")?.remove();
+  document.getElementById("product-detail-overlay")?.remove();
+  document.getElementById("client-form-panel")?.remove();
+
+  const prod = state.products.find(p=>p.product_name===productName) || {product_name:productName,vendor:"",product_type:""};
+  const pccEntries = state.pcc.filter(r=>r.product===productName);
+  const covPct = pccEntries.length ? Math.round(pccEntries.filter(r=>r.coverage_level==="Covered").length/pccEntries.length*100) : null;
+  const clients = (state.clients||[]).filter(c=>c.product===productName);
+
+  const overlay = document.createElement("div");
+  overlay.id = "product-detail-overlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000";
+  overlay.onclick = closeProductDetail;
+  document.body.appendChild(overlay);
+
+  const panel = document.createElement("div");
+  panel.id = "product-detail-panel";
+  panel.style.cssText = "position:fixed;top:0;right:0;width:480px;max-width:95vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4)";
+
+  panel.innerHTML = `
+    <style>@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}</style>
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">${prod.product_name}</div>
+        <div style="font-size:11px;color:var(--muted)">${prod.vendor||""} ${prod.product_type?"· "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):""}</div>
+      </div>
+      <button onclick="closeProductDetail()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
+    </div>
+    <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;background:var(--bg3)">
+      ${prod.deployment_model?"<div><div style='font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px'>Deployment</div><div style='font-size:11px;color:var(--text);margin-top:2px'>"+prod.deployment_model+"</div></div>":""}
+      ${prod.version_info?"<div><div style='font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px'>Version</div><div style='font-size:11px;color:var(--yellow);font-weight:600;margin-top:2px'>"+prod.version_info+"</div></div>":""}
+      ${covPct!==null?"<div><div style='font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px'>Commodity Coverage</div><div style='font-size:11px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+";margin-top:2px'>"+covPct+"%</div></div>":""}
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">👥 Client Feedback</div>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openClientForm('${escAttr(productName)}',null,window._pdCtx)">+ Add Feedback</button>
+      </div>
+      <div id="clients-list-${escAttr(productName).replace(/[^a-z0-9]/gi,'_')}">
+        ${renderClientsList(productName, clients)}
+      </div>
+    </div>`;
+
+  window._pdCtx = ctx || null;
+  document.body.appendChild(panel);
+}
+
+function renderClientsList(productName, clients){
+  if(!clients||!clients.length) return `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">No feedback added yet.<br><span style="font-size:11px">Click "+ Add Feedback" to add the first one.</span></div>`;
+  return clients.map(c=>{
+    const coms = (c.commodities||"").split(",").map(s=>s.trim()).filter(Boolean);
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px;color:var(--text)">${c.client_name}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="openClientForm('${escAttr(productName)}',${c.id},null)">Edit</button>
+          <button class="btn" style="font-size:10px;padding:2px 7px;color:var(--red);border-color:var(--red)44" onclick="deleteClient(${c.id},'${escAttr(productName)}')">Delete</button>
+        </div>
+      </div>
+      ${coms.length?"<div style='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px'>"+coms.map(com=>"<span style='padding:1px 7px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33'>"+com+"</span>").join("")+"</div>":""}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+        ${c.region?"<span>📍 "+c.region+"</span>":""}
+        ${c.since_year?"<span>📅 Since "+c.since_year+"</span>":""}
+        ${c.created_by?"<span>👤 "+c.created_by+"</span>":""}
+      </div>
+      ${c.notes?"<div style='margin-top:6px;font-size:11px;color:var(--muted);font-style:italic'>"+c.notes+"</div>":""}
+    </div>`;
+  }).join("");
+}
+
+function closeProductDetail(){
+  document.getElementById("product-detail-panel")?.remove();
+  document.getElementById("product-detail-overlay")?.remove();
+  document.getElementById("client-form-panel")?.remove();
+}
+
+function openClientForm(productName, clientId, ctx){
+  document.getElementById("client-form-panel")?.remove();
+  const existing = clientId ? (state.clients||[]).find(c=>c.id===clientId) : null;
+  const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
+  const selectedComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : ctx?.commodity ? [ctx.commodity] : [];
+  window._cfSelectedComs = [...selectedComs];
+  window._cfAllComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
+  const showCommodities = !(ctx?.category && !ctx?.commodity);
+  const prefillFunction = existing?.function_name || ctx?.function_name || "";
+  const prefillCategory = existing?.category || ctx?.category || "";
+
+  const form = document.createElement("div");
+  form.id = "client-form-panel";
+  form.style.cssText = "position:fixed;top:0;right:480px;width:360px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3)";
+  form.innerHTML = `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-weight:700;font-size:14px">${clientId?"Edit Client Feedback":"New Client Feedback"}</div>
+      <button onclick="document.getElementById('client-form-panel').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Client Name *</label>
+        <input id="cf-client" value="${escAttr(existing?.client_name||"")}" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
+      ${showCommodities?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label><div id="cf-coms-ms-wrap"></div></div>`:""}
+      ${prefillCategory?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Category</label>
+        <input id="cf-category" value="${escAttr(prefillCategory)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"></div>`:""}
+      ${prefillFunction?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
+        <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"></div>`:""}
+      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
+        <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Since Year</label>
+        <input id="cf-year" type="number" value="${existing?.since_year||""}" placeholder="e.g. 2020" min="1990" max="2099" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Notes</label>
+        <textarea id="cf-notes" placeholder="Additional notes..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box">${existing?.notes||""}</textarea></div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.getElementById('client-form-panel').remove()" class="btn" style="font-size:12px">Cancel</button>
+      <button onclick="saveClient('${escAttr(productName)}',${clientId||"null"})" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>
+    </div>`;
+  document.body.appendChild(form);
+  if(showCommodities) buildCfComsMultiselect();
+  setTimeout(()=>document.getElementById("cf-client")?.focus(),100);
+}
+
+function buildCfComsMultiselect(){
+  const wrap = document.getElementById("cf-coms-ms-wrap");
+  if(!wrap) return;
+  const allComs = window._cfAllComs || [];
+  const selected = window._cfSelectedComs || [];
+  const btn = document.createElement("button");
+  btn.type = "button";
+  const lbl = selected.length===0?"Select commodities...":selected.length===1?selected[0]:selected.length+" selected";
+  btn.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:"+(selected.length>0?"var(--accent)":"var(--muted)")+";font-size:12px;font-family:inherit;cursor:pointer";
+  btn.innerHTML = "<span id='cf-coms-label'>"+lbl+"</span><span style='font-size:9px'>▼</span>";
+  btn.onclick = (e) => { e.preventDefault(); openCfComsDropdown(btn, allComs); };
+  wrap.appendChild(btn);
+}
+
+function openCfComsDropdown(btn, allComs){
+  document.getElementById("cf-coms-portal")?.remove();
+  const rect = btn.getBoundingClientRect();
+  const portal = document.createElement("div");
+  portal.id = "cf-coms-portal";
+  portal.style.cssText = "position:fixed;top:"+(rect.bottom+2)+"px;left:"+rect.left+"px;width:"+Math.max(rect.width,220)+"px;z-index:99999;background:var(--bg2);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.5);font-size:12px;overflow:hidden";
+  const searchRow = document.createElement("div");
+  searchRow.style.cssText = "padding:6px 8px;border-bottom:1px solid var(--border);background:var(--bg3)";
+  const searchInput = document.createElement("input");
+  searchInput.placeholder = "Search...";
+  searchInput.style.cssText = "width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
+  searchRow.appendChild(searchInput);
+  portal.appendChild(searchRow);
+  const allRow = document.createElement("div");
+  allRow.style.cssText = "display:flex;align-items:center;gap:7px;padding:5px 10px;border-bottom:2px solid var(--border);background:var(--bg3);cursor:pointer";
+  const allCb = document.createElement("input"); allCb.type="checkbox";
+  allCb.style.cssText = "cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0";
+  const allLbl = document.createElement("span"); allLbl.textContent="(Select All)"; allLbl.style.cssText="font-weight:600;user-select:none";
+  allRow.appendChild(allCb); allRow.appendChild(allLbl); portal.appendChild(allRow);
+  const listDiv = document.createElement("div"); listDiv.style.cssText="max-height:200px;overflow-y:auto";
+  portal.appendChild(listDiv);
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;gap:6px;padding:7px 10px;border-top:1px solid var(--border);background:var(--bg3);justify-content:flex-end";
+  const okBtn = document.createElement("button"); okBtn.textContent="OK";
+  okBtn.style.cssText = "padding:4px 18px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
+  const cancelBtn = document.createElement("button"); cancelBtn.textContent="Cancel";
+  cancelBtn.style.cssText = "padding:4px 12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit";
+  footer.appendChild(cancelBtn); footer.appendChild(okBtn); portal.appendChild(footer);
+  document.body.appendChild(portal);
+  let pending = [...(window._cfSelectedComs||[])];
+  function buildList(opts){
+    listDiv.innerHTML="";
+    opts.forEach(opt=>{
+      const row=document.createElement("label");
+      row.style.cssText="display:flex;align-items:center;gap:7px;padding:4px 10px;cursor:pointer;border-bottom:1px solid var(--row-border)";
+      row.onmouseover=()=>row.style.background="var(--bg3)"; row.onmouseout=()=>row.style.background="";
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.value=opt; cb.checked=pending.includes(opt);
+      cb.style.cssText="cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0";
+      cb.addEventListener("change",()=>{ if(cb.checked){if(!pending.includes(opt))pending.push(opt);}else{pending=pending.filter(v=>v!==opt);} syncAll(); });
+      const lbl=document.createElement("span"); lbl.textContent=opt; lbl.style.cssText="user-select:none;font-size:12px;color:var(--text)";
+      row.appendChild(cb); row.appendChild(lbl); listDiv.appendChild(row);
+    }); syncAll();
+  }
+  function syncAll(){
+    const vis=[...listDiv.querySelectorAll("input[type=checkbox]")].map(c=>c.value);
+    const checked=vis.filter(o=>pending.includes(o));
+    allCb.checked=checked.length===vis.length&&vis.length>0; allCb.indeterminate=checked.length>0&&checked.length<vis.length;
+  }
+  allCb.addEventListener("change",()=>{ const vis=[...listDiv.querySelectorAll("input[type=checkbox]")]; if(allCb.checked){vis.forEach(cb=>{cb.checked=true;if(!pending.includes(cb.value))pending.push(cb.value);});}else{vis.forEach(cb=>{cb.checked=false;});pending=pending.filter(o=>!vis.map(c=>c.value).includes(o));} });
+  allRow.onclick=e=>{if(e.target!==allCb){allCb.checked=!allCb.checked;allCb.dispatchEvent(new Event("change"));}};
+  searchInput.addEventListener("input",()=>{ const q=searchInput.value.toLowerCase(); buildList(q?allComs.filter(o=>o.toLowerCase().includes(q)):allComs); });
+  okBtn.addEventListener("click",()=>{
+    window._cfSelectedComs=[...pending];
+    const lbl=document.getElementById("cf-coms-label");
+    if(lbl)lbl.textContent=pending.length===0?"Select commodities...":pending.length===1?pending[0]:pending.length+" selected";
+    const btnEl=document.querySelector("#cf-coms-ms-wrap button");
+    if(btnEl)btnEl.style.color=pending.length>0?"var(--accent)":"var(--muted)";
+    portal.remove();
+  });
+  cancelBtn.addEventListener("click",()=>portal.remove());
+  setTimeout(()=>{ document.addEventListener("click",function outside(ev){if(!portal.contains(ev.target)&&!btn.contains(ev.target)){portal.remove();document.removeEventListener("click",outside);}});},0);
+  requestAnimationFrame(()=>{ const pr=portal.getBoundingClientRect(); if(pr.bottom>window.innerHeight-10)portal.style.top=(rect.top-pr.height-2)+"px"; });
+  buildList(allComs); searchInput.focus();
+}
+
+async function saveClient(productName, clientId){
+  const clientName = document.getElementById("cf-client")?.value?.trim();
+  if(!clientName){alert("Client name is required.");return;}
+  const commodities = (window._cfSelectedComs||[]).join(", ");
+  const region = document.getElementById("cf-region")?.value?.trim()||null;
+  const sinceYear = parseInt(document.getElementById("cf-year")?.value)||null;
+  const notes = document.getElementById("cf-notes")?.value?.trim()||null;
+  const functionName = document.getElementById("cf-function")?.value?.trim()||null;
+  const category = document.getElementById("cf-category")?.value?.trim()||null;
+  const userName = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
+  const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,created_by:userName};
+  try{
+    if(clientId&&clientId!=="null"){
+      await apiFetch("product_clients",{method:"PATCH",body,params:{id:"eq."+clientId}});
+      const idx=(state.clients||[]).findIndex(c=>c.id==clientId);
+      if(idx>-1)state.clients[idx]={...state.clients[idx],...body};
+    }else{
+      const res=await apiFetch("product_clients",{method:"POST",body});
+      if(!state.clients)state.clients=[];
+      if(res[0])state.clients.push(res[0]);
+    }
+    document.getElementById("client-form-panel")?.remove();
+    const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
+    if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
+  }catch(e){alert("Error saving: "+e.message);}
+}
+
+async function deleteClient(clientId, productName){
+  if(!confirm("Delete this feedback record?"))return;
+  try{
+    await apiFetch("product_clients",{method:"DELETE",params:{id:"eq."+clientId}});
+    state.clients=(state.clients||[]).filter(c=>c.id!==clientId);
+    const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
+    if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
+  }catch(e){alert("Error deleting: "+e.message);}
+}
+
 function openVendorModal(id){
   const v=id?state.vendors.find(x=>x.id===id):null;
   openModal(v?"Edit Vendor":"Add Vendor",[
@@ -1081,13 +1318,14 @@ async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
   try{
-    const[v,p,ct_data,g,pcc,risk,ct,com]=await Promise.all([
+    const[v,p,ct_data,g,pcc,risk,ct,com,clients]=await Promise.all([
       getAll("vendors"),getAll("products"),getAll("product_contacts"),
       getAll("geographic_coverage"),getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities")
+      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities"),
+      getAll("product_clients")
     ]);
     state.vendors=v;state.products=p;state.contacts=ct_data;
-    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
     state.ctrmLoading=true;
     render();
     const ctrm=await getAll("product_function_ctrm");
