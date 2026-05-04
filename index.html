@@ -494,7 +494,7 @@ function renderCommCoverage(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}</div>`;
 }
 
@@ -519,7 +519,7 @@ function renderCTRM(){
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity||"")}',function_name:'${escAttr(r.function_name||"")}',coverage_level:'${escAttr(COV_LABEL[code]||"")}',coverage_opts:'ctrm'})">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -543,7 +543,7 @@ function renderRisk(){
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}',coverage_level:'${escAttr(COV_LABEL[code]||"")}',coverage_opts:'risk'})">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
@@ -827,6 +827,7 @@ function renderClientsList(productName, clients){
       </div>
       ${coms.length?"<div style='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px'>"+coms.map(com=>"<span style='padding:1px 7px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33'>"+com+"</span>").join("")+"</div>":""}
       <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+        ${c.coverage_level?`<span style="font-weight:600;color:${c.coverage_level==="Covered"||c.coverage_level==="Deployed"?"var(--green)":c.coverage_level.includes("Partial")||c.coverage_level==="Capable"?"var(--yellow)":"var(--red)"}">● ${c.coverage_level}</span>`:""}
         ${c.region?"<span>📍 "+c.region+"</span>":""}
         ${c.since_year?"<span>📅 Since "+c.since_year+"</span>":""}
         ${c.created_by?"<span>👤 "+c.created_by+"</span>":""}
@@ -852,6 +853,12 @@ function openClientForm(productName, clientId, ctx){
   const showCommodities = !(ctx?.category && !ctx?.commodity);
   const prefillFunction = existing?.function_name || ctx?.function_name || "";
   const prefillCategory = existing?.category || ctx?.category || "";
+  const prefillCoverage = existing?.coverage_level || ctx?.coverage_level || "";
+  const coverageOpts = ctx?.coverage_opts === 'pcc'
+    ? ["Covered","Partially Covered","Not Covered","Can be covered"]
+    : ctx?.coverage_opts === 'ctrm' || ctx?.coverage_opts === 'risk'
+    ? ["Deployed","Capable","Not Capable","N/A"]
+    : prefillCoverage ? ["Covered","Partially Covered","Not Covered","Can be covered","Deployed","Capable","Not Capable","N/A"] : [];
 
   const form = document.createElement("div");
   form.id = "client-form-panel";
@@ -869,6 +876,11 @@ function openClientForm(productName, clientId, ctx){
         <input id="cf-category" value="${escAttr(prefillCategory)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"></div>`:""}
       ${prefillFunction?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
         <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"></div>`:""}
+      ${coverageOpts.length?`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Coverage Level</label>
+        <select id="cf-coverage" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
+          <option value="">— Select —</option>
+          ${coverageOpts.map(o=>`<option value="${o}" ${o===prefillCoverage?"selected":""}>${o}</option>`).join("")}
+        </select></div>`:""}
       <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
         <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
       <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Since Year</label>
@@ -973,8 +985,9 @@ async function saveClient(productName, clientId){
   const notes = document.getElementById("cf-notes")?.value?.trim()||null;
   const functionName = document.getElementById("cf-function")?.value?.trim()||null;
   const category = document.getElementById("cf-category")?.value?.trim()||null;
+  const coverageLevel = document.getElementById("cf-coverage")?.value||null;
   const userName = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
-  const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,created_by:userName};
+  const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,coverage_level:coverageLevel,created_by:userName};
   try{
     if(clientId&&clientId!=="null"){
       await apiFetch("product_clients",{method:"PATCH",body,params:{id:"eq."+clientId}});
