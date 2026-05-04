@@ -501,22 +501,20 @@ function renderVendors(){
 
 // ── PRODUCTS ──
 // ── PRODUCT DETAIL SIDE PANEL ──
-function openProductDetail(productName){
-  // Close any existing panel
+function openProductDetail(productName, ctx){
+  // ctx = {commodity, function_name, category} — optional pre-fill context
   const existing = document.getElementById("product-detail-panel");
   if(existing) existing.remove();
 
-  const prod = state.products.find(p=>p.product_name===productName);
-  if(!prod) return;
+  const prod = state.products.find(p=>p.product_name===productName)
+    || {product_name:productName, vendor:"", product_type:""};
 
-  // Overlay
   const overlay = document.createElement("div");
   overlay.id = "product-detail-overlay";
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000";
   overlay.onclick = closeProductDetail;
   document.body.appendChild(overlay);
 
-  // Panel
   const panel = document.createElement("div");
   panel.id = "product-detail-panel";
   panel.style.cssText = "position:fixed;top:0;right:0;width:480px;max-width:95vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4);animation:slideIn .2s ease";
@@ -547,13 +545,14 @@ function openProductDetail(productName){
     <div style="flex:1;overflow-y:auto;padding:16px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:13px;font-weight:700;color:var(--text)">👥 Client Feedback</div>
-        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openClientForm('${escAttr(productName)}',null)">+ Add Feedback</button>
+        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openClientForm('${escAttr(productName)}',null,window._pdCtx)">+ Add Feedback</button>
       </div>
       <div id="clients-list-${escAttr(productName).replace(/[^a-z0-9]/gi,'_')}">
         ${renderClientsList(productName, clients)}
       </div>
     </div>`;
 
+  window._pdCtx = ctx || null;
   document.body.appendChild(panel);
 }
 
@@ -588,7 +587,7 @@ function closeProductDetail(){
   document.getElementById("client-form-panel")?.remove();
 }
 
-function openClientForm(productName, clientId){
+function openClientForm(productName, clientId, ctx){
   document.getElementById("client-form-panel")?.remove();
 
   const existing = clientId ? state.clients.find(c=>c.id===clientId) : null;
@@ -598,10 +597,18 @@ function openClientForm(productName, clientId){
   form.id = "client-form-panel";
   form.style.cssText = "position:fixed;top:0;right:480px;width:360px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3);animation:slideIn .15s ease";
 
-  // Store selected commodities in a temporary state for the form
-  const selectedComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : [];
+  // Pre-fill from existing record or from ctx (row context)
+  const selectedComs = existing
+    ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean)
+    : ctx?.commodity ? [ctx.commodity] : [];
   window._cfSelectedComs = [...selectedComs];
   window._cfAllComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
+
+  const showCommodities = !(ctx?.category && !ctx?.commodity);  // hide for Risk context
+
+  const showCommodities = !(ctx?.category && !ctx?.commodity);
+  const prefillFunction = existing?.function_name || ctx?.function_name || "";
+  const prefillCategory = existing?.category || ctx?.category || "";
 
   form.innerHTML = `
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -613,10 +620,18 @@ function openClientForm(productName, clientId){
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Client Name *</label>
         <input id="cf-client" value="${escAttr(existing?.client_name||"")}" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
       </div>
-      <div>
+      ${showCommodities?`<div>
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label>
         <div id="cf-coms-ms-wrap"></div>
-      </div>
+      </div>`:""}
+      ${prefillFunction?`<div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
+        <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>`:""}
+      ${prefillCategory?`<div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Category</label>
+        <input id="cf-category" value="${escAttr(prefillCategory)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
+      </div>`:""}
       <div>
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
         <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
@@ -636,9 +651,7 @@ function openClientForm(productName, clientId){
     </div>`;
 
   document.body.appendChild(form);
-
-  // Build the Excel-style multiselect for commodities
-  buildCfComsMultiselect();
+  if(showCommodities) buildCfComsMultiselect();
   setTimeout(()=>document.getElementById("cf-client")?.focus(),100);
 }
 
@@ -790,9 +803,11 @@ async function saveClient(productName, clientId){
   const region    = document.getElementById("cf-region")?.value?.trim()||null;
   const sinceYear = parseInt(document.getElementById("cf-year")?.value)||null;
   const notes     = document.getElementById("cf-notes")?.value?.trim()||null;
-  const userName  = localStorage.getItem("pa_username") || "User";
+  const functionName = document.getElementById("cf-function")?.value?.trim()||null;
+  const category  = document.getElementById("cf-category")?.value?.trim()||null;
+  const userName  = currentUser?.email || currentUser?.user_metadata?.full_name || currentUser || "User";
 
-  const body = {product:productName, client_name:clientName, commodities, region, since_year:sinceYear, notes, created_by:userName};
+  const body = {product:productName, client_name:clientName, commodities, region, since_year:sinceYear, notes, function_name:functionName, category, created_by:userName};
 
   try{
     if(clientId){
@@ -889,7 +904,7 @@ function renderCommCoverage(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}')">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}</div>`;
 }
 
@@ -920,7 +935,7 @@ function renderCTRM(){
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th><th></th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="openProductDetail('${escAttr(r.product)}')">capSpire Feedback</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity)}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -950,7 +965,7 @@ function renderRisk(){
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th><th></th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="openProductDetail('${escAttr(r.product)}')">capSpire Feedback</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
@@ -1844,7 +1859,7 @@ function renderCommoditiesView(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}')">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
   </div>`;
 }
