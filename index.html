@@ -1053,11 +1053,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
                   :`<button onclick="toggleIntRow('${rowId}')" style="background:none;border:1px solid var(--accent)44;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit">💬 ${fb.length} ▼</button>`}
               </td>
             </tr>
-            ${fb.length>0?`<tr id="${rowId}" style="display:none;background:var(--bg3)">
-              <td colspan="3" style="padding:8px 16px 12px;border-bottom:1px solid var(--border)">
-                ${fb.map(f=>fbCard(f)).join("")}
-              </td>
-            </tr>`:""}`;
+            ${fb.length>0?"<tr id='"+rowId+"' style='display:none;background:var(--bg3)'><td colspan='3' style='padding:8px 16px 12px;border-bottom:1px solid var(--border)'>"+fb.map(f=>fbCard(f)).join("")+"</td></tr>":""}`;
           }).join("")}
         </tbody>
       </table>`;
@@ -1112,11 +1108,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
                   :`<button onclick="toggleIntRow('${rowId}')" style="background:none;border:1px solid var(--accent)44;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit">💬 ${fb.length} ▼</button>`}
               </td>
             </tr>
-            ${fb.length>0?`<tr id="${rowId}" style="display:none;background:var(--bg3)">
-              <td colspan="4" style="padding:8px 16px 12px;border-bottom:1px solid var(--border)">
-                ${fb.map(f=>fbCard(f)).join("")}
-              </td>
-            </tr>`:""}`;
+            ${fb.length>0?"<tr id='"+rowId+"' style='display:none;background:var(--bg3)'><td colspan='4' style='padding:8px 16px 12px;border-bottom:1px solid var(--border)'>"+fb.map(f=>fbCard(f)).join("")+"</td></tr>":""}`;
           }).join("")}
         </tbody>
       </table>`;
@@ -1171,11 +1163,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
                   :`<button onclick="toggleIntRow('${rowId}')" style="background:none;border:1px solid var(--accent)44;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 8px;border-radius:4px;font-family:inherit">💬 ${fb.length} ▼</button>`}
               </td>
             </tr>
-            ${fb.length>0?`<tr id="${rowId}" style="display:none;background:var(--bg3)">
-              <td colspan="4" style="padding:8px 16px 12px;border-bottom:1px solid var(--border)">
-                ${fb.map(f=>fbCard(f)).join("")}
-              </td>
-            </tr>`:""}`;
+            ${fb.length>0?"<tr id='"+rowId+"' style='display:none;background:var(--bg3)'><td colspan='4' style='padding:8px 16px 12px;border-bottom:1px solid var(--border)'>"+fb.map(f=>fbCard(f)).join("")+"</td></tr>":""}`;
           }).join("")}
         </tbody>
       </table>`;
