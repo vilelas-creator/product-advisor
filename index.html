@@ -604,8 +604,6 @@ function openClientForm(productName, clientId, ctx){
   window._cfSelectedComs = [...selectedComs];
   window._cfAllComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
 
-  const showCommodities = !(ctx?.category && !ctx?.commodity);  // hide for Risk context
-
   const showCommodities = !(ctx?.category && !ctx?.commodity);
   const prefillFunction = existing?.function_name || ctx?.function_name || "";
   const prefillCategory = existing?.category || ctx?.category || "";
