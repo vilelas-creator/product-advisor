@@ -479,7 +479,7 @@ function renderCommCoverage(){
   const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
   const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
   const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); rows=msFilter(rows,'coverage_level','pcc_cov');
+  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); if(state.filters.pcc_cov&&!Array.isArray(state.filters.pcc_cov))rows=rows.filter(r=>r.coverage_level===state.filters.pcc_cov);else rows=msFilter(rows,'coverage_level','pcc_cov');
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
@@ -489,7 +489,7 @@ function renderCommCoverage(){
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${createMultiSelect('pcc_prod', prods, state.filters.pcc_prod||[], 'All Products', 'pcc_prod')}
       ${createMultiSelect('pcc_com', coms, state.filters.pcc_com||[], 'All Commodities', 'pcc_com')}
-      ${createMultiSelect('pcc_cov', covs, state.filters.pcc_cov||[], 'All Coverage', 'pcc_cov')}
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,state.filters.pcc_cov||'','All Coverage')}</select>
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
@@ -895,7 +895,7 @@ function renderCommoditiesView(){
   const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
   const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
   const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); rows=msFilter(rows,'coverage_level','pcc_cov');
+  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); if(state.filters.pcc_cov&&!Array.isArray(state.filters.pcc_cov))rows=rows.filter(r=>r.coverage_level===state.filters.pcc_cov);else rows=msFilter(rows,'coverage_level','pcc_cov');
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
@@ -905,7 +905,7 @@ function renderCommoditiesView(){
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
       ${createMultiSelect('pcc_prod', prods, state.filters.pcc_prod||[], 'All Products', 'pcc_prod')}
       ${createMultiSelect('pcc_com', coms, state.filters.pcc_com||[], 'All Commodities', 'pcc_com')}
-      ${createMultiSelect('pcc_cov', covs, state.filters.pcc_cov||[], 'All Coverage', 'pcc_cov')}
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,state.filters.pcc_cov||'','All Coverage')}</select>
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
