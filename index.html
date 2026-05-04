@@ -131,7 +131,6 @@ a:hover{text-decoration:underline;}
   <div id="section-geo" class="section"></div>
   <div id="section-customertype" class="section"></div>
   <div id="section-contacts" class="section"></div>
-  <div id="section-reporting" class="section"></div>
   <div id="section-import" class="section"></div>
   <div id="section-logs" class="section"></div>
 </main>
@@ -160,7 +159,7 @@ let currentUser="User";
 
 function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
 
-let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],clients:[],pages:{},filters:{},ctrmLoading:true};
+let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
 let modalSaveFn=null;
 
 async function apiFetch(table,opts={}){
@@ -186,78 +185,15 @@ function pagerHtml(id,page,total,per){
 }
 function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 
-function normName(s){ return (s||"").toLowerCase().replace(/\s+/g," ").trim(); }
-
-function findExact(arr, field, val) {
-  // 1. exact match
-  let m = arr.find(r => r[field] === val);
-  if (m) return m[field];
-  // 2. case-insensitive
-  const v = normName(val);
-  m = arr.find(r => normName(r[field]) === v);
-  if (m) return m[field];
-  // 3. one contains the other (handles typos like Platfrom vs Platform)
-  m = arr.find(r => normName(r[field]).includes(v.slice(0,20)) );
-  if (m) return m[field];
-  return val;
-}
-
 function navToProduct(name, type) {
   const decoded = decodeURIComponent(name.replace(/%27/g,"'"));
   if (type && type.includes('Risk')) {
-    const exact = findExact(state.risk, 'product', decoded);
-    Object.keys(state.filters).forEach(k=>{if(k.startsWith('risk_'))delete state.filters[k];});
-    state.filters['risk_prod'] = [exact];
-    state.pages = {};
-    setTab('risk');
+    navToTab('risk', 'risk_prod', decoded);
   } else {
-    const exact = findExact(state.pcc, 'product', decoded);
-    Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
-    state.filters['pcc_prod'] = [exact];
-    state.filters['com_view'] = 'coverage';
-    state.pages = {};
-    setTab('commodities');
+    navToTab('ctrm', 'ctrm_prod', decoded);
   }
 }
 
-function navToCTRMByCommodity(product, commodity) {
-  const exactProd = findExact(state.ctrm, 'product', product);
-  const exactCom  = findExact(state.ctrm, 'commodity', commodity);
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
-  state.filters['ctrm_prod'] = [exactProd];
-  state.filters['ctrm_com']  = [exactCom];
-  state.pages = {};
-  setTab('ctrm');
-}
-function escAttr(s){ return (s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
-document.addEventListener('click', e => {
-  const link = e.target.closest('.ctrm-com-link');
-  if (!link) return;
-  e.preventDefault();
-  navToCTRMByCommodity(link.dataset.prod, link.dataset.com);
-});
-function navToProductsByVendorType(vendor, type){
-  // Find exact vendor name as it appears in products table
-  const vn = normName(vendor);
-  const exactVendor = [...new Set((state.products||[]).map(p=>p.vendor).filter(Boolean))]
-    .find(pv => normName(pv)===vn || normName(pv).includes(vn.slice(0,12)) || vn.includes(normName(pv).slice(0,12)))
-    || vendor;
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
-  state.filters['p_vendor'] = exactVendor;
-  state.filters['p_type'] = type;
-  state.pages = {};
-  setTab('products');
-}
-function navToContactsByVendor(vendor){
-  const vn = normName(vendor);
-  const exactVendor = [...new Set((state.contacts||[]).map(c=>c.vendor).filter(Boolean))]
-    .find(cv => normName(cv)===vn || normName(cv).includes(vn.slice(0,12)) || vn.includes(normName(cv).slice(0,12)))
-    || vendor;
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('con_'))delete state.filters[k];});
-  state.filters['con_vendor'] = exactVendor;
-  state.pages = {};
-  setTab('contacts');
-}
 function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
 function sf(key,val){
   state.filters[key]=val;state.pages={};
@@ -462,7 +398,6 @@ const TABS=[
   {id:"geo",label:"🌍 Geographic"},
   {id:"customertype",label:"👥 Customer Types"},
   {id:"contacts",label:"👤 Contacts"},
-  {id:"reporting",label:"📈 Reporting"},
   {id:"import",label:"📥 Import Data"},
   {id:"logs",label:"📋 Activity Logs"}
 ];
@@ -500,346 +435,13 @@ function renderVendors(){
 }
 
 // ── PRODUCTS ──
-// ── PRODUCT DETAIL SIDE PANEL ──
-function openProductDetail(productName, ctx){
-  // ctx = {commodity, function_name, category} — optional pre-fill context
-  const existing = document.getElementById("product-detail-panel");
-  if(existing) existing.remove();
-
-  const prod = state.products.find(p=>p.product_name===productName)
-    || {product_name:productName, vendor:"", product_type:""};
-
-  const overlay = document.createElement("div");
-  overlay.id = "product-detail-overlay";
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000";
-  overlay.onclick = closeProductDetail;
-  document.body.appendChild(overlay);
-
-  const panel = document.createElement("div");
-  panel.id = "product-detail-panel";
-  panel.style.cssText = "position:fixed;top:0;right:0;width:480px;max-width:95vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4);animation:slideIn .2s ease";
-
-  const pccEntries = state.pcc.filter(r=>r.product===productName);
-  const covPct = pccEntries.length ? Math.round(pccEntries.filter(r=>r.coverage_level==="Covered").length/pccEntries.length*100) : null;
-  const clients = state.clients.filter(c=>c.product===productName);
-
-  panel.innerHTML = `
-    <style>@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}</style>
-    <!-- Header -->
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">${prod.product_name}</div>
-        <div style="font-size:11px;color:var(--muted)">${prod.vendor||""} ${prod.product_type?"· "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):""}</div>
-      </div>
-      <button onclick="closeProductDetail()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
-    </div>
-
-    <!-- Product info strip -->
-    <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;background:var(--bg3)">
-      ${prod.deployment_model?"<div><div style='font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px'>Deployment</div><div style='font-size:11px;color:var(--text);margin-top:2px'>"+prod.deployment_model+"</div></div>":""}
-      ${prod.version_info?"<div><div style='font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px'>Version</div><div style='font-size:11px;color:var(--yellow);font-weight:600;margin-top:2px'>"+prod.version_info+"</div></div>":""}
-      ${covPct!==null?"<div><div style='font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px'>Commodity Coverage</div><div style='font-size:11px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+";margin-top:2px'>"+covPct+"%</div></div>":""}
-    </div>
-
-    <!-- Clients section -->
-    <div style="flex:1;overflow-y:auto;padding:16px 20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:700;color:var(--text)">👥 Client Feedback</div>
-        <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" onclick="openClientForm('${escAttr(productName)}',null,window._pdCtx)">+ Add Feedback</button>
-      </div>
-      <div id="clients-list-${escAttr(productName).replace(/[^a-z0-9]/gi,'_')}">
-        ${renderClientsList(productName, clients)}
-      </div>
-    </div>`;
-
-  window._pdCtx = ctx || null;
-  document.body.appendChild(panel);
-}
-
-function renderClientsList(productName, clients){
-  if(!clients.length) return `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">No feedback added yet.<br><span style="font-size:11px">Click "+ Add Feedback" to add the first one.</span></div>`;
-
-  return clients.map(c=>{
-    const coms = (c.commodities||"").split(",").map(s=>s.trim()).filter(Boolean);
-    const listId = "clients-list-"+productName.replace(/[^a-z0-9]/gi,'_');
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
-        <div style="font-weight:700;font-size:13px;color:var(--text)">${c.client_name}</div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="openClientForm('${escAttr(productName)}',${c.id})">Edit</button>
-          <button class="btn" style="font-size:10px;padding:2px 7px;color:var(--red);border-color:var(--red)44" onclick="deleteClient(${c.id},'${escAttr(productName)}')">Delete</button>
-        </div>
-      </div>
-      ${coms.length?"<div style='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px'>"+coms.map(com=>"<span style='padding:1px 7px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33'>"+com+"</span>").join("")+"</div>":""}
-      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
-        ${c.region?"<span>📍 "+c.region+"</span>":""}
-        ${c.since_year?"<span>📅 Since "+c.since_year+"</span>":""}
-        ${c.created_by?"<span>👤 "+c.created_by+"</span>":""}
-      </div>
-      ${c.notes?"<div style='margin-top:6px;font-size:11px;color:var(--muted);font-style:italic'>"+c.notes+"</div>":""}
-    </div>`;
-  }).join("");
-}
-
-function closeProductDetail(){
-  document.getElementById("product-detail-panel")?.remove();
-  document.getElementById("product-detail-overlay")?.remove();
-  document.getElementById("client-form-panel")?.remove();
-}
-
-function openClientForm(productName, clientId, ctx){
-  document.getElementById("client-form-panel")?.remove();
-
-  const existing = clientId ? state.clients.find(c=>c.id===clientId) : null;
-  const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
-
-  const form = document.createElement("div");
-  form.id = "client-form-panel";
-  form.style.cssText = "position:fixed;top:0;right:480px;width:360px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3);animation:slideIn .15s ease";
-
-  // Pre-fill from existing record or from ctx (row context)
-  const selectedComs = existing
-    ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean)
-    : ctx?.commodity ? [ctx.commodity] : [];
-  window._cfSelectedComs = [...selectedComs];
-  window._cfAllComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
-
-  const showCommodities = !(ctx?.category && !ctx?.commodity);
-  const prefillFunction = existing?.function_name || ctx?.function_name || "";
-  const prefillCategory = existing?.category || ctx?.category || "";
-
-  form.innerHTML = `
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <div style="font-weight:700;font-size:14px">${clientId?"Edit Client Feedback":"New Client Feedback"}</div>
-      <button onclick="document.getElementById('client-form-panel').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Client Name *</label>
-        <input id="cf-client" value="${escAttr(existing?.client_name||"")}" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
-      </div>
-      ${showCommodities?`<div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label>
-        <div id="cf-coms-ms-wrap"></div>
-      </div>`:""}
-      ${prefillCategory?`<div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Category</label>
-        <input id="cf-category" value="${escAttr(prefillCategory)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
-      </div>`:""}
-      ${prefillFunction?`<div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Function</label>
-        <input id="cf-function" value="${escAttr(prefillFunction)}" readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box">
-      </div>`:""}
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
-        <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Since Year</label>
-        <input id="cf-year" type="number" value="${existing?.since_year||""}" placeholder="e.g. 2020" min="1990" max="2099" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Notes</label>
-        <textarea id="cf-notes" placeholder="Additional notes..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box">${existing?.notes||""}</textarea>
-      </div>
-    </div>
-    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="document.getElementById('client-form-panel').remove()" class="btn" style="font-size:12px">Cancel</button>
-      <button onclick="saveClient('${escAttr(productName)}',${clientId||"null"})" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>
-    </div>`;
-
-  document.body.appendChild(form);
-  if(showCommodities) buildCfComsMultiselect();
-  setTimeout(()=>document.getElementById("cf-client")?.focus(),100);
-}
-
-function buildCfComsMultiselect(){
-  const wrap = document.getElementById("cf-coms-ms-wrap");
-  if(!wrap) return;
-  const allComs = window._cfAllComs || [];
-  const selected = window._cfSelectedComs || [];
-
-  // Button
-  const btn = document.createElement("button");
-  btn.type = "button";
-  const label = selected.length===0 ? "Select commodities..." : selected.length===1 ? selected[0] : selected.length+" selected";
-  btn.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:"+(selected.length>0?"var(--accent)":"var(--muted)")+";font-size:12px;font-family:inherit;cursor:pointer";
-  btn.innerHTML = "<span id='cf-coms-label'>"+label+"</span><span style='font-size:9px'>▼</span>";
-  btn.onclick = (e) => { e.preventDefault(); openCfComsDropdown(btn, allComs); };
-  wrap.appendChild(btn);
-}
-
-function openCfComsDropdown(btn, allComs){
-  // Remove existing
-  document.getElementById("cf-coms-portal")?.remove();
-
-  const rect = btn.getBoundingClientRect();
-  const portal = document.createElement("div");
-  portal.id = "cf-coms-portal";
-  portal.style.cssText = "position:fixed;top:"+(rect.bottom+2)+"px;left:"+rect.left+"px;width:"+Math.max(rect.width,220)+"px;z-index:99999;background:var(--bg2);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.5);font-size:12px;overflow:hidden";
-
-  // Search
-  const searchRow = document.createElement("div");
-  searchRow.style.cssText = "padding:6px 8px;border-bottom:1px solid var(--border);background:var(--bg3)";
-  const searchInput = document.createElement("input");
-  searchInput.placeholder = "Search...";
-  searchInput.style.cssText = "width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
-  searchRow.appendChild(searchInput);
-  portal.appendChild(searchRow);
-
-  // Select All row
-  const allRow = document.createElement("div");
-  allRow.style.cssText = "display:flex;align-items:center;gap:7px;padding:5px 10px;border-bottom:2px solid var(--border);background:var(--bg3);cursor:pointer";
-  const allCb = document.createElement("input");
-  allCb.type = "checkbox";
-  allCb.style.cssText = "cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0";
-  const allLbl = document.createElement("span");
-  allLbl.textContent = "(Select All)";
-  allLbl.style.cssText = "font-weight:600;user-select:none";
-  allRow.appendChild(allCb); allRow.appendChild(allLbl);
-  portal.appendChild(allRow);
-
-  // List
-  const listDiv = document.createElement("div");
-  listDiv.style.cssText = "max-height:200px;overflow-y:auto";
-  portal.appendChild(listDiv);
-
-  // Footer
-  const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:6px;padding:7px 10px;border-top:1px solid var(--border);background:var(--bg3);justify-content:flex-end";
-  const okBtn = document.createElement("button");
-  okBtn.textContent = "OK";
-  okBtn.style.cssText = "padding:4px 18px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
-  const cancelBtn = document.createElement("button");
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText = "padding:4px 12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit";
-  footer.appendChild(cancelBtn); footer.appendChild(okBtn);
-  portal.appendChild(footer);
-  document.body.appendChild(portal);
-
-  // Pending selection
-  let pending = [...(window._cfSelectedComs||[])];
-
-  function buildList(opts){
-    listDiv.innerHTML = "";
-    opts.forEach(opt => {
-      const row = document.createElement("label");
-      row.style.cssText = "display:flex;align-items:center;gap:7px;padding:4px 10px;cursor:pointer;border-bottom:1px solid var(--row-border)";
-      row.onmouseover = ()=>row.style.background="var(--bg3)";
-      row.onmouseout = ()=>row.style.background="";
-      const cb = document.createElement("input");
-      cb.type = "checkbox"; cb.value = opt;
-      cb.checked = pending.includes(opt);
-      cb.style.cssText = "cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0";
-      cb.addEventListener("change", ()=>{
-        if(cb.checked){ if(!pending.includes(opt)) pending.push(opt); }
-        else { pending = pending.filter(v=>v!==opt); }
-        syncAll();
-      });
-      const lbl = document.createElement("span");
-      lbl.textContent = opt;
-      lbl.style.cssText = "user-select:none;font-size:12px;color:var(--text)";
-      row.appendChild(cb); row.appendChild(lbl);
-      listDiv.appendChild(row);
-    });
-    syncAll();
-  }
-
-  function syncAll(){
-    const vis = [...listDiv.querySelectorAll("input[type=checkbox]")].map(c=>c.value);
-    const checked = vis.filter(o=>pending.includes(o));
-    allCb.checked = checked.length===vis.length && vis.length>0;
-    allCb.indeterminate = checked.length>0 && checked.length<vis.length;
-  }
-
-  allCb.addEventListener("change", ()=>{
-    const vis = [...listDiv.querySelectorAll("input[type=checkbox]")];
-    if(allCb.checked){ vis.forEach(cb=>{ cb.checked=true; if(!pending.includes(cb.value)) pending.push(cb.value); }); }
-    else { vis.forEach(cb=>{ cb.checked=false; }); pending=pending.filter(o=>!vis.map(c=>c.value).includes(o)); }
-  });
-  allRow.onclick = e=>{ if(e.target!==allCb){ allCb.checked=!allCb.checked; allCb.dispatchEvent(new Event("change")); } };
-
-  searchInput.addEventListener("input", ()=>{
-    const q = searchInput.value.toLowerCase();
-    buildList(q ? allComs.filter(o=>o.toLowerCase().includes(q)) : allComs);
-  });
-
-  okBtn.addEventListener("click", ()=>{
-    window._cfSelectedComs = [...pending];
-    const lbl = document.getElementById("cf-coms-label");
-    if(lbl) lbl.textContent = pending.length===0?"Select commodities...":pending.length===1?pending[0]:pending.length+" selected";
-    const btnEl = document.querySelector("#cf-coms-ms-wrap button");
-    if(btnEl) btnEl.style.color = pending.length>0?"var(--accent)":"var(--muted)";
-    portal.remove();
-  });
-
-  cancelBtn.addEventListener("click", ()=>portal.remove());
-
-  setTimeout(()=>{
-    document.addEventListener("click", function outside(ev){
-      if(!portal.contains(ev.target) && !btn.contains(ev.target)){ portal.remove(); document.removeEventListener("click",outside); }
-    });
-  }, 0);
-
-  // Reposition if off screen
-  requestAnimationFrame(()=>{
-    const pr = portal.getBoundingClientRect();
-    if(pr.bottom > window.innerHeight-10) portal.style.top = (rect.top - pr.height - 2)+"px";
-  });
-
-  buildList(allComs);
-  searchInput.focus();
-}
-
-async function saveClient(productName, clientId){
-  const clientName = document.getElementById("cf-client")?.value?.trim();
-  if(!clientName){alert("Client name is required.");return;}
-
-  // Get selected commodities from the multiselect
-  const commodities = (window._cfSelectedComs||[]).join(", ");
-
-  const region    = document.getElementById("cf-region")?.value?.trim()||null;
-  const sinceYear = parseInt(document.getElementById("cf-year")?.value)||null;
-  const notes     = document.getElementById("cf-notes")?.value?.trim()||null;
-  const functionName = document.getElementById("cf-function")?.value?.trim()||null;
-  const category  = document.getElementById("cf-category")?.value?.trim()||null;
-  const userName  = currentUser?.email || currentUser?.user_metadata?.full_name || currentUser || "User";
-
-  const body = {product:productName, client_name:clientName, commodities, region, since_year:sinceYear, notes, function_name:functionName, category, created_by:userName};
-
-  try{
-    if(clientId){
-      await apiFetch("product_clients", {method:"PATCH", body, params:{id:"eq."+clientId}});
-      const idx = state.clients.findIndex(c=>c.id===clientId);
-      if(idx>-1) state.clients[idx] = {...state.clients[idx], ...body};
-    } else {
-      const res = await apiFetch("product_clients", {method:"POST", body});
-      if(res[0]) state.clients.push(res[0]);
-    }
-    document.getElementById("client-form-panel")?.remove();
-    // Refresh clients list in panel
-    const listEl = document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
-    if(listEl) listEl.innerHTML = renderClientsList(productName, state.clients.filter(c=>c.product===productName));
-  } catch(e){ alert("Error saving: "+e.message); }
-}
-
-async function deleteClient(clientId, productName){
-  if(!confirm("Delete this client record?")) return;
-  try{
-    await apiFetch("product_clients", {method:"DELETE", params:{id:"eq."+clientId}});
-    state.clients = state.clients.filter(c=>c.id!==clientId);
-    const listEl = document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
-    if(listEl) listEl.innerHTML = renderClientsList(productName, state.clients.filter(c=>c.product===productName));
-  } catch(e){ alert("Error deleting: "+e.message); }
-}
-
 function renderProducts(){
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
   const types=[...new Set(state.products.map(p=>p.product_type).filter(Boolean))].sort();
   const vendors=[...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
-  const rows=state.products.filter(p=>(!typeF||(p.product_type||"").toLowerCase().includes(typeF.toLowerCase()))&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  const rows=state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
   const page=state.pages.products||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-products").innerHTML=`<div class="card">
@@ -850,19 +452,8 @@ function renderProducts(){
       <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr>
-      <td style="font-weight:600"><a onclick="navToProduct('${(p.product_name||"").replace(/'/g,'%27')}','${p.product_type||""}');return false;" href="#">${p.product_name||""}</a></td>
-      <td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>
-      <td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td>
-      <td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td>
-      <td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td>
-      <td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>
-      <td style="white-space:nowrap">
-        <button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product_name)}')">capSpire Feedback</button>
-        <button class="btn" onclick="openProductModal(${p.id})">Edit</button>
-      </td>
-    </tr>`).join("")}
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToProduct('${(p.product_name||"").replace(/'/g,'%27')}','${p.product_type||""}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td>${commentCell("products",p)}<td><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
@@ -886,7 +477,7 @@ function renderCommCoverage(){
   const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
   const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
   const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
-  const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
+  const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
   const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
   let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); rows=msFilter(rows,'coverage_level','pcc_cov');
   const page=state.pages.pcc||0;const PER=30;
@@ -902,38 +493,32 @@ function renderCommCoverage(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td>${bdg(p.commodity,"var(--green)")}</td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}</div>`;
 }
 
 // ── CTRM ──
 function renderCTRM(){
   const q=(state.filters.ctrm_q||"").toLowerCase();
+  const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
   const prods=[...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
   const coms=[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-  const funcs=[...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
-  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
-  rows=msFilter(rows,'product','ctrm_prod');
-  rows=msFilter(rows,'commodity','ctrm_com');
-  rows=msFilter(rows,'function_name','ctrm_func');
-  const ctrmCovSel=state.filters.ctrm_cov||[];
-  if(ctrmCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=ctrmCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
+  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))); rows=msFilter(rows,'product','ctrm_prod'); rows=msFilter(rows,'commodity','ctrm_com'); const ctrmCovSel=state.filters.ctrm_cov||[]; if(ctrmCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=ctrmCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
   const page=state.pages.ctrm||0;const PER=50;
   const paged=rows.slice(page*PER,(page+1)*PER);
   const loading=state.ctrmLoading;
   document.getElementById("section-ctrm").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">⚡ CTRM Coverage</span><span class="card-meta">${state.ctrm.length.toLocaleString()} records ${loading?"(loading...)":""}</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCtrm(),'ctrm_coverage','CTRM Coverage')">⬇ Excel</button></div>
-    ${loading&&state.ctrm.length===0?'<div class="loading">Loading CTRM records...</div>':`
+    ${loading&&state.ctrm.length===0?'<div class="loading">Loading 41,089 CTRM records...</div>':`
     <div class="filters">
       <input id="search-ctrm_q" value="${q}" oninput="sf('ctrm_q',this.value)" placeholder="Search all columns...">
       ${createMultiSelect('ctrm_prod', prods, state.filters.ctrm_prod||[], 'All Products', 'ctrm_prod')}
       ${createMultiSelect('ctrm_com', coms, state.filters.ctrm_com||[], 'All Commodities', 'ctrm_com')}
-      ${createMultiSelect('ctrm_func', funcs, state.filters.ctrm_func||[], 'All Functions', 'ctrm_func')}
       ${createMultiSelect('ctrm_cov', ['Deployed','Capable','Not Capable','N/A'], state.filters.ctrm_cov||[], 'All Coverage', 'ctrm_cov')}
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th><th></th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity)}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -941,15 +526,10 @@ function renderCTRM(){
 // ── RISK ──
 function renderRisk(){
   const q=(state.filters.risk_q||"").toLowerCase();
+  const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
   const prods=[...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
   const cats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-  const funcs=[...new Set(state.risk.map(r=>r.function_name).filter(Boolean))].sort();
-  let rows=state.risk.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
-  rows=msFilter(rows,'product','risk_prod');
-  rows=msFilter(rows,'category','risk_cat');
-  rows=msFilter(rows,'function_name','risk_func');
-  const riskCovSel=state.filters.risk_cov||[];
-  if(riskCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=riskCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
+  let rows=state.risk.filter(r=>(!catF||r.category===catF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','risk_prod'); const riskCovSel=state.filters.risk_cov||[]; if(riskCovSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=riskCovSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
   const page=state.pages.risk||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-risk").innerHTML=`<div class="card">
@@ -957,12 +537,11 @@ function renderRisk(){
     <div class="filters">
       <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       ${createMultiSelect('risk_prod', prods, state.filters.risk_prod||[], 'All Products', 'risk_prod')}
-      ${createMultiSelect('risk_cat', cats, state.filters.risk_cat||[], 'All Categories', 'risk_cat')}
-      ${createMultiSelect('risk_func', funcs, state.filters.risk_func||[], 'All Functions', 'risk_func')}
+      <select onchange="sf('risk_cat',this.value)">${selOpts(cats,catF,"All Categories")}</select>
       ${createMultiSelect('risk_cov', ['Deployed','Capable','Not Capable','N/A'], state.filters.risk_cov||[], 'All Coverage', 'risk_cov')}
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th><th></th></tr></thead><tbody>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
     ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToTab('products','p_q','${(r.product||"").replace(/'/g,"\\'")}')" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}' })">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
@@ -1055,570 +634,6 @@ const ALL_TABLES=[
   {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
-function renderReporting(){
-  const activeReport = state.activeReport || null;
-  const el = document.getElementById("section-reporting");
-
-  const REPORTS = [
-    {id:"heatmap", icon:"🔥", title:"Coverage Heatmap",            desc:"Product × Commodity matrix with coverage levels"},
-    {id:"vendor",  icon:"🏢", title:"Vendor Landscape",             desc:"Side-by-side vendor comparison with key metrics"},
-    {id:"market",  icon:"🌾", title:"Market Coverage by Commodity", desc:"How many products cover each commodity and which vendors"},
-    {id:"gap",     icon:"🔍", title:"Gap Analysis",                 desc:"Products ranked by highest coverage gaps"},
-  ];
-
-  if(!activeReport){
-    el.innerHTML = "";
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "padding:20px";
-    wrap.innerHTML = `<div style="margin-bottom:20px">
-      <h2 style="font-size:18px;font-weight:700;color:var(--text)">📈 Reporting</h2>
-      <p style="color:var(--muted);font-size:12px;margin-top:4px">Select a report to view</p>
-    </div>`;
-    const grid = document.createElement("div");
-    grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px";
-    REPORTS.forEach(r => {
-      const card = document.createElement("div");
-      card.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all .15s";
-      card.innerHTML = `<div style="font-size:28px;margin-bottom:10px">${r.icon}</div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${r.title}</div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.desc}</div>
-        <div style="margin-top:14px;display:inline-block;padding:4px 12px;background:var(--accent);color:#fff;border-radius:5px;font-size:11px;font-weight:600">View Report →</div>`;
-      card.onmouseover = () => { card.style.borderColor = "var(--accent)"; card.style.transform = "translateY(-2px)"; };
-      card.onmouseout  = () => { card.style.borderColor = "var(--border)"; card.style.transform = ""; };
-      card.onclick = () => { state.activeReport = r.id; renderReporting(); };
-      grid.appendChild(card);
-    });
-    wrap.appendChild(grid);
-    el.appendChild(wrap);
-    return;
-  }
-
-  const report = REPORTS.find(r=>r.id===activeReport);
-  const backBtn = `<button onclick="state.activeReport=null;renderReporting()" class="btn" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:5px">← Back</button>`;
-
-  if(activeReport==="heatmap")     renderReportHeatmap(el, backBtn, report);
-  else if(activeReport==="vendor") renderReportVendor(el, backBtn, report);
-  else if(activeReport==="market") renderReportMarket(el, backBtn, report);
-  else if(activeReport==="gap")    renderReportGap(el, backBtn, report);
-}
-
-// ── REPORT: Coverage Heatmap ──
-function renderReportHeatmap(el, backBtn, report){
-  const pcc = state.pcc || [];
-  const products = [...new Set(pcc.map(r=>r.product))].filter(Boolean).sort();
-
-  // Defined column order (from reference image)
-  const COL_ORDER = [
-    "Power","Natural Gas","HC Liquids","PetroChem / Chemicals","Coal","LNG",
-    "Bulk","Break Bulk","Container",
-    "Base Metals","Ferrous","Concentrates","Precious Metals",
-    "North America CO2 & Emissions","Europe CO2 & Emissions",
-    "FX"
-  ];
-
-  // Get all commodities from data
-  const allComs = [...new Set(pcc.map(r=>r.commodity))].filter(Boolean);
-
-  // Deduplicate: normalize commodity names for matching
-  const normCom = s => (s||"").trim().toLowerCase();
-
-  // Build ordered list: first COL_ORDER items (if they exist in data), then remaining sorted
-  const orderedComs = [];
-  const usedNorm = new Set();
-  COL_ORDER.forEach(col => {
-    // Find exact or close match in data
-    const match = allComs.find(c => normCom(c) === normCom(col));
-    if(match && !usedNorm.has(normCom(match))){
-      orderedComs.push(match);
-      usedNorm.add(normCom(match));
-    }
-  });
-  // Add remaining commodities not in COL_ORDER
-  allComs.sort().forEach(c => {
-    if(!usedNorm.has(normCom(c))){
-      orderedComs.push(c);
-      usedNorm.add(normCom(c));
-    }
-  });
-
-  const map = {};
-  pcc.forEach(r=>{ map[r.product+"||"+r.commodity] = r.coverage_level; });
-
-  const covColor  = v => v==="Covered"?"#22c55e":v&&v.includes("Partial")?"#f59e0b":v==="Not Covered"?"#ef4444":"transparent";
-  const covLetter = v => v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
-  const covOpacity= v => v?"1":".18";
-
-  const thStyle = `padding:4px 5px;font-size:9px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;background:var(--bg3);max-width:80px;overflow:hidden;text-overflow:ellipsis`;
-
-  el.innerHTML=`<div style="padding:16px">${backBtn}
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">${report.icon} ${report.title}</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:8px">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered</span>
-        <button onclick="exportHeatmapExcel()" class="btn btn-success" style="margin-left:auto;font-size:11px;padding:4px 10px">⬇ Excel</button>
-      </div>
-      <div style="overflow:auto;max-height:74vh">
-        <table id="heatmap-table" style="font-size:11px;border-collapse:collapse;min-width:100%">
-          <thead><tr>
-            <th style="position:sticky;left:0;z-index:3;background:var(--bg3);padding:6px 10px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:190px">PRODUCT</th>
-            ${orderedComs.map(c=>`<th style="${thStyle}" title="${c}">${c}</th>`).join("")}
-          </tr></thead>
-          <tbody>
-            ${products.map(p=>`<tr>
-              <td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}">
-                <a href="#" onclick="navToPccFromHeatmap('${escAttr(p)}');return false;" style="font-weight:600;color:var(--accent);text-decoration:none">${p}</a>
-              </td>
-              ${orderedComs.map(c=>{
-                const v=map[p+"||"+c];
-                const col=covColor(v);
-                const op=covOpacity(v);
-                return `<td style="text-align:center;padding:3px;border-bottom:1px solid var(--row-border)">
-                  <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${p} · ${c}: ${v||'–'}" style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${op};cursor:${v?'pointer':'default'}">${covLetter(v)}</span>
-                </td>`;
-              }).join("")}
-            </tr>`).join("")}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
-
-  // Store for export
-  window._heatmapData = {products, commodities: orderedComs, map};
-}
-
-function navToPccFromHeatmap(product){
-  const exact = findExact(state.pcc, 'product', product);
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
-  state.filters['pcc_prod'] = [exact || product];
-  state.filters['com_view'] = 'coverage';
-  state.pages = {};
-  setTab('commodities');
-}
-
-function navToCtrmFromHeatmap(product, commodity){
-  const exactProd = findExact(state.ctrm, 'product', product);
-  const exactCom  = findExact(state.ctrm, 'commodity', commodity);
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
-  state.filters['ctrm_prod'] = [exactProd || product];
-  state.filters['ctrm_com']  = [exactCom  || commodity];
-  state.pages = {};
-  setTab('ctrm');
-}
-
-function exportHeatmapExcel(){
-  if(typeof XLSX==="undefined"){alert("Excel library not loaded, please try again.");return;}
-  const {products, commodities, map} = window._heatmapData || {};
-  if(!products) return;
-
-  const wb = XLSX.utils.book_new();
-  const wsData = [];
-
-  // Header row
-  wsData.push(["Product", ...commodities]);
-
-  // Data rows
-  products.forEach(p => {
-    wsData.push([p, ...commodities.map(c => {
-      const v = map[p+"||"+c];
-      return v==="Covered"?"C": v&&v.includes("Partial")?"P": v==="Not Covered"?"✗": "–";
-    })]);
-  });
-
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Column widths
-  ws['!cols'] = [{wch:30}, ...commodities.map(()=>({wch:10}))];
-
-  // Apply cell colors
-  const greenFill  = {type:"pattern",patternType:"solid",fgColor:{rgb:"22C55E"}};
-  const yellowFill = {type:"pattern",patternType:"solid",fgColor:{rgb:"F59E0B"}};
-  const redFill    = {type:"pattern",patternType:"solid",fgColor:{rgb:"EF4444"}};
-  const headerFill = {type:"pattern",patternType:"solid",fgColor:{rgb:"1E293B"}};
-  const whiteTxt   = {color:{rgb:"FFFFFF"}};
-  const boldWhite  = {bold:true, color:{rgb:"FFFFFF"}};
-  const centerAlign= {horizontal:"center",vertical:"center"};
-  const boldCenter = {alignment:centerAlign, font:boldWhite};
-
-  // Style header row
-  for(let c=0; c<=commodities.length; c++){
-    const cell = XLSX.utils.encode_cell({r:0, c});
-    if(!ws[cell]) continue;
-    ws[cell].s = {fill:headerFill, font:boldWhite, alignment:{...centerAlign, wrapText:true}};
-  }
-
-  // Style data cells
-  products.forEach((p, ri) => {
-    // Product name cell
-    const pCell = XLSX.utils.encode_cell({r:ri+1, c:0});
-    if(ws[pCell]) ws[pCell].s = {font:{bold:true}, alignment:{vertical:"center"}};
-
-    commodities.forEach((com, ci) => {
-      const v = map[p+"||"+com];
-      const cell = XLSX.utils.encode_cell({r:ri+1, c:ci+1});
-      if(!ws[cell]) return;
-      let fill = null;
-      if(v==="Covered") fill = greenFill;
-      else if(v&&v.includes("Partial")) fill = yellowFill;
-      else if(v==="Not Covered") fill = redFill;
-      ws[cell].s = {
-        fill: fill || {type:"pattern",patternType:"none"},
-        font: fill ? {bold:true,color:{rgb:"FFFFFF"}} : {color:{rgb:"94A3B8"}},
-        alignment: centerAlign
-      };
-    });
-  });
-
-  XLSX.utils.book_append_sheet(wb, ws, "Coverage Heatmap");
-  XLSX.writeFile(wb, "coverage_heatmap.xlsx");
-}
-
-
-// ── REPORT: Vendor Landscape ──
-function renderReportVendor(el, backBtn, report){
-  const vendors = state.vendors || [];
-  const products = state.products || [];
-  const pcc = state.pcc || [];
-  const geo = state.geo || [];
-  const contacts = state.contacts || [];
-
-  const data = vendors.map(v=>{
-    // Use normalized matching to handle name inconsistencies between tables
-    const vn = normName(v.vendor_name);
-    const vProds = products.filter(p=>normName(p.vendor)===vn || normName(p.vendor).includes(vn.slice(0,12)) || vn.includes(normName(p.vendor).slice(0,12)));
-    const ctrmProds = vProds.filter(p=>(p.product_type||"").toLowerCase().includes("ctrm"));
-    const riskProds = vProds.filter(p=>(p.product_type||"").toLowerCase().includes("risk"));
-    const vPcc = pcc.filter(p=>vProds.some(vp=>normName(vp.product_name)===normName(p.product)));
-    const covTotal = vPcc.length;
-    const covCovered = vPcc.filter(p=>p.coverage_level==="Covered").length;
-    const covPartial = vPcc.filter(p=>p.coverage_level&&p.coverage_level.includes("Partial")).length;
-    const covNot = vPcc.filter(p=>p.coverage_level==="Not Covered").length;
-    const covPct = covTotal ? Math.round(covCovered/covTotal*100) : 0;
-    const coms = [...new Set(vPcc.map(p=>p.commodity))].filter(Boolean);
-    const vGeo = geo.filter(g=>vProds.some(vp=>normName(vp.product_name)===normName(g.product)));
-    const regionCols = Object.keys(vGeo[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
-    const covRegions = regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE"));
-    const vContacts = contacts.filter(c=>normName(c.vendor)===vn || normName(c.vendor).includes(vn.slice(0,12)));
-    const deployModels = [...new Set(vProds.map(p=>p.deployment_model).filter(Boolean))];
-    return {v, vProds, ctrmProds, riskProds, covPct, covCovered, covPartial, covNot, covTotal, coms, covRegions, vContacts, deployModels};
-  }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
-
-  el.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "padding:16px";
-
-  // Header
-  const hdr = document.createElement("div");
-  hdr.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
-  hdr.innerHTML = `${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} vendors</span>`;
-  wrap.appendChild(hdr);
-
-  // Grid of cards
-  const grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px";
-
-  data.forEach(d => {
-    const {v, vProds, ctrmProds, riskProds, covPct, covCovered, covPartial, covNot, covTotal, coms, covRegions, vContacts, deployModels} = d;
-    const card = document.createElement("div");
-    card.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
-    card.onmouseover = ()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)";
-    card.onmouseout  = ()=>card.style.boxShadow="";
-
-    // Coverage bar segments
-    const barCov     = covTotal ? Math.round(covCovered/covTotal*100) : 0;
-    const barPartial = covTotal ? Math.round(covPartial/covTotal*100) : 0;
-    const barNot     = covTotal ? 100-barCov-barPartial : 0;
-
-    const vid = "vcard-"+v.vendor_name.replace(/[^a-z0-9]/gi,"_");
-
-    // Type badges — clickable links to products table
-    const ctrmBadge = ctrmProds.length ? `<a href="#" onclick="navToProductsByVendorType('${escAttr(v.vendor_name)}','CTRM');return false;" style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)44;text-decoration:none">⚡ CTRM (${ctrmProds.length})</a>` : "";
-    const riskBadge = riskProds.length ? `<a href="#" onclick="navToProductsByVendorType('${escAttr(v.vendor_name)}','Risk');return false;" style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--purple)22;color:var(--purple);border:1px solid var(--purple)44;text-decoration:none">🛡 Risk (${riskProds.length})</a>` : "";
-    const typeBadges = [ctrmBadge, riskBadge].filter(Boolean).join(" ");
-
-    // Commodities — first 4 visible, rest in tooltip span
-    const comsVisible = coms.slice(0,4).map(c=>
-      `<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--green)22;color:var(--green);border:1px solid var(--green)33">${c}</span>`
-    ).join(" ");
-    const comsHidden = coms.slice(4);
-    const comsMore = comsHidden.length ? `<span id="${vid}-more" onclick="document.getElementById('${vid}-hidden').style.display=document.getElementById('${vid}-hidden').style.display==='none'?'flex':'none';this.style.display='none'" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent)44;cursor:pointer"> +${comsHidden.length} more</span>` : "";
-    const comsHiddenHtml = comsHidden.length ? `<div id="${vid}-hidden" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">${comsHidden.map(c=>`<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--green)22;color:var(--green);border:1px solid var(--green)33">${c}</span>`).join(" ")}</div>` : "";
-
-    // Regions
-    const regDisplay = covRegions.slice(0,3).map(r=>
-      `<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">${r.replace(/_/g," ")}</span>`
-    ).join(" ") + (covRegions.length>3 ? `<span style="font-size:10px;color:var(--muted)"> +${covRegions.length-3}</span>` : "");
-
-    card.innerHTML = `
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-          <div>
-            <div style="font-weight:700;font-size:14px;color:var(--text)">${v.vendor_name}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${v.headquarters||"–"}${v.website?` · <a href="${v.website.startsWith("http")?v.website:"https://"+v.website}" target="_blank" style="color:var(--accent);text-decoration:none">🌐 Website</a>`:""}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Coverage</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">${typeBadges}</div>
-      </div>
-
-      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-
-        <!-- Coverage bar with explicit legend -->
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-            <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Commodity Coverage</span>
-            <span style="font-size:10px;color:var(--muted)">${covTotal} combinations</span>
-          </div>
-          <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">
-            ${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}
-            ${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}
-            ${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}
-            ${!covTotal?`<div style="flex:1;background:var(--border)"></div>`:""}
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <span style="font-size:10px;color:var(--green)">● Covered: ${covCovered}</span>
-            <span style="font-size:10px;color:var(--yellow)">● Partial: ${covPartial}</span>
-            <span style="font-size:10px;color:var(--red)">● Not Covered: ${covNot}</span>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">Product × Commodity combinations</div>
-        </div>
-
-        <!-- Stats row -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
-          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
-            <div style="font-size:16px;font-weight:700;color:var(--accent)">${vProds.length}</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
-            <div style="font-size:16px;font-weight:700;color:var(--green)">${coms.length}</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Commodities</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
-            <div style="font-size:16px;font-weight:700;color:var(--purple)">${covRegions.length}</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Regions</div>
-          </div>
-        </div>
-
-        <!-- Commodities with expandable +more -->
-        ${coms.length ? `<div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Commodities</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">${comsVisible} ${comsMore}</div>
-          ${comsHiddenHtml}
-        </div>` : ""}
-
-        <!-- Regions -->
-        ${covRegions.length ? `<div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regions Present</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">${regDisplay}</div>
-        </div>` : ""}
-
-        <!-- Contacts link -->
-        ${vContacts.length ? `<div style="padding-top:4px;border-top:1px solid var(--border)">
-          <a href="#" onclick="navToContactsByVendor('${escAttr(v.vendor_name)}');return false;" style="font-size:11px;color:var(--accent);text-decoration:none">👤 ${vContacts.length} contact${vContacts.length>1?"s":""} →</a>
-        </div>` : ""}
-
-      </div>`;
-
-    grid.appendChild(card);
-  });
-
-  wrap.appendChild(grid);
-  el.appendChild(wrap);
-}
-
-
-// ── REPORT: Market Coverage by Commodity ──
-function renderReportMarket(el, backBtn, report){
-  const pcc = state.pcc || [];
-  const products = state.products || [];
-  const commodities = [...new Set(pcc.map(r=>r.commodity))].filter(Boolean).sort();
-
-  const data = commodities.map(c=>{
-    const entries = pcc.filter(r=>r.commodity===c);
-    const covered = entries.filter(r=>r.coverage_level==="Covered").length;
-    const partial = entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
-    const notCov  = entries.filter(r=>r.coverage_level==="Not Covered").length;
-    const total   = entries.length;
-    const covPct  = total ? Math.round(covered/total*100) : 0;
-    const prods   = [...new Set(entries.map(r=>r.product).filter(Boolean))];
-    const ctrmCount = prods.filter(p=>{ const pr=products.find(x=>x.product_name===p); return (pr?.product_type||"").toLowerCase().includes("ctrm"); }).length;
-    const riskCount = prods.filter(p=>{ const pr=products.find(x=>x.product_name===p); return (pr?.product_type||"").toLowerCase().includes("risk"); }).length;
-    const vendors = [...new Set(entries.map(r=>{ const pr=products.find(p=>p.product_name===r.product); return pr?.vendor; }).filter(Boolean))];
-    return {c, total, covered, partial, notCov, covPct, prods, ctrmCount, riskCount, vendors};
-  }).sort((a,b)=>b.covered-a.covered);
-
-  el.innerHTML = "";
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "padding:16px";
-
-  const hdr = document.createElement("div");
-  hdr.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
-  hdr.innerHTML = `${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} commodities</span>`;
-  wrap.appendChild(hdr);
-
-  const grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px";
-
-  data.forEach(d=>{
-    const {c, total, covered, partial, notCov, covPct, prods, ctrmCount, riskCount, vendors} = d;
-    const cid = "mcard-"+c.replace(/[^a-z0-9]/gi,"_");
-
-    const barCov     = total ? Math.round(covered/total*100) : 0;
-    const barPartial = total ? Math.round(partial/total*100) : 0;
-    const barNot     = total ? 100-barCov-barPartial : 0;
-
-    // Vendors — first 3 visible, rest expandable
-    const vendorsVisible = vendors.slice(0,3).map(v=>
-      `<a href="#" onclick="navToProductsByVendorCom('${escAttr(v)}','${escAttr(c)}');return false;" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33;text-decoration:none">${v}</a>`
-    ).join(" ");
-    const vendorsHidden = vendors.slice(3);
-    const vendorsMore = vendorsHidden.length
-      ? `<span id="${cid}-more" onclick="document.getElementById('${cid}-hidden').style.display='flex';this.style.display='none'" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent)44;cursor:pointer">+${vendorsHidden.length} more</span>` : "";
-    const vendorsHiddenHtml = vendorsHidden.length
-      ? `<div id="${cid}-hidden" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">${vendorsHidden.map(v=>`<a href="#" onclick="navToProductsByVendorCom('${escAttr(v)}','${escAttr(c)}');return false;" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33;text-decoration:none">${v}</a>`).join(" ")}</div>` : "";
-
-    const card = document.createElement("div");
-    card.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
-    card.onmouseover = ()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)";
-    card.onmouseout  = ()=>card.style.boxShadow="";
-
-    card.innerHTML = `
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-          <a href="#" onclick="navToPccByCommodity('${escAttr(c)}');return false;" style="font-weight:700;font-size:14px;color:var(--text);text-decoration:none">${c}</a>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Covered</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-          ${ctrmCount ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)44">⚡ CTRM: ${ctrmCount}</span>` : ""}
-          ${riskCount ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--purple)22;color:var(--purple);border:1px solid var(--purple)44">🛡 Risk: ${riskCount}</span>` : ""}
-        </div>
-      </div>
-
-      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-
-        <!-- Coverage bar -->
-        <div>
-          <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">
-            ${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}
-            ${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}
-            ${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}
-            ${!total?`<div style="flex:1;background:var(--border)"></div>`:""}
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <span style="font-size:10px;color:var(--green)">● Covered: ${covered}</span>
-            <span style="font-size:10px;color:var(--yellow)">● Partial: ${partial}</span>
-            <span style="font-size:10px;color:var(--red)">● Not Covered: ${notCov}</span>
-          </div>
-        </div>
-
-        <!-- Stats -->
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;text-align:center">
-          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
-            <div style="font-size:16px;font-weight:700;color:var(--accent)">${total}</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:6px;padding:7px 4px">
-            <div style="font-size:16px;font-weight:700;color:var(--purple)">${vendors.length}</div>
-            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Vendors</div>
-          </div>
-        </div>
-
-        <!-- Vendors -->
-        ${vendors.length ? `<div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Vendors</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">${vendorsVisible} ${vendorsMore}</div>
-          ${vendorsHiddenHtml}
-        </div>` : ""}
-
-      </div>`;
-
-    grid.appendChild(card);
-  });
-
-  wrap.appendChild(grid);
-  el.appendChild(wrap);
-}
-
-function navToPccByCommodity(commodity){
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
-  state.filters['pcc_com'] = [commodity];
-  state.filters['com_view'] = 'coverage';
-  state.pages = {};
-  setTab('commodities');
-}
-
-function navToProductsByVendorCom(vendor, commodity){
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
-  state.filters['p_vendor'] = vendor;
-  state.pages = {};
-  setTab('products');
-}
-
-// ── REPORT: Gap Analysis ──
-function renderReportGap(el, backBtn, report){
-  const pcc = state.pcc || [];
-  const products = [...new Set(pcc.map(r=>r.product))].filter(Boolean).sort();
-
-  const rows = products.map(p=>{
-    const entries = pcc.filter(r=>r.product===p);
-    const total = entries.length;
-    const covered = entries.filter(r=>r.coverage_level==="Covered").length;
-    const partial = entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
-    const notCov = entries.filter(r=>r.coverage_level==="Not Covered").length;
-    const gaps = notCov + partial;
-    const gapPct = total>0?Math.round(gaps/total*100):0;
-    const prod = (state.products||[]).find(vp=>vp.product_name===p);
-    const missingComs = entries.filter(r=>r.coverage_level==="Not Covered").map(r=>r.commodity).filter(Boolean);
-    return {p, total, covered, partial, notCov, gapPct, type:prod?.product_type||"–", vendor:prod?.vendor||"–", missingComs};
-  }).sort((a,b)=>b.gapPct-a.gapPct);
-
-  el.innerHTML=`<div style="padding:16px">${backBtn}
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">${report.icon} ${report.title}</span>
-        <span class="card-meta">${rows.filter(r=>r.gapPct>0).length} products with gaps</span>
-      </div>
-      <div style="overflow:auto">
-        <table>
-          <thead><tr>
-            <th>Product</th><th>Vendor</th><th>Type</th>
-            <th style="text-align:center">Total Com.</th>
-            <th style="text-align:center">✅ Covered</th>
-            <th style="text-align:center">⚠️ Partial</th>
-            <th style="text-align:center">❌ Not Cov.</th>
-            <th style="min-width:140px">Gap %</th>
-            <th>Missing Commodities</th>
-          </tr></thead>
-          <tbody>
-            ${rows.map(r=>`<tr>
-              <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.p}">${r.p}</td>
-              <td style="color:var(--muted);font-size:11px">${r.vendor}</td>
-              <td>${r.type?`<span style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;background:${r.type.includes("Risk")?"var(--purple)33":"var(--accent)33"};color:${r.type.includes("Risk")?"var(--purple)":"var(--accent)"}">${r.type}</span>`:""}</td>
-              <td style="text-align:center">${r.total}</td>
-              <td style="text-align:center;color:var(--green);font-weight:600">${r.covered}</td>
-              <td style="text-align:center;color:var(--yellow);font-weight:600">${r.partial}</td>
-              <td style="text-align:center;color:var(--red);font-weight:600">${r.notCov}</td>
-              <td>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:${r.gapPct}%;height:100%;background:${r.gapPct>70?"var(--red)":r.gapPct>40?"var(--yellow)":"var(--green)"};border-radius:3px"></div></div>
-                  <span style="font-size:11px;font-weight:600;min-width:32px">${r.gapPct}%</span>
-                </div>
-              </td>
-              <td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.missingComs.join(', ')}">${r.missingComs.slice(0,3).join(", ")}${r.missingComs.length>3?" +"+(r.missingComs.length-3):""}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
-}
-
 function renderImport(){
   document.getElementById("section-import").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📥 Import Data</span></div>
@@ -1869,7 +884,6 @@ function render(){
   else if(activeTab==="geo")renderGeo();
   else if(activeTab==="customertype")renderCustomerType();
   else if(activeTab==="contacts")renderContacts();
-  else if(activeTab==="reporting")renderReporting();
   else if(activeTab==="import")renderImport();
   else if(activeTab==="logs")renderLogs();
 }
@@ -1879,7 +893,7 @@ function renderCommoditiesView(){
   const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
   const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
   const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
-  const covs=[...new Set(state.pcc.map(p=>p.coverage_level).filter(Boolean))].sort();
+  const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
   const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
   let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); rows=msFilter(rows,'coverage_level','pcc_cov');
   const page=state.pages.pcc||0;const PER=30;
@@ -1895,7 +909,7 @@ function renderCommoditiesView(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToTab('products','p_q','${(p.product||"").replace(/'/g,"\\'")}')" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td>${bdg(p.commodity,"var(--green)")}</td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
   </div>`;
 }
@@ -1937,7 +951,7 @@ function getFilteredProducts() {
   const q=(state.filters.p_q||"").toLowerCase();
   const typeF=state.filters.p_type||"";
   const vendorF=state.filters.p_vendor||"";
-  return state.products.filter(p=>(!typeF||(p.product_type||"").toLowerCase().includes(typeF.toLowerCase()))&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  return state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
 }
 function getFilteredPcc() {
   const q=(state.filters.pcc_q||"").toLowerCase();
@@ -1946,23 +960,13 @@ function getFilteredPcc() {
 }
 function getFilteredCtrm() {
   const q=(state.filters.ctrm_q||"").toLowerCase();
-  let rows=state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
-  rows=msFilter(rows,'product','ctrm_prod');
-  rows=msFilter(rows,'commodity','ctrm_com');
-  rows=msFilter(rows,'function_name','ctrm_func');
-  const covSel=state.filters.ctrm_cov||[];
-  if(covSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=covSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
-  return rows;
+  const pF=state.filters.ctrm_prod||"";const cF=state.filters.ctrm_com||"";const covF=state.filters.ctrm_cov||"";
+  return state.ctrm.filter(r=>(!pF||r.product===pF)&&(!cF||r.commodity===cF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
 }
 function getFilteredRisk() {
   const q=(state.filters.risk_q||"").toLowerCase();
-  let rows=state.risk.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
-  rows=msFilter(rows,'product','risk_prod');
-  rows=msFilter(rows,'category','risk_cat');
-  rows=msFilter(rows,'function_name','risk_func');
-  const covSel=state.filters.risk_cov||[];
-  if(covSel.length>0){const codeMap={'Deployed':'D','Capable':'C','Not Capable':'N','N/A':'X'};const codes=covSel.map(v=>codeMap[v]).filter(Boolean);rows=rows.filter(r=>codes.includes(getCode(r.coverage_level)));}
-  return rows;
+  const pF=state.filters.risk_prod||"";const catF=state.filters.risk_cat||"";const covF=state.filters.risk_cov||"";
+  return state.risk.filter(r=>(!pF||r.product===pF)&&(!catF||r.category===catF)&&(!covF||getCode(r.coverage_level)===covF)&&(!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q))));
 }
 function getFilteredGeo() {
   const q=(state.filters.geo_q||"").toLowerCase();
@@ -1981,196 +985,85 @@ function getFilteredContacts() {
 }
 
 
-// ── MULTI-SELECT DROPDOWN (Excel-style) ──
-// Pending selections per dropdown (staged before OK is clicked)
-const msPending = {};
-
-function createMultiSelect(id, options, selectedValues, placeholder, filterKey) {
+// ── MULTI-SELECT DROPDOWN ──
+function createMultiSelect(id, options, selectedValues, placeholder, onChangeKey) {
   const selected = selectedValues || [];
   const label = selected.length === 0 ? placeholder :
     selected.length === 1 ? selected[0] :
     selected.length + ' selected';
-  // Store options list so we can rebuild the dropdown on search
-  window['_msOpts_' + id] = options;
-  window['_msFKey_' + id] = filterKey;
+
   return `<div class="ms-wrap" id="ms-${id}" style="position:relative;display:inline-block">
-    <button class="ms-btn" onclick="toggleMultiSelect(event,'${id}')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:${selected.length>0?'var(--accent)':'var(--text)'};padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:130px;justify-content:space-between${selected.length>0?';border-color:var(--accent)':''}">
-      <span class="ms-label">${label}</span><span style="font-size:9px;color:var(--muted)">▼</span>
+    <button class="ms-btn" onclick="toggleMultiSelect('${id}')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:120px;justify-content:space-between">
+      <span>${label}</span><span style="font-size:9px;color:var(--muted)">▼</span>
     </button>
+    <div class="ms-dropdown" id="ms-drop-${id}" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:4px;max-height:260px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.4);min-width:160px">
+      <div style="display:flex;border-bottom:1px solid var(--border)">
+        <button onclick="msSelectAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;color:var(--accent);font-family:inherit">(All)</button>
+        <button onclick="msClearAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:inherit">Clear</button>
+      </div>
+      ${options.map(opt => `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border);white-space:nowrap" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><input type="checkbox" value="${opt}" ${selected.includes(opt)?'checked':''} onchange="msChange('${id}','${onChangeKey}')" style="margin:0;cursor:pointer;accent-color:var(--accent)">${opt}</label>`).join('')}
+    </div>
   </div>`;
 }
 
-function toggleMultiSelect(e, id) {
-  e.stopPropagation();
-  // If already open, close it
-  const existing = document.getElementById('ms-portal-' + id);
-  if (existing) { existing.remove(); return; }
-  // Close any other open dropdowns
-  document.querySelectorAll('[id^="ms-portal-"]').forEach(el => el.remove());
 
-  const filterKey = window['_msFKey_' + id];
-  const allOptions = window['_msOpts_' + id] || [];
-  const currentSelected = state.filters[filterKey] || [];
-  // Init pending as copy of current
-  msPending[id] = [...currentSelected];
+function toggleMultiSelect(id) {
+  // Close all other dropdowns first
+  document.querySelectorAll('.ms-dropdown').forEach(d => {
+    if (d.id !== 'ms-drop-' + id) d.style.display = 'none';
+  });
+  const drop = document.getElementById('ms-drop-' + id);
+  if (drop) drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+}
 
-  const wrap = document.getElementById('ms-' + id);
-  const rect = wrap.getBoundingClientRect();
-
-  const portal = document.createElement('div');
-  portal.id = 'ms-portal-' + id;
-  portal.style.cssText = `position:fixed;top:${rect.bottom + 2}px;left:${rect.left}px;z-index:99999;
-    background:var(--bg2);border:1px solid var(--border);border-radius:6px;
-    box-shadow:0 6px 24px rgba(0,0,0,.5);min-width:${Math.max(rect.width, 200)}px;max-width:320px;
-    font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:var(--text);overflow:hidden`;
-
-  // Search box
-  const searchRow = document.createElement('div');
-  searchRow.style.cssText = 'padding:6px 8px;border-bottom:1px solid var(--border);background:var(--bg3)';
-  const searchInput = document.createElement('input');
-  searchInput.placeholder = 'Search...';
-  searchInput.style.cssText = 'width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box';
-  searchRow.appendChild(searchInput);
-  portal.appendChild(searchRow);
-
-  // Select All row
-  const allRow = document.createElement('div');
-  allRow.style.cssText = 'display:flex;align-items:center;gap:7px;padding:5px 10px;border-bottom:2px solid var(--border);background:var(--bg3);cursor:pointer';
-  const allCb = document.createElement('input');
-  allCb.type = 'checkbox';
-  allCb.style.cssText = 'cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0';
-  const allLbl = document.createElement('span');
-  allLbl.textContent = '(Select All)';
-  allLbl.style.cssText = 'font-weight:600;user-select:none';
-  allRow.appendChild(allCb);
-  allRow.appendChild(allLbl);
-  portal.appendChild(allRow);
-
-  // List container
-  const listDiv = document.createElement('div');
-  listDiv.style.cssText = 'max-height:240px;overflow-y:auto';
-  portal.appendChild(listDiv);
-
-  // OK / Cancel footer
-  const footer = document.createElement('div');
-  footer.style.cssText = 'display:flex;gap:6px;padding:7px 10px;border-top:1px solid var(--border);background:var(--bg3);justify-content:flex-end';
-  const okBtn = document.createElement('button');
-  okBtn.textContent = 'OK';
-  okBtn.style.cssText = 'padding:4px 18px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'padding:4px 12px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px;font-family:inherit';
-  footer.appendChild(cancelBtn);
-  footer.appendChild(okBtn);
-  portal.appendChild(footer);
-
-  document.body.appendChild(portal);
-
-  function buildList(opts) {
-    listDiv.innerHTML = '';
-    opts.forEach(opt => {
-      const row = document.createElement('label');
-      row.style.cssText = 'display:flex;align-items:center;gap:7px;padding:4px 10px;cursor:pointer;border-bottom:1px solid var(--row-border);white-space:nowrap;overflow:hidden';
-      row.onmouseover = () => row.style.background = 'var(--bg3)';
-      row.onmouseout = () => row.style.background = '';
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.value = opt;
-      cb.checked = msPending[id].includes(opt);
-      cb.style.cssText = 'cursor:pointer;accent-color:var(--accent);width:14px;height:14px;flex-shrink:0';
-      cb.addEventListener('change', () => {
-        if (cb.checked) { if (!msPending[id].includes(opt)) msPending[id].push(opt); }
-        else { msPending[id] = msPending[id].filter(v => v !== opt); }
-        syncAllCheckbox();
-      });
-      const lbl = document.createElement('span');
-      lbl.textContent = opt;
-      lbl.style.cssText = 'overflow:hidden;text-overflow:ellipsis;user-select:none';
-      row.appendChild(cb);
-      row.appendChild(lbl);
-      listDiv.appendChild(row);
-    });
-    syncAllCheckbox();
+// Close dropdowns when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ms-wrap')) {
+    document.querySelectorAll('.ms-dropdown').forEach(d => d.style.display = 'none');
   }
+});
 
-  function syncAllCheckbox() {
-    const visibleOpts = getCurrentVisibleOpts();
-    const checkedVisible = visibleOpts.filter(o => msPending[id].includes(o));
-    if (checkedVisible.length === 0) { allCb.checked = false; allCb.indeterminate = false; }
-    else if (checkedVisible.length === visibleOpts.length) { allCb.checked = true; allCb.indeterminate = false; }
-    else { allCb.checked = false; allCb.indeterminate = true; }
+function msGetSelected(id) {
+  const drop = document.getElementById('ms-drop-' + id);
+  if (!drop) return [];
+  return [...drop.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+}
+
+function msChange(id, filterKey) {
+  const selected = msGetSelected(id);
+  state.filters[filterKey] = selected;
+  state.pages = {};
+  // Update button label
+  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
+  if (btn) {
+    const label = selected.length === 0 ? getPlaceholder(filterKey) :
+      selected.length === 1 ? selected[0] :
+      selected.length + ' selected';
+    btn.childNodes[0].textContent = label + ' ';
   }
+  render();
+}
 
-  function getCurrentVisibleOpts() {
-    return [...listDiv.querySelectorAll('input[type=checkbox]')].map(cb => cb.value);
-  }
+function msSelectAll(id, filterKey) {
+  const drop = document.getElementById('ms-drop-' + id);
+  if (!drop) return;
+  drop.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+  state.filters[filterKey] = [];
+  state.pages = {};
+  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
+  if (btn) btn.childNodes[0].textContent = getPlaceholder(filterKey) + ' ';
+  render();
+}
 
-  allCb.addEventListener('change', () => {
-    const visOpts = getCurrentVisibleOpts();
-    if (allCb.checked) {
-      visOpts.forEach(o => { if (!msPending[id].includes(o)) msPending[id].push(o); });
-    } else {
-      msPending[id] = msPending[id].filter(o => !visOpts.includes(o));
-    }
-    listDiv.querySelectorAll('input[type=checkbox]').forEach(cb => {
-      cb.checked = msPending[id].includes(cb.value);
-    });
-  });
-  allRow.addEventListener('click', e => { if (e.target !== allCb) { allCb.checked = !allCb.checked; allCb.dispatchEvent(new Event('change')); } });
-
-  searchInput.addEventListener('input', () => {
-    const q = searchInput.value.toLowerCase();
-    buildList(q ? allOptions.filter(o => o.toLowerCase().includes(q)) : allOptions);
-  });
-
-  okBtn.addEventListener('click', () => {
-    state.filters[filterKey] = [...msPending[id]];
-    state.pages = {};
-    portal.remove();
-    // Update button label & style
-    const sel = state.filters[filterKey];
-    const btnEl = document.querySelector('#ms-' + id + ' .ms-btn');
-    const lblEl = document.querySelector('#ms-' + id + ' .ms-label');
-    if (lblEl) {
-      const ph = getPlaceholder(filterKey);
-      lblEl.textContent = sel.length === 0 ? ph : sel.length === 1 ? sel[0] : sel.length + ' selected';
-    }
-    if (btnEl) {
-      btnEl.style.color = sel.length > 0 ? 'var(--accent)' : 'var(--text)';
-      btnEl.style.borderColor = sel.length > 0 ? 'var(--accent)' : 'var(--border)';
-    }
-    render();
-  });
-
-  cancelBtn.addEventListener('click', () => { portal.remove(); });
-
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', function outsideClick(ev) {
-      if (!portal.contains(ev.target) && !wrap.contains(ev.target)) {
-        portal.remove();
-        document.removeEventListener('click', outsideClick);
-      }
-    });
-  }, 0);
-
-  // Reposition if off-screen bottom
-  requestAnimationFrame(() => {
-    const pr = portal.getBoundingClientRect();
-    if (pr.bottom > window.innerHeight - 10) {
-      portal.style.top = (rect.top - pr.height - 2) + 'px';
-    }
-  });
-
-  buildList(allOptions);
-  searchInput.focus();
+function msClearAll(id, filterKey) {
+  msSelectAll(id, filterKey);
 }
 
 function getPlaceholder(key) {
   const map = {
     'pcc_prod':'All Products','pcc_com':'All Commodities','pcc_cov':'All Coverage',
-    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_func':'All Functions','ctrm_cov':'All Coverage',
-    'risk_prod':'All Products','risk_cat':'All Categories','risk_func':'All Functions','risk_cov':'All Coverage',
+    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_cov':'All Coverage',
+    'risk_prod':'All Products','risk_cov':'All Coverage',
     'geo_prod':'All Products','ct_prod':'All Products','con_prod':'All Products'
   };
   return map[key] || 'All';
@@ -2187,14 +1080,13 @@ async function init(){
   document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
   try{
-    const[v,p,ct_data,g,pcc,risk,ct,com,clients]=await Promise.all([
+    const[v,p,ct_data,g,pcc,risk,ct,com]=await Promise.all([
       getAll("vendors"),getAll("products"),getAll("product_contacts"),
       getAll("geographic_coverage"),getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities"),
-      getAll("product_clients")
+      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities")
     ]);
     state.vendors=v;state.products=p;state.contacts=ct_data;
-    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;
     state.ctrmLoading=true;
     render();
     const ctrm=await getAll("product_function_ctrm");
