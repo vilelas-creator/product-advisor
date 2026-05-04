@@ -757,7 +757,7 @@ function openCfComsDropdown(btn, allComs){
     window._cfSelectedComs = [...pending];
     const lbl = document.getElementById("cf-coms-label");
     if(lbl) lbl.textContent = pending.length===0?"Select commodities...":pending.length===1?pending[0]:pending.length+" selected";
-    const btnEl = wrap?.querySelector("button");
+    const btnEl = document.querySelector("#cf-coms-ms-wrap button");
     if(btnEl) btnEl.style.color = pending.length>0?"var(--accent)":"var(--muted)";
     portal.remove();
   });
