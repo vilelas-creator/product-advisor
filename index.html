@@ -505,7 +505,7 @@ function renderCommCoverage(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc',source_table:'pcc'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc',source_table:'pcc',pcc_row_id:${p.id}})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}</div>`;
 }
 
@@ -530,7 +530,7 @@ function renderCTRM(){
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity||"")}',function_name:'${escAttr(r.function_name||"")}',coverage_level:'${escAttr(COV_LABEL[code]||"")}',coverage_opts:'ctrm',source_table:'ctrm'})">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{commodity:'${escAttr(r.commodity||"")}',function_name:'${escAttr(r.function_name||"")}',coverage_level:'${escAttr(COV_LABEL[code]||"")}',coverage_opts:'ctrm',source_table:'ctrm',ctrm_row_id:${r.id}})">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -554,7 +554,7 @@ function renderRisk(){
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}',coverage_level:'${escAttr(COV_LABEL[code]||"")}',coverage_opts:'risk',source_table:'risk'})">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(r.product)}',{category:'${escAttr(r.category||"")}',function_name:'${escAttr(r.function_name||"")}',coverage_level:'${escAttr(COV_LABEL[code]||"")}',coverage_opts:'risk',source_table:'risk',risk_row_id:${r.id}})">capSpire Feedback</button><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
@@ -904,12 +904,12 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
   const risk=(state.risk||[]).filter(r=>r.product===productName);
   const clients=(state.clients||[]).filter(c=>c.product===productName);
-  // Split feedback by source_table field
+  // Split feedback by source_table
   const hasVal = v => v && String(v).trim() !== "";
   const fbProd = clients.filter(c=> c.source_table==="products" || (!c.source_table && !hasVal(c.commodities) && !hasVal(c.function_name) && !hasVal(c.category)));
-  const fbPcc  = clients.filter(c=> c.source_table==="pcc"      || (!c.source_table && hasVal(c.commodities) && !hasVal(c.function_name) && !hasVal(c.category)));
-  const fbCtrm = clients.filter(c=> c.source_table==="ctrm"     || (!c.source_table && hasVal(c.function_name) && !hasVal(c.category)));
-  const fbRisk = clients.filter(c=> c.source_table==="risk"      || (!c.source_table && hasVal(c.category)));
+  const fbPcc  = clients.filter(c=> c.source_table==="pcc"  || (!c.source_table && hasVal(c.commodities) && !hasVal(c.function_name) && !hasVal(c.category)));
+  const fbCtrm = clients.filter(c=> c.source_table==="ctrm" || (!c.source_table && hasVal(c.function_name) && !hasVal(c.category)));
+  const fbRisk = clients.filter(c=> c.source_table==="risk" || (!c.source_table && hasVal(c.category)));
 
   const activeSection=state._intSection||"pcc";
   const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
@@ -993,7 +993,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         </tr></thead>
         <tbody>
           ${rows.map(r=>{
-            const fb=fbPcc.filter(f=>f.commodities&&f.commodities.split(",").map(s=>s.trim()).includes(r.commodity));
+            const fb=fbPcc.filter(f=>f.pcc_row_id?f.pcc_row_id===r.id:(f.commodities&&f.commodities.split(",").map(s=>s.trim()).includes(r.commodity)));
             const covColor=r.coverage_level==="Covered"?"var(--green)":r.coverage_level?.includes("Partial")?"var(--yellow)":"var(--red)";
             const rowId="irow-"+r.id;
             return `<tr>
@@ -1019,7 +1019,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       return true;
     });
     const ctrmMatchedIds = new Set();
-    rows.forEach(r=>{ fbCtrm.filter(f=>f.function_name===r.function_name).forEach(f=>ctrmMatchedIds.add(f.id)); });
+    rows.forEach(r=>{ fbCtrm.filter(f=>f.ctrm_row_id?f.ctrm_row_id===r.id:f.function_name===r.function_name).forEach(f=>ctrmMatchedIds.add(f.id)); });
     const ctrmOrphanFb = fbCtrm.filter(f=>!ctrmMatchedIds.has(f.id));
     content.innerHTML=`
       <div class="filters" style="border-radius:8px;margin-bottom:10px">
@@ -1039,7 +1039,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         <tbody>
           ${rows.map(r=>{
             const code=getCode(r.coverage_level);
-            const fb=fbCtrm.filter(f=>f.function_name===r.function_name);
+            const fb=fbCtrm.filter(f=>f.ctrm_row_id?f.ctrm_row_id===r.id:f.function_name===r.function_name);
             const rowId="ictrm-"+r.id;
             return `<tr>
               <td style="padding:8px 12px;font-weight:600;border-bottom:1px solid var(--row-border)">${r.function_name||""}</td>
@@ -1067,12 +1067,9 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       if(fRiskCov&&COV_LABEL[getCode(r.coverage_level)]!==fRiskCov) return false;
       return true;
     });
-    console.log('RISK DEBUG', {clients:clients.length, fbRisk:fbRisk.length, rows:rows.length, risk:risk.length});
-    console.log('fbRisk entries:', fbRisk);
     const matchedFbIds = new Set();
-    rows.forEach(r=>{ fbRisk.filter(f=>f.category===r.category&&f.function_name===r.function_name).forEach(f=>matchedFbIds.add(f.id)); });
+    rows.forEach(r=>{ fbRisk.filter(f=>f.risk_row_id?f.risk_row_id===r.id:(f.category===r.category&&f.function_name===r.function_name)).forEach(f=>matchedFbIds.add(f.id)); });
     const orphanFb = fbRisk.filter(f=>!matchedFbIds.has(f.id));
-    console.log('orphanFb:', orphanFb);
 
     content.innerHTML=`
       <div class="filters" style="border-radius:8px;margin-bottom:10px">
@@ -1092,7 +1089,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         <tbody>
           ${rows.map(r=>{
             const code=getCode(r.coverage_level);
-            const fb=fbRisk.filter(f=>f.category===r.category&&f.function_name===r.function_name);
+            const fb=fbRisk.filter(f=>f.risk_row_id?f.risk_row_id===r.id:(f.category===r.category&&f.function_name===r.function_name));
             const rowId="irisk-"+r.id;
             return `<tr>
               <td style="padding:8px 12px;border-bottom:1px solid var(--row-border)">${bdg(r.category,"var(--purple)")}</td>
@@ -1514,8 +1511,11 @@ async function saveClient(productName, clientId){
   const category = document.getElementById("cf-category")?.value?.trim()||null;
   const coverageLevel = document.getElementById("cf-coverage")?.value||null;
   const sourceTable = window._cfType || window._cfCtx?.source_table || null;
+  const pccRowId  = window._cfCtx?.pcc_row_id  || null;
+  const ctrmRowId = window._cfCtx?.ctrm_row_id || null;
+  const riskRowId = window._cfCtx?.risk_row_id  || null;
   const userName = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
-  const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,coverage_level:coverageLevel,source_table:sourceTable,created_by:userName};
+  const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,coverage_level:coverageLevel,source_table:sourceTable,pcc_row_id:pccRowId,ctrm_row_id:ctrmRowId,risk_row_id:riskRowId,created_by:userName};
   try{
     if(clientId&&clientId!=="null"){
       await apiFetch("product_clients",{method:"PATCH",body,params:{id:"eq."+clientId}});
@@ -1689,7 +1689,7 @@ function renderCommoditiesView(){
       ${resetBtn('pcc_')}
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc',source_table:'pcc'})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc',source_table:'pcc',pcc_row_id:${p.id}})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
   </div>`;
 }
