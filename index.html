@@ -1018,6 +1018,9 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       if(fCtrmCov&&COV_LABEL[getCode(r.coverage_level)]!==fCtrmCov) return false;
       return true;
     });
+    const ctrmMatchedIds = new Set();
+    rows.forEach(r=>{ fbCtrm.filter(f=>f.function_name===r.function_name).forEach(f=>ctrmMatchedIds.add(f.id)); });
+    const ctrmOrphanFb = fbCtrm.filter(f=>!ctrmMatchedIds.has(f.id));
     content.innerHTML=`
       <div class="filters" style="border-radius:8px;margin-bottom:10px">
         <select onchange="state._intFCtrmFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>${fns.map(f=>`<option value="${f}" ${f===fCtrmFn?"selected":""}>${f}</option>`).join("")}</select>
@@ -1026,7 +1029,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         <button class="btn btn-reset" onclick="state._intFCtrmFn='';state._intFCtrmCom='';state._intFCtrmCov='';renderReporting()">↺ Reset</button>
         <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows · ${fbCtrm.length} feedbacks</span>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
+      ${rows.length>0?`<table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr>
           <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Function</th>
           <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Commodity</th>
@@ -1049,7 +1052,13 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
             ${fb.length>0?"<tr id='"+rowId+"' style='display:none;background:var(--bg3)'><td colspan='4' style='padding:8px 16px 12px;border-bottom:1px solid var(--border)'>"+fb.map(f=>fbCard(f)).join("")+"</td></tr>":""}`;
           }).join("")}
         </tbody>
-      </table>`;
+      </table>`:""}
+      ${ctrmOrphanFb.length>0?`<div style="margin-top:${rows.length>0?'16px':'0'}">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding:8px 12px;background:var(--bg3);border-radius:6px">capSpire Feedback — No official CTRM data for this product</div>
+        ${ctrmOrphanFb.map(f=>`<div style="margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">${f.function_name||""}</span>${fbCard(f)}</div>`).join("")}
+      </div>`:""}
+      ${rows.length===0&&ctrmOrphanFb.length===0?`<div style="padding:20px;color:var(--muted);font-size:13px;text-align:center">No CTRM data or feedback for this product.</div>`:""}
+    `;
 
   } else if(activeSection==="risk"){
     const cats=[...new Set(risk.map(r=>r.category).filter(Boolean))].sort();
@@ -1061,6 +1070,11 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       if(fRiskCov&&COV_LABEL[getCode(r.coverage_level)]!==fRiskCov) return false;
       return true;
     });
+    // Orphan feedbacks — not matched to any official row
+    const matchedFbIds = new Set();
+    rows.forEach(r=>{ fbRisk.filter(f=>f.category===r.category&&f.function_name===r.function_name).forEach(f=>matchedFbIds.add(f.id)); });
+    const orphanFb = fbRisk.filter(f=>!matchedFbIds.has(f.id));
+
     content.innerHTML=`
       <div class="filters" style="border-radius:8px;margin-bottom:10px">
         <select onchange="state._intFRiskCat=this.value;renderReporting()" style="font-size:12px"><option value="">All Categories</option>${cats.map(c=>`<option value="${c}" ${c===fRiskCat?"selected":""}>${c}</option>`).join("")}</select>
@@ -1069,7 +1083,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         <button class="btn btn-reset" onclick="state._intFRiskCat='';state._intFRiskFn='';state._intFRiskCov='';renderReporting()">↺ Reset</button>
         <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows · ${fbRisk.length} feedbacks</span>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
+      ${rows.length>0?`<table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead><tr>
           <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Category</th>
           <th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left">Function</th>
@@ -1092,7 +1106,21 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
             ${fb.length>0?"<tr id='"+rowId+"' style='display:none;background:var(--bg3)'><td colspan='4' style='padding:8px 16px 12px;border-bottom:1px solid var(--border)'>"+fb.map(f=>fbCard(f)).join("")+"</td></tr>":""}`;
           }).join("")}
         </tbody>
-      </table>`;
+      </table>`:""}
+      ${orphanFb.length>0?`<div style="margin-top:${rows.length>0?'16px':'0'}">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding:8px 12px;background:var(--bg3);border-radius:6px">
+          capSpire Feedback — No official data for this product
+        </div>
+        ${orphanFb.map(f=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+            ${f.category?`${bdg(f.category,"var(--purple)")}`:""} 
+            <span style="font-size:11px;color:var(--muted)">${f.function_name||""}</span>
+          </div>
+          ${fbCard(f)}
+        </div>`).join("")}
+      </div>`:""}
+      ${rows.length===0&&orphanFb.length===0?`<div style="padding:20px;color:var(--muted);font-size:13px;text-align:center">No Risk data or feedback for this product.</div>`:""}
+    `;
   }
 
   wrap.appendChild(content);
