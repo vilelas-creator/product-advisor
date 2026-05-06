@@ -1533,7 +1533,15 @@ function renderReportIntelligence(el, backBtn, report){
   wrap.appendChild(grid); el.appendChild(wrap);
 }
 
-function renderIntelligenceDetail(el, backBtn, report, productName){
+async function renderIntelligenceDetail(el, backBtn, report, productName){
+  // Garantir que os clients estão actualizados (sem cache stale)
+  const cacheKey = "pa_cache_product_clients";
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) {
+      state.clients = await getAll("product_clients");
+    }
+  } catch(e) {}
   const prod=(state.products||[]).find(p=>p.product_name===productName)||{product_name:productName};
   const pcc=(state.pcc||[]).filter(r=>r.product===productName);
   const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
@@ -2140,13 +2148,15 @@ async function saveClient(productName, clientId){
       if(res[0])state.clients.push(res[0]);
     }
     invalidateCache("product_clients");
+    // Recarregar TODOS os clients do Supabase para garantir dados frescos
+    state.clients = await getAll("product_clients");
     document.getElementById("client-form-panel")?.remove();
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-    showToast("Feedback saved successfully");
-    // Actualizar também o report de intelligence se estiver aberto
+    showToast("Feedback saved");
+    // Re-renderizar o report de intelligence se estiver aberto
     if(activeTab==="reporting" && state.activeReport==="intelligence") renderReporting();
-  }catch(e){showToast("Error saving: "+e.message,"error");}
+  }catch(e){showToast("Error: "+e.message,"error");}
 }
 
 async function deleteClient(clientId, productName){
@@ -2155,11 +2165,12 @@ async function deleteClient(clientId, productName){
     await apiFetch("product_clients",{method:"DELETE",params:{id:"eq."+clientId}});
     state.clients=(state.clients||[]).filter(c=>c.id!==clientId);
     invalidateCache("product_clients");
+    state.clients = await getAll("product_clients");
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
     showToast("Feedback deleted");
     if(activeTab==="reporting" && state.activeReport==="intelligence") renderReporting();
-  }catch(e){showToast("Error deleting: "+e.message,"error");}
+  }catch(e){showToast("Error: "+e.message,"error");}
 }
 
 // ╔═══════════════════════════════════════════════════════════════
