@@ -667,6 +667,13 @@ const ALL_TABLES=[
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
 // ── REPORTING ──
+function renderReportIntelligence(el){
+  // Wrapper para re-renderizar só o intelligence sem tocar no resto
+  const selProd = state._intProd;
+  if(!selProd) return;
+  const backBtn = `<button class="btn" onclick="state.activeReport=null;state._intProd=null;render()">← Back</button>`;
+  renderIntelligenceDetail(el, backBtn, "intelligence", selProd);
+}
 function renderReporting(){
   const activeReport = state.activeReport || null;
   const el = document.getElementById("section-reporting");
@@ -1519,14 +1526,19 @@ async function saveClient(productName, clientId){
       if(!state.clients)state.clients=[];
       if(res[0])state.clients.push(res[0]);
     }
-    // Recarregar todos os clients para garantir dados frescos no Intelligence
+    // 1. Fechar form PRIMEIRO para não corromper campos
+    document.getElementById("client-form-panel")?.remove();
+    // 2. Recarregar clients frescos do Supabase
     invalidateCache("product_clients");
     try{state.clients=await getAll("product_clients");}catch(e){}
-    document.getElementById("client-form-panel")?.remove();
+    // 3. Actualizar lista no painel de detalhe se estiver aberto
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-    // Se o Intelligence estiver aberto, re-renderizar
-    if(activeTab==="reporting"&&state.activeReport==="intelligence"){state.activeReport="intelligence";render();}
+    // 4. Re-renderizar o Intelligence se estiver aberto (sem chamar render() global)
+    if(activeTab==="reporting" && state.activeReport==="intelligence" && state._intProd===productName){
+      const el=document.getElementById("section-reporting");
+      if(el) renderReportIntelligence(el);
+    }
   }catch(e){alert("Error saving: "+e.message);}
 }
 
