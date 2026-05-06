@@ -1636,7 +1636,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   if(activeSection==="pcc"){
     const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
-    const fbPcc=clients.filter(c=>c.source_table==="pcc"||(c.source_table==="products"&&false));
+    const fbPcc=clients.filter(c=>c.source_table==="pcc"||c.source_table==="products");
     let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
     const filtersHtml=`<div class="filters" style="border-radius:8px;margin-bottom:10px">
       <select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>${coms.map(c=>`<option value="${c}" ${c===fPccCom?"selected":""}>${c}</option>`).join("")}</select>
@@ -1859,110 +1859,10 @@ function getVals(keys){
   const r={};keys.forEach((k,i)=>{const v=els[i]?.value||"";r[k]=(k==="id"&&v==="")?null:v;});return r;
 }
 
-// ── PRODUCT DETAIL SIDE PANEL ──
-function openProductDetail(productName, ctx){
-  document.getElementById("product-detail-panel")?.remove();
-  document.getElementById("product-detail-overlay")?.remove();
-  document.getElementById("client-form-panel")?.remove();
-
-  const prod = state.products.find(p=>p.product_name===productName) || {product_name:productName,vendor:"",product_type:""};
-  const pccEntries = state.pcc.filter(r=>r.product===productName);
-  const covPct = pccEntries.length ? Math.round(pccEntries.filter(r=>r.coverage_level==="Covered").length/pccEntries.length*100) : null;
-  const clients = (state.clients||[]).filter(c=>c.product===productName);
-
-  const overlay = document.createElement("div");
-  overlay.id = "product-detail-overlay";
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000";
-  overlay.onclick = closeProductDetail;
-  document.body.appendChild(overlay);
-
-  const panel = document.createElement("div");
-  panel.id = "product-detail-panel";
-  panel.style.cssText = "position:fixed;top:0;right:0;width:480px;max-width:95vw;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.4)";
-
-  panel.innerHTML = `
-    <style>@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}</style>
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:2px">${prod.product_name}</div>
-        <div style="font-size:11px;color:var(--muted)">${prod.vendor||""} ${prod.product_type?"· "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):""}</div>
-      </div>
-      <button onclick="closeProductDetail()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0;line-height:1">✕</button>
-    </div>
-    <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;background:var(--bg3)">
 
 // ╔═══════════════════════════════════════════════════════════════
-// ║  PRODUCT DETAIL PANEL & CLIENT FEEDBACK
+// ║  PRODUCT DETAIL SIDE PANEL & CLIENT FEEDBACK
 // ╚═══════════════════════════════════════════════════════════════
-    };
-    reader.onerror=()=>reject(new Error("Could not read file"));
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-async function importFile(event,table){
-  const file=event.target.files[0];if(!file)return;
-  const statusEl=document.getElementById("import-status-"+table);
-  const ext=file.name.split(".").pop().toLowerCase();if(!["xlsx","xls","csv"].includes(ext)){statusEl.textContent="Please upload Excel or CSV";statusEl.style.color="var(--red)";return;}
-  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
-  try{
-    const text=await file.text();
-    const lines=text.split("\n").filter(l=>l.trim());
-    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
-    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
-    rows=lines.slice(1).map(line=>{
-      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-      const obj={};
-      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
-      return obj;
-    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
-    statusEl.textContent="Importing "+rows.length+" records...";
-    let ok=0,err=0;
-    for(const row of rows){
-      try{
-        if(row.id){
-          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
-          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
-          else await apiFetch(table,{method:"POST",body:row});
-        }else{
-          const{id,...r}=row;
-          await apiFetch(table,{method:"POST",body:r});
-        }
-        ok++;
-      }catch(e){err++;}
-    }
-    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
-    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
-    // Reload affected data
-    if(table==="vendors")state.vendors=await getAll("vendors");
-    else if(table==="products")state.products=await getAll("products");
-    else if(table==="commodities")state.commodities=await getAll("commodities");
-    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
-    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
-    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
-    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
-    render();
-  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
-}
-
-// ── MODALS ──
-function openModal(title,fields,saveFn){
-  document.getElementById("modal-title").textContent=title;
-  document.getElementById("modal-fields").innerHTML=fields.map(f=>{
-    if(f.type==="textarea")return`<div class="fg"><label class="lbl">${f.label}</label><textarea ${f.ro?"readonly":""}>${f.value||""}</textarea></div>`;
-    if(f.type==="select")return`<div class="fg"><label class="lbl">${f.label}</label><select style="width:100%"><option value="">— Select —</option>${(f.options||[]).map(o=>`<option ${o===f.value?"selected":""}>${o}</option>`).join("")}</select></div>`;
-    return`<div class="fg"><label class="lbl">${f.label}</label><input type="${f.type||"text"}" value="${f.value||""}" ${f.ro?"readonly":""}></div>`;
-  }).join("");
-  modalSaveFn=saveFn;
-  document.getElementById("modal").classList.add("open");
-}
-function closeModal(){document.getElementById("modal").classList.remove("open");modalSaveFn=null;}
-function saveModal(){if(modalSaveFn)modalSaveFn();}
-function getVals(keys){
-  const els=[...document.getElementById("modal-fields").querySelectorAll("input,select,textarea")];
-  const r={};keys.forEach((k,i)=>{const v=els[i]?.value||"";r[k]=(k==="id"&&v==="")?null:v;});return r;
-}
-
 // ── PRODUCT DETAIL SIDE PANEL ──
 function openProductDetail(productName, ctx){
   document.getElementById("product-detail-panel")?.remove();
@@ -2239,10 +2139,14 @@ async function saveClient(productName, clientId){
       if(!state.clients)state.clients=[];
       if(res[0])state.clients.push(res[0]);
     }
+    invalidateCache("product_clients");
     document.getElementById("client-form-panel")?.remove();
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-  }catch(e){alert("Error saving: "+e.message);}
+    showToast("Feedback saved successfully");
+    // Actualizar também o report de intelligence se estiver aberto
+    if(activeTab==="reporting" && state.activeReport==="intelligence") renderReporting();
+  }catch(e){showToast("Error saving: "+e.message,"error");}
 }
 
 async function deleteClient(clientId, productName){
@@ -2250,9 +2154,12 @@ async function deleteClient(clientId, productName){
   try{
     await apiFetch("product_clients",{method:"DELETE",params:{id:"eq."+clientId}});
     state.clients=(state.clients||[]).filter(c=>c.id!==clientId);
+    invalidateCache("product_clients");
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-  }catch(e){alert("Error deleting: "+e.message);}
+    showToast("Feedback deleted");
+    if(activeTab==="reporting" && state.activeReport==="intelligence") renderReporting();
+  }catch(e){showToast("Error deleting: "+e.message,"error");}
 }
 
 // ╔═══════════════════════════════════════════════════════════════
