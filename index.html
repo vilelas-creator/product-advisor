@@ -149,6 +149,14 @@ a:hover{text-decoration:underline;}
   </div>
 </div>
 <script>
+// ── localStorage seguro (fallback para memória quando bloqueado pelo browser) ──
+const _store = {};
+const safeStorage = {
+  getItem:    k => { try { return localStorage.getItem(k); } catch(e) { return _store[k]??null; } },
+  setItem:    (k,v) => { try { localStorage.setItem(k,v); } catch(e) { _store[k]=v; } },
+  removeItem: k => { try { localStorage.removeItem(k); } catch(e) { delete _store[k]; } },
+};
+
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="COLOCA_AQUI_A_TUA_NOVA_ANON_KEY"; // ← regenera no Supabase dashboard
 const GROQ_MODEL="llama-3.3-70b-versatile";
@@ -268,7 +276,7 @@ function showComments(table,id){
 // ── TABS ──
 
 // ── USER IDENTITY ──
-function getUsername(){return localStorage.getItem("pa_username")||"";}
+function getUsername(){return safeStorage.getItem("pa_username")||"";}
 function ensureUsername(callback){
   const user=getUsername();if(user){callback(user);return;}
   const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
@@ -279,7 +287,7 @@ function ensureUsername(callback){
   const btn=document.createElement("button");btn.textContent="Continue →";
   btn.style.cssText="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600";
   box: { bx.appendChild(inp);bx.appendChild(btn);ov.appendChild(bx);document.body.appendChild(ov);setTimeout(()=>inp.focus(),100); }
-  const save=()=>{const name=inp.value.trim();if(!name){inp.style.border="1px solid var(--red)";return;}localStorage.setItem("pa_username",name);ov.remove();callback(name);};
+  const save=()=>{const name=inp.value.trim();if(!name){inp.style.border="1px solid var(--red)";return;}safeStorage.setItem("pa_username",name);ov.remove();callback(name);};
   btn.onclick=save;inp.onkeydown=e=>{if(e.key==="Enter")save();};
 }
 
@@ -1916,7 +1924,7 @@ async function doLogin() {
   if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
   try {
     const data = await authFetch("/token?grant_type=password", {body: {email, password}});
-    localStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, user: data.user}));
+    safeStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, user: data.user}));
     onLogin(data.user);
   } catch(e) {
     errEl.textContent = e.message;
@@ -1955,7 +1963,7 @@ async function showForgotPassword() {
 function onLogin(user) {
   currentUser = user;
   const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-  localStorage.setItem("pa_username", name);
+  safeStorage.setItem("pa_username", name);
   document.getElementById("auth-screen").style.display = "none";
   document.querySelector("header").style.display = "flex";
   document.querySelector("main").style.display = "block";
@@ -1967,8 +1975,8 @@ function onLogin(user) {
 }
 
 function doLogout() {
-  localStorage.removeItem("pa_session");
-  localStorage.removeItem("pa_username");
+  safeStorage.removeItem("pa_session");
+  safeStorage.removeItem("pa_username");
   location.reload();
 }
 
@@ -1976,7 +1984,7 @@ async function checkAuth() {
   document.getElementById("auth-screen").style.display = "flex";
   // Check for existing session
   try {
-    const saved = localStorage.getItem("pa_session");
+    const saved = safeStorage.getItem("pa_session");
     if (saved) {
       const session = JSON.parse(saved);
       if (session?.user) {
