@@ -5,1153 +5,522 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Product Advisor</title>
 <style>
-/* ═══════════════════════════════════════════
-   RESET & VARIABLES
-═══════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#0a0e1a;--bg2:#0d1424;--bg3:#0a1020;--border:#1e2d40;--text:#e2e8f0;--muted:#64748b;
   --accent:#60a5fa;--green:#22c55e;--yellow:#f59e0b;--purple:#a78bfa;--red:#ef4444;
   --input-bg:#111827;--row-border:#111827;
-  --shadow:0 4px 20px rgba(0,0,0,.4);
-  --radius:8px;--radius-sm:5px;--radius-lg:12px;
-  --transition:all .15s ease;
 }
 .light{
   --bg:#f8fafc;--bg2:#ffffff;--bg3:#f1f5f9;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;
   --accent:#1d4ed8;--green:#16a34a;--yellow:#d97706;--purple:#7c3aed;--red:#dc2626;
   --input-bg:#ffffff;--row-border:#f1f5f9;
-  --shadow:0 4px 20px rgba(0,0,0,.1);
 }
-
-/* ═══════════════════════════════════════════
-   BASE
-═══════════════════════════════════════════ */
-body{
-  font-family:system-ui,-apple-system,sans-serif;
-  background:var(--bg);color:var(--text);
-  font-size:13px;transition:background .2s,color .2s;
-}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;transition:background .2s,color .2s;}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:8px;min-height:48px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.logo{font-weight:700;font-size:14px;color:var(--accent);white-space:nowrap;}
+.sub{font-size:10px;color:var(--muted);margin-left:4px;}
+nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:3px 0;max-width:calc(100% - 280px);}
+.tab{padding:4px 10px;font-size:11px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s;white-space:nowrap;}
+.tab.active{background:var(--accent);color:#fff;font-weight:600;}
+.tab:hover:not(.active){background:var(--bg3);}
+.theme-btn{padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit;white-space:nowrap;}
+main{padding:12px;max-width:1600px;margin:0 auto;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;}
+.card-head{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg3);}
+.card-title{font-weight:600;font-size:13px;}
+.card-meta{font-size:11px;color:var(--muted);margin-left:auto;}
+.filters{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--bg3);}
+input,select{background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 9px;font-size:12px;font-family:inherit;outline:none;}
+input{width:180px;}
+.btn{padding:4px 10px;font-size:11px;font-weight:600;border:none;border-radius:5px;cursor:pointer;font-family:inherit;background:var(--bg3);color:var(--muted);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-success{background:#14532d;color:#86efac;border:1px solid #22c55e44;}
+.btn-reset{background:#1e3a1e;color:var(--green);border:1px solid var(--green);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+td{padding:6px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:middle;}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;}
+.pager{display:flex;gap:8px;padding:7px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);align-items:center;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center;}
+.stat-n{font-size:26px;font-weight:700;color:var(--accent);}
+.stat-l{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:1px;}
+.bar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
+.bar-inner{height:100%;border-radius:2px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 a{color:var(--accent);text-decoration:none;cursor:pointer;}
 a:hover{text-decoration:underline;}
-input,select,textarea{
-  background:var(--input-bg);border:1px solid var(--border);
-  border-radius:var(--radius-sm);color:var(--text);
-  padding:5px 9px;font-size:12px;font-family:inherit;outline:none;
-  transition:border-color .15s;
-}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);}
-input{width:180px;}
-
-/* ═══════════════════════════════════════════
-   LAYOUT
-═══════════════════════════════════════════ */
-header{
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  padding:0 16px;display:flex;align-items:center;gap:8px;
-  min-height:52px;position:sticky;top:0;z-index:50;flex-wrap:wrap;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
-}
-.logo{font-weight:700;font-size:15px;color:var(--accent);white-space:nowrap;letter-spacing:-.3px;}
-.sub{font-size:10px;color:var(--muted);margin-left:4px;}
-nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:4px 0;max-width:calc(100% - 280px);}
-main{padding:14px;max-width:1600px;margin:0 auto;}
-
-/* ═══════════════════════════════════════════
-   TABS & BUTTONS
-═══════════════════════════════════════════ */
-.tab{
-  padding:5px 11px;font-size:11px;border:none;border-radius:var(--radius-sm);
-  cursor:pointer;background:transparent;color:var(--muted);
-  font-family:inherit;transition:var(--transition);white-space:nowrap;
-}
-.tab.active{background:var(--accent);color:#fff;font-weight:600;}
-.tab:hover:not(.active){background:var(--bg3);color:var(--text);}
-.theme-btn{
-  padding:5px 11px;font-size:11px;border:1px solid var(--border);
-  border-radius:var(--radius-sm);cursor:pointer;background:var(--bg3);
-  color:var(--muted);font-family:inherit;transition:var(--transition);
-}
-.theme-btn:hover{border-color:var(--accent);color:var(--accent);}
-.btn{
-  padding:5px 11px;font-size:11px;font-weight:600;border:none;
-  border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;
-  background:var(--bg3);color:var(--muted);transition:var(--transition);
-}
-.btn:hover{background:var(--border);color:var(--text);}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.btn-primary{background:var(--accent);color:#fff;}
-.btn-primary:hover{opacity:.9;background:var(--accent);}
-.btn-success{background:#14532d;color:#86efac;border:1px solid #22c55e44;}
-.btn-success:hover{background:#166534;}
-.btn-reset{background:#1e3a1e;color:var(--green);border:1px solid var(--green);}
-.btn-danger{color:var(--red);border:1px solid var(--red)44;}
-
-/* ═══════════════════════════════════════════
-   CARDS
-═══════════════════════════════════════════ */
-.card{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);overflow:hidden;margin-bottom:14px;
-}
-.card-head{
-  padding:10px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;background:var(--bg3);
-}
-.card-title{font-weight:700;font-size:13px;}
-.card-meta{font-size:11px;color:var(--muted);margin-left:auto;}
-.filters{
-  padding:10px 16px;border-bottom:1px solid var(--border);
-  display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--bg3);
-}
-
-/* ═══════════════════════════════════════════
-   TABLE
-═══════════════════════════════════════════ */
-table{width:100%;border-collapse:collapse;font-size:12px;}
-th{
-  padding:8px 12px;text-align:left;font-size:10px;font-weight:700;
-  color:var(--muted);border-bottom:1px solid var(--border);
-  background:var(--bg3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
-}
-td{padding:7px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:middle;}
-tr:hover td{background:rgba(255,255,255,.02);}
-.light tr:hover td{background:rgba(0,0,0,.02);}
-
-/* ═══════════════════════════════════════════
-   BADGES
-═══════════════════════════════════════════ */
-.badge{
-  display:inline-block;padding:2px 8px;border-radius:10px;
-  font-size:10px;font-weight:600;
-}
-
-/* ═══════════════════════════════════════════
-   STATS
-═══════════════════════════════════════════ */
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-.stat{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:16px 20px;text-align:center;
-  transition:var(--transition);
-}
-.stat:hover{border-color:var(--accent);transform:translateY(-1px);}
-.stat-n{font-size:28px;font-weight:700;color:var(--accent);}
-.stat-l{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
-
-/* ═══════════════════════════════════════════
-   PROGRESS BARS
-═══════════════════════════════════════════ */
-.bar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px;}
-.bar-inner{height:100%;border-radius:2px;transition:width .3s ease;}
-
-/* ═══════════════════════════════════════════
-   LAYOUT HELPERS
-═══════════════════════════════════════════ */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.pager{
-  display:flex;gap:8px;padding:8px 16px;border-top:1px solid var(--border);
-  font-size:11px;color:var(--muted);align-items:center;
-}
-.pct-cell{min-width:90px;}
-
-/* ═══════════════════════════════════════════
-   MODAL
-═══════════════════════════════════════════ */
-.modal-bg{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
-  z-index:999;align-items:center;justify-content:center;padding:20px;
-  backdrop-filter:blur(2px);
-}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;padding:20px;}
 .modal-bg.open{display:flex;}
-.modal-box{
-  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
-  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px;
-  box-shadow:var(--shadow);
-}
-.fg{margin-bottom:12px;}
-.lbl{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:22px;}
+.fg{margin-bottom:11px;}
+.lbl{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:3px;text-transform:uppercase;}
 .fg input,.fg select,.fg textarea{width:100%;}
-.fg textarea{min-height:60px;resize:vertical;}
-
-/* ═══════════════════════════════════════════
-   SECTIONS
-═══════════════════════════════════════════ */
+.fg textarea{min-height:55px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 9px;font-size:12px;font-family:inherit;}
 .section{display:none;}
 .section.active{display:block;}
-
-/* ═══════════════════════════════════════════
-   LOADING STATES
-═══════════════════════════════════════════ */
-.loading{padding:32px;text-align:center;color:var(--muted);}
-.loading-spinner{
-  display:inline-block;width:20px;height:20px;
-  border:2px solid var(--border);border-top-color:var(--accent);
-  border-radius:50%;animation:spin .6s linear infinite;margin-bottom:8px;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
-
-/* Skeleton loader */
-.skeleton{
-  background:linear-gradient(90deg,var(--border) 25%,var(--bg3) 50%,var(--border) 75%);
-  background-size:200% 100%;animation:shimmer 1.5s infinite;
-  border-radius:4px;height:12px;
-}
-@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-
-/* ═══════════════════════════════════════════
-   TOAST NOTIFICATIONS
-═══════════════════════════════════════════ */
-#toast-container{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-  z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;
-}
-.toast{
-  padding:10px 18px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;
-  color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.4);
-  animation:toastIn .2s ease;pointer-events:none;white-space:nowrap;
-}
-.toast.success{background:var(--green);}
-.toast.error{background:var(--red);}
-.toast.info{background:var(--accent);}
-@keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-
-/* ═══════════════════════════════════════════
-   COMMENTS
-═══════════════════════════════════════════ */
-.comment-block{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:var(--radius-sm);padding:10px;margin-bottom:8px;font-size:11px;
-}
-.comment-meta{color:var(--muted);font-size:10px;margin-bottom:4px;}
-.comment-text{color:var(--text);line-height:1.6;}
-
-/* ═══════════════════════════════════════════
-   CHAT PANEL
-═══════════════════════════════════════════ */
-#chat-panel{
-  display:none;position:fixed;bottom:80px;right:20px;
-  width:420px;height:560px;background:var(--bg2);
-  border:1px solid var(--border);border-radius:var(--radius-lg);
-  flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.5);
-  z-index:900;overflow:hidden;
-}
-#chat-fab{
-  position:fixed;bottom:20px;right:20px;width:52px;height:52px;
-  border-radius:50%;background:var(--accent);color:#fff;border:none;
-  font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(96,165,250,.4);
-  z-index:900;transition:transform .15s;
-}
-#chat-fab:hover{transform:scale(1.08);}
-
-/* ═══════════════════════════════════════════
-   AUTH SCREEN
-═══════════════════════════════════════════ */
-#auth-screen{
-  display:none;position:fixed;inset:0;background:var(--bg);
-  z-index:99999;align-items:center;justify-content:center;padding:20px;
-}
-.auth-box{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:16px;width:100%;max-width:420px;padding:40px;
-  box-shadow:0 8px 40px rgba(0,0,0,.3);
-}
-.auth-tab-bar{
-  display:flex;gap:0;margin-bottom:28px;
-  border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;
-}
-.auth-tab{
-  flex:1;padding:11px;font-size:13px;font-weight:600;
-  border:none;cursor:pointer;font-family:inherit;transition:var(--transition);
-}
-.auth-field{margin-bottom:16px;}
-.auth-field label{
-  display:block;font-size:11px;font-weight:700;color:var(--muted);
-  margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;
-}
-.auth-field input{
-  width:100%;padding:11px 14px;border-radius:var(--radius-sm);
-  background:var(--input-bg);border:1px solid var(--border);
-  color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;
-}
-.auth-field input:focus{border-color:var(--accent);}
-.auth-btn{
-  width:100%;padding:13px;border:none;border-radius:var(--radius-sm);
-  font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:var(--transition);
-}
-
-/* ═══════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════ */
-@media(max-width:768px){
-  .stat-grid{grid-template-columns:repeat(2,1fr);}
-  .two-col{grid-template-columns:1fr;}
-  nav{gap:1px;}
-  .tab{padding:4px 7px;font-size:10px;}
-  #chat-panel{width:calc(100vw - 20px);right:10px;}
-}
-@media(max-width:480px){
-  header{padding:0 10px;}
-  main{padding:10px;}
-  .auth-box{padding:24px 20px;}
-}
+.loading{padding:28px;text-align:center;color:var(--muted);}
+.row-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--row-border);}
+.pct-cell{min-width:90px;}
+.comment-block{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px;}
+.comment-meta{color:var(--muted);font-size:10px;margin-bottom:3px;}
+.comment-text{color:var(--text);line-height:1.5;}
+@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:3px 6px;font-size:10px;}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-
-<!-- ═══════════════════════════════════════════
-     AUTH SCREEN
-═══════════════════════════════════════════ -->
-<div id="auth-screen">
-  <div class="auth-box">
-    <div style="text-align:center;margin-bottom:32px">
-      <div style="font-size:36px;margin-bottom:10px">📊</div>
-      <div style="font-weight:700;font-size:22px;color:var(--accent)">Product Advisor</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:5px">CTRM &amp; Risk Management Intelligence</div>
+<div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:32px;margin-bottom:8px">📊</div>
+      <div style="font-weight:700;font-size:20px;color:var(--accent)">Product Advisor</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">CTRM & Risk Management Intelligence</div>
     </div>
-    <div class="auth-tab-bar">
-      <button id="tab-login" class="auth-tab" onclick="showAuthTab('login')" style="background:var(--accent);color:#fff">Sign In</button>
-      <button id="tab-register" class="auth-tab" onclick="showAuthTab('register')" style="background:var(--bg3);color:var(--muted)">Register</button>
+    <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <button id="tab-login" onclick="showAuthTab('login')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">Sign In</button>
+      <button id="tab-register" onclick="showAuthTab('register')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Register</button>
     </div>
-
-    <!-- Login -->
     <div id="auth-login">
-      <div class="auth-field">
-        <label>Email</label>
-        <input id="login-email" type="email" placeholder="your@email.com">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
+        <input id="login-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
-      <div class="auth-field" style="margin-bottom:24px">
-        <label>Password</label>
-        <input id="login-password" type="password" placeholder="••••••••">
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
+        <input id="login-password" type="password" placeholder="••••••••" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
-      <button class="auth-btn" onclick="doLogin()" style="background:var(--accent);color:#fff;margin-bottom:12px">Sign In</button>
-      <div id="login-error" style="color:var(--red);font-size:12px;text-align:center;display:none;margin-top:8px"></div>
-      <div style="text-align:center;margin-top:14px">
-        <a onclick="showForgotPassword()" href="#" style="font-size:12px">Forgot password?</a>
+      <button onclick="doLogin()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Sign In</button>
+      <div id="login-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
+      <div style="text-align:center;margin-top:16px">
+        <a onclick="showForgotPassword()" href="#" style="font-size:12px;color:var(--accent)">Forgot password?</a>
       </div>
     </div>
-
-    <!-- Register -->
     <div id="auth-register" style="display:none">
-      <div class="auth-field">
-        <label>Full Name</label>
-        <input id="register-name" type="text" placeholder="Your full name">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Full Name</label>
+        <input id="register-name" type="text" placeholder="Your full name" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
-      <div class="auth-field">
-        <label>Email</label>
-        <input id="register-email" type="email" placeholder="your@email.com">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
+        <input id="register-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
-      <div class="auth-field" style="margin-bottom:24px">
-        <label>Password</label>
-        <input id="register-password" type="password" placeholder="Min. 6 characters">
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
+        <input id="register-password" type="password" placeholder="Min. 6 characters" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
-      <button class="auth-btn" onclick="doRegister()" style="background:var(--green);color:#fff">Create Account</button>
-      <div id="register-error" style="color:var(--red);font-size:12px;text-align:center;display:none;margin-top:8px"></div>
-      <div id="register-success" style="color:var(--green);font-size:12px;text-align:center;display:none;margin-top:8px"></div>
+      <button onclick="doRegister()" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Create Account</button>
+      <div id="register-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
+      <div id="register-success" style="margin-top:12px;color:var(--green);font-size:12px;text-align:center;display:none"></div>
     </div>
   </div>
 </div>
-
-<!-- ═══════════════════════════════════════════
-     MAIN APP
-═══════════════════════════════════════════ -->
 <header style="display:none">
-  <div style="display:flex;align-items:center;gap:6px">
-    <span style="font-size:18px">📊</span>
-    <span class="logo">Product Advisor</span>
-    <span class="sub">CTRM &amp; Risk Management Intelligence</span>
-  </div>
+  <div><span class="logo">Product Advisor</span><span class="sub">CTRM &amp; Risk Management Intelligence</span></div>
   <nav id="nav"></nav>
   <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
 </header>
-
 <main style="display:none">
-  <div id="section-overview"   class="section active"></div>
-  <div id="section-vendors"    class="section"></div>
-  <div id="section-products"   class="section"></div>
+  <div id="section-overview" class="section active"></div>
+  <div id="section-vendors" class="section"></div>
+  <div id="section-products" class="section"></div>
   <div id="section-commodities" class="section"></div>
-  <div id="section-ctrm"       class="section"></div>
-  <div id="section-risk"       class="section"></div>
-  <div id="section-geo"        class="section"></div>
+  <div id="section-ctrm" class="section"></div>
+  <div id="section-risk" class="section"></div>
+  <div id="section-geo" class="section"></div>
   <div id="section-customertype" class="section"></div>
-  <div id="section-contacts"   class="section"></div>
-  <div id="section-reporting"  class="section"></div>
-  <div id="section-import"     class="section"></div>
-  <div id="section-logs"       class="section"></div>
+  <div id="section-contacts" class="section"></div>
+  <div id="section-reporting" class="section"></div>
+  <div id="section-import" class="section"></div>
+  <div id="section-logs" class="section"></div>
 </main>
-
-<!-- ═══════════════════════════════════════════
-     MODAL (edit/add records)
-═══════════════════════════════════════════ -->
 <div class="modal-bg" id="modal">
   <div class="modal-box">
-    <div style="display:flex;align-items:center;margin-bottom:18px">
-      <strong id="modal-title" style="font-size:15px"></strong>
+    <div style="display:flex;align-items:center;margin-bottom:16px">
+      <strong id="modal-title" style="font-size:14px"></strong>
       <button class="btn" style="margin-left:auto" onclick="closeModal()">✕ Close</button>
     </div>
     <div id="modal-fields"></div>
-    <div style="display:flex;gap:8px;margin-top:16px">
+    <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-primary" onclick="saveModal()">💾 Save</button>
       <button class="btn" onclick="closeModal()">Cancel</button>
     </div>
   </div>
 </div>
-
-<!-- ═══════════════════════════════════════════
-     TOAST CONTAINER
-═══════════════════════════════════════════ -->
-<div id="toast-container"></div>
-
-<!-- ═══════════════════════════════════════════
-     CHAT FAB + PANEL
-═══════════════════════════════════════════ -->
-<button id="chat-fab" onclick="toggleChat()">💬</button>
-<div id="chat-panel">
-  <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-    <span style="font-size:16px">🔍</span>
-    <div>
-      <div style="font-weight:700;font-size:12px">Product Advisor Search</div>
-      <div style="font-size:10px;color:var(--muted)">Explore the database interactively</div>
-    </div>
-    <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 8px;border-radius:4px">↺ Menu</button>
-    <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;margin-left:4px">✕</button>
-  </div>
-  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     JAVASCRIPT
-═══════════════════════════════════════════ -->
 <script>
-// ╔═══════════════════════════════════════════════════════════════
-// ║  CONFIG — substitui com as tuas credenciais do Supabase
-// ╚═══════════════════════════════════════════════════════════════
-const SB_URL = "https://hhltetlifatsskrfkywu.supabase.co";
-const SB_KEY = "COLOCA_AQUI_A_TUA_NOVA_ANON_KEY"; // ← regenera no Supabase dashboard
+const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
+const SB_KEY="COLOCA_AQUI_A_TUA_NOVA_ANON_KEY"; // ← regenera no Supabase dashboard
+const GROQ_MODEL="llama-3.3-70b-versatile";
+const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
+const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
+const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
+let isDark=true;
+let currentUser="User";
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  CONSTANTS
-// ╚═══════════════════════════════════════════════════════════════
-const GROQ_MODEL    = "llama-3.3-70b-versatile";
-const COV_COLOR     = {D:"#22c55e", C:"#f59e0b", N:"#ef4444", X:"#64748b"};
-const COV_LABEL     = {D:"Deployed", C:"Capable", N:"Not Capable", X:"N/A"};
-const CACHE_TTL_MIN = 10; // minutos de cache local
+function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
 
-const TABS = [
-  {id:"overview",      label:"📊 Overview"},
-  {id:"vendors",       label:"🏢 Vendors"},
-  {id:"products",      label:"📦 Products"},
-  {id:"commodities",   label:"🌾 Commodities"},
-  {id:"ctrm",          label:"⚡ CTRM"},
-  {id:"risk",          label:"🛡 Risk"},
-  {id:"geo",           label:"🌍 Geographic"},
-  {id:"customertype",  label:"👥 Customer Types"},
-  {id:"contacts",      label:"👤 Contacts"},
-  {id:"reporting",     label:"📈 Reporting"},
-  {id:"import",        label:"📥 Import Data"},
-  {id:"logs",          label:"📋 Activity Logs"},
-];
+let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
+let modalSaveFn=null;
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  APP STATE
-// ╚═══════════════════════════════════════════════════════════════
-let state = {
-  vendors:[], products:[], contacts:[], ctrm:[], risk:[],
-  geo:[], pcc:[], ct:[], commodities:[], clients:[],
-  pages:{}, filters:{}, ctrmLoading:true,
-  activeReport:null, _intProd:null, _intSection:"pcc",
-  _intFPccCom:"", _intFPccCov:"",
-  _intFCtrmFn:"", _intFCtrmCom:"", _intFCtrmCov:"",
-  _intFRiskCat:"", _intFRiskFn:"", _intFRiskCov:"",
-};
-let activeTab    = "overview";
-let isDark       = true;
-let currentUser  = "User";
-let modalSaveFn  = null;
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  SUPABASE — API helpers
-// ╚═══════════════════════════════════════════════════════════════
-
-/**
- * Fetch genérico para a API REST do Supabase
- * @param {string} table - nome da tabela / path
- * @param {Object} opts  - { method, body, params }
- */
-async function apiFetch(table, opts = {}) {
-  const { method = "GET", body, params = {} } = opts;
-  let url = SB_URL + "/rest/v1/" + table;
-  const qp = new URLSearchParams(params);
-  if ([...qp].length) url += "?" + qp;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SB_KEY,
-      "Authorization": "Bearer " + SB_KEY,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const t = await res.text();
-  return t ? JSON.parse(t) : [];
+async function apiFetch(table,opts={}){
+  const{method="GET",body,params={}}=opts;
+  let url=SB_URL+"/rest/v1/"+table;
+  const qp=new URLSearchParams(params);
+  if([...qp].length)url+="?"+qp;
+  const res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+  if(!res.ok)throw new Error(await res.text());
+  const t=await res.text();return t?JSON.parse(t):[];
 }
-
-/**
- * Busca todos os registos de uma tabela (paginação automática de 1000 em 1000)
- * Usa cache localStorage com TTL configurável
- */
-async function getAll(table) {
-  // Tentar cache primeiro
-  const cacheKey = "pa_cache_" + table;
-  try {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      const { data, ts } = JSON.parse(cached);
-      if ((Date.now() - ts) / 60000 < CACHE_TTL_MIN) return data;
-    }
-  } catch(e) {}
-
-  // Buscar do Supabase com paginação
-  const all = [];
-  let offset = 0;
-  while (true) {
-    const batch = await apiFetch(table, { params: { limit: 1000, offset, order: "id" } });
-    all.push(...batch);
-    if (batch.length < 1000) break;
-    offset += 1000;
+async function getAll(table,skipCache=false){
+  // Cache simples em memória (não localStorage para evitar problemas de stale)
+  if(!window._memCache)window._memCache={};
+  const cacheKey=table;
+  const CACHE_MS=5*60*1000; // 5 minutos
+  if(!skipCache&&window._memCache[cacheKey]){
+    const{data,ts}=window._memCache[cacheKey];
+    if(Date.now()-ts<CACHE_MS)return data;
   }
-
-  // Guardar em cache
-  try {
-    localStorage.setItem(cacheKey, JSON.stringify({ data: all, ts: Date.now() }));
-  } catch(e) {}
-
+  const all=[];let offset=0;
+  while(true){const b=await apiFetch(table,{params:{limit:1000,offset,order:"id"}});all.push(...b);if(b.length<1000)break;offset+=1000;}
+  window._memCache[cacheKey]={data:all,ts:Date.now()};
   return all;
 }
-
-/** Invalida o cache de uma tabela (chama após INSERT/UPDATE/DELETE) */
-function invalidateCache(table) {
-  try { localStorage.removeItem("pa_cache_" + table); } catch(e) {}
+function invalidateCache(table){
+  if(window._memCache&&window._memCache[table])delete window._memCache[table];
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  UI UTILITIES
-// ╚═══════════════════════════════════════════════════════════════
-
-/** Mostra uma notificação toast */
-function showToast(msg, type = "success", duration = 2500) {
-  const tc = document.getElementById("toast-container");
-  if (!tc) return;
-  const t = document.createElement("div");
-  t.className = "toast " + type;
-  t.textContent = msg;
-  tc.appendChild(t);
-  setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 300); }, duration);
+function bdg(label,color){return`<span class="badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${label||""}</span>`;}
+function bar(pct,color){return`<div class="bar-wrap"><div class="bar-inner" style="width:${Math.min(pct,100)}%;background:${color||"var(--accent)"}"></div></div>`;}
+function escAttr(s){return(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;");}
+function pagerHtml(id,page,total,per){
+  const pages=Math.ceil(total/per);if(pages<=1)return"";
+  return`<div class="pager"><button class="btn" onclick="changePage('${id}',${page-1})" ${page===0?"disabled":""}>← Prev</button><span>Page ${page+1} / ${pages} · ${total.toLocaleString()} records</span><button class="btn" onclick="changePage('${id}',${page+1})" ${page>=pages-1?"disabled":""}>Next →</button></div>`;
 }
-
-/** Badge colorido */
-function bdg(label, color) {
-  return `<span class="badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${label || ""}</span>`;
-}
-
-/** Barra de progresso */
-function bar(pct, color) {
-  return `<div class="bar-wrap"><div class="bar-inner" style="width:${Math.min(pct, 100)}%;background:${color || "var(--accent)"}"></div></div>`;
-}
-
-/** Escape de atributos HTML */
-function escAttr(s) { return (s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;"); }
-function escH(s)    { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-/** HTML do paginador */
-function pagerHtml(id, page, total, per) {
-  const pages = Math.ceil(total / per);
-  if (pages <= 1) return "";
-  return `<div class="pager">
-    <button class="btn" onclick="changePage('${id}',${page - 1})" ${page === 0 ? "disabled" : ""}>← Prev</button>
-    <span>Page ${page + 1} / ${pages} &nbsp;·&nbsp; ${total.toLocaleString()} records</span>
-    <button class="btn" onclick="changePage('${id}',${page + 1})" ${page >= pages - 1 ? "disabled" : ""}>Next →</button>
-  </div>`;
-}
-
-function changePage(id, p) { state.pages[id] = Math.max(0, p); render(); }
-
-/** Options para <select> */
-function selOpts(arr, selected, placeholder) {
-  return `<option value="">${placeholder}</option>` + arr.map(v =>
-    `<option value="${escAttr(v)}" ${v === selected ? "selected" : ""}>${v}</option>`
-  ).join("");
-}
-
-/** Botão de reset de filtros */
-function resetBtn(prefix) {
-  return `<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;
-}
-
-/** Define filtro e re-renderiza */
-function sf(key, value) { state.filters[key] = value; state.pages = {}; render(); }
-
-/** Reset de filtros com determinado prefixo */
-function resetFilters(prefix) {
-  Object.keys(state.filters).forEach(k => { if (k.startsWith(prefix)) delete state.filters[k]; });
-  document.querySelectorAll('[id^="search-' + prefix + '"]').forEach(el => { el.value = ""; });
-  state.pages = {};
-  render();
-}
-
-function normName(s) { return (s || "").toLowerCase().trim(); }
-function findExact(arr, field, val) { return arr.find(r => (r[field] || "") === val)?.[field] ?? val; }
-
-// Determina código de cobertura a partir do texto
-const getCode = l => {
-  if (!l) return "X";
-  if (l.toLowerCase().includes("deployed")) return "D";
-  if (l.toLowerCase().includes("capable") && !l.toLowerCase().includes("not")) return "C";
-  if (l.toLowerCase().includes("not")) return "N";
-  return "X";
-};
-
-// Skeleton HTML para loading state
-function skeletonRows(n = 8, cols = 5) {
-  return Array.from({length: n}, () =>
-    "<tr>" + Array.from({length: cols}, () =>
-      `<td><div class="skeleton" style="width:${60 + Math.random()*30}%"></div></td>`
-    ).join("") + "</tr>"
-  ).join("");
-}
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  THEME
-// ╚═══════════════════════════════════════════════════════════════
-function toggleTheme() {
-  isDark = !isDark;
-  document.body.classList.toggle("light", !isDark);
-  document.getElementById("theme-btn").textContent = isDark ? "☀️ Light" : "🌙 Dark";
-  try { localStorage.setItem("pa_theme", isDark ? "dark" : "light"); } catch(e) {}
-}
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  NAVIGATION
-// ╚═══════════════════════════════════════════════════════════════
-function initNav() {
-  document.getElementById("nav").innerHTML = TABS.map(t =>
-    `<button class="tab ${t.id === activeTab ? "active" : ""}" onclick="setTab('${t.id}')">${t.label}</button>`
-  ).join("");
-}
-
-function setTab(id) {
-  activeTab = id;
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-  document.getElementById("section-" + id).classList.add("active");
-  initNav();
-  render();
-}
-
-function navToTab(tabId, filterKey, filterVal) {
-  if (filterKey) state.filters[filterKey] = filterVal;
-  state.pages = {};
-  setTab(tabId);
-}
+function changePage(id,p){state.pages[id]=Math.max(0,p);render();}
 
 function navToProduct(name, type) {
-  const decoded = decodeURIComponent(name.replace(/%27/g, "'"));
-  if (type && type.includes("Risk")) navToTab("risk", "risk_prod", decoded);
-  else navToTab("ctrm", "ctrm_prod", decoded);
-}
-
-function navToIntelligence(productName) {
-  state.activeReport  = "intelligence";
-  state._intProd      = productName;
-  state._intSection   = "pcc";
-  state._intFPccCom   = ""; state._intFPccCov   = "";
-  state._intFCtrmFn   = ""; state._intFCtrmCom  = ""; state._intFCtrmCov  = "";
-  state._intFRiskCat  = ""; state._intFRiskFn   = ""; state._intFRiskCov  = "";
-  setTab("reporting");
-}
-
-function navToProductsByVendorType(vendorName, type) {
-  state.filters.p_vendor = vendorName;
-  state.filters.p_type   = type === "CTRM" ? "CTRM Solutions" : "";
-  state.pages = {};
-  setTab("products");
-}
-
-function navToPccFromHeatmap(product) {
-  const exact = findExact(state.pcc, "product", product);
-  Object.keys(state.filters).forEach(k => { if (k.startsWith("pcc_")) delete state.filters[k]; });
-  state.filters["pcc_prod"] = [exact || product];
-  state.filters["com_view"] = "coverage";
-  state.pages = {};
-  setTab("commodities");
-}
-
-function navToCtrmFromHeatmap(product, commodity) {
-  const exactProd = findExact(state.ctrm, "product", product);
-  const exactCom  = findExact(state.ctrm, "commodity", commodity);
-  Object.keys(state.filters).forEach(k => { if (k.startsWith("ctrm_")) delete state.filters[k]; });
-  state.filters["ctrm_prod"] = [exactProd || product];
-  state.filters["ctrm_com"]  = [exactCom  || commodity];
-  state.pages = {};
-  setTab("ctrm");
-}
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  USER / AUTH HELPERS
-// ╚═══════════════════════════════════════════════════════════════
-function getUsername() {
-  return localStorage.getItem("pa_username") || currentUser || "Unknown";
-}
-
-function ensureUsername(cb) {
-  const u = getUsername();
-  if (u && u !== "Unknown") return cb(u);
-  const name = prompt("Enter your name to add a comment:");
-  if (name) {
-    localStorage.setItem("pa_username", name);
-    cb(name);
+  const decoded = decodeURIComponent(name.replace(/%27/g,"'"));
+  if (type && type.includes('Risk')) {
+    navToTab('risk', 'risk_prod', decoded);
+  } else {
+    navToTab('ctrm', 'ctrm_prod', decoded);
   }
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  ACTIVITY LOGS
-// ╚═══════════════════════════════════════════════════════════════
-async function logAction(action, tableName, recordId, recordName, details) {
-  try {
-    await apiFetch("activity_logs", {
-      method: "POST",
-      body: {
-        action, table_name: tableName, record_id: recordId || null,
-        record_name: recordName || null, user_name: getUsername() || "Unknown",
-        details: details ? JSON.stringify(details) : null,
-      },
-    });
-  } catch(e) { console.warn("Log error:", e.message); }
+function navToIntelligence(productName){
+  state.activeReport = 'intelligence';
+  state._intProd = productName;
+  state._intSection = 'pcc';
+  state._intFPccCom=''; state._intFPccCov='';
+  state._intFCtrmFn=''; state._intFCtrmCom=''; state._intFCtrmCov='';
+  state._intFRiskCat=''; state._intFRiskFn=''; state._intFRiskCov='';
+  setTab('reporting');
+}
+function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
+function sf(key,val){
+  state.filters[key]=val;state.pages={};
+  const aid=document.activeElement?.id;
+  const ss=document.activeElement?.selectionStart;
+  const se=document.activeElement?.selectionEnd;
+  render();
+  if(aid){const el=document.getElementById(aid);if(el){el.focus();try{el.setSelectionRange(ss,se);}catch(e){}}}
+}
+function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};render();}
+function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
+function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
+
+// ── COMMENTS ──
+function renderComments(comments){
+  if(!comments||!comments.length)return'<div style="color:var(--muted);font-size:11px;padding:4px 0">No comments yet</div>';
+  return comments.map(c=>`<div class="comment-block"><div class="comment-meta">👤 ${c.user} &nbsp;·&nbsp; ${c.date}</div><div class="comment-text">${c.text}</div></div>`).join("");
+}
+function addComment(table,id,currentComments){
+  const text=prompt("Add comment:");
+  if(!text||!text.trim())return;
+  const now=new Date();
+  const dateStr=now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  const newComment={user:currentUser,date:dateStr,text:text.trim()};
+  const updated=[...(currentComments||[]),newComment];
+  apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}})
+    .then(()=>{
+      if(table==="vendors")state.vendors=state.vendors.map(v=>v.id===id?{...v,capspire_comments:JSON.stringify(updated)}:v);
+      else if(table==="products")state.products=state.products.map(p=>p.id===id?{...p,capspire_comments:JSON.stringify(updated)}:p);
+      else if(table==="commodities")state.commodities=state.commodities.map(c=>c.id===id?{...c,capspire_comments:JSON.stringify(updated)}:c);
+      render();
+    }).catch(e=>alert("Error saving comment: "+e.message));
+}
+function parseComments(v){try{return v?JSON.parse(v):[];}catch{return[];}}
+function commentCell(table,row){
+  const comments=parseComments(row.capspire_comments);
+  const count=comments.length;
+  return`<td style="min-width:200px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--muted)">${count?count+" comment"+(count>1?"s":""):"No comments"}</span><button class="btn" style="font-size:10px;padding:2px 7px" onclick="showComments('${table}',${row.id})">💬 View</button><button class="btn btn-primary" style="font-size:10px;padding:2px 7px" onclick="addComment('${table}',${row.id},parseComments(${JSON.stringify(row.capspire_comments||"[]")}))">+ Add</button></div></td>`;
+}
+function showComments(table,id){
+  const row=state[table==="vendors"?"vendors":table==="products"?"products":"commodities"].find(r=>r.id===id);
+  const comments=parseComments(row?.capspire_comments);
+  const d=document.createElement("div");
+  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  d.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px"><div style="display:flex;align-items:center;margin-bottom:14px"><strong>capSpire Comments</strong><button onclick="this.closest('div[style]').remove()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button></div>${renderComments(comments)}<button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="this.closest('div[style]').remove();addComment('${table}',${id},${JSON.stringify(comments)})">+ Add Comment</button></div>`;
+  document.body.appendChild(d);
 }
 
-async function renderLogs() {
-  document.getElementById("section-logs").innerHTML = '<div class="loading"><div class="loading-spinner"></div><br>Loading logs...</div>';
-  try {
-    const logs = await apiFetch("activity_logs", { params: { order: "created_at.desc", limit: 200 } });
-    const ac = {INSERT:"var(--green)", UPDATE:"var(--yellow)", DELETE:"var(--red)", IMPORT:"var(--accent)", ERROR:"var(--red)"};
-    const rows = logs.map(l => {
-      const dt = new Date(l.created_at);
-      const ds = dt.toLocaleDateString("en-GB") + " " + dt.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
-      const col = ac[l.action] || "var(--muted)";
-      let det = "";
-      try { const d = JSON.parse(l.details); det = Object.entries(d).map(([k,v]) => k + ": " + v).join(", "); } catch {}
-      return `<tr>
-        <td style="color:var(--muted);white-space:nowrap;font-size:11px">${ds}</td>
-        <td style="font-weight:600">${escH(l.user_name || "")}</td>
-        <td><span style="background:${col}22;color:${col};border:1px solid ${col}44;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">${l.action}</span></td>
-        <td style="color:var(--muted)">${escH((l.table_name || "").replace(/_/g, " "))}</td>
-        <td>${escH(String(l.record_name || l.record_id || ""))}</td>
-        <td style="color:var(--muted);font-size:11px;max-width:300px">${escH(det)}</td>
-      </tr>`;
-    }).join("");
-    document.getElementById("section-logs").innerHTML = `
-      <div class="card">
-        <div class="card-head">
-          <span class="card-title">📋 Activity Logs</span>
-          <span class="card-meta">${logs.length} entries</span>
-          <button class="btn" style="margin-left:8px" onclick="renderLogs()">↺ Refresh</button>
-        </div>
-        ${logs.length === 0
-          ? '<div class="loading">No activity yet</div>'
-          : `<div style="overflow-x:auto"><table>
-              <thead><tr><th>Date & Time</th><th>User</th><th>Action</th><th>Table</th><th>Record</th><th>Details</th></tr></thead>
-              <tbody>${rows}</tbody>
-             </table></div>`
-        }
-      </div>`;
-  } catch(e) {
-    document.getElementById("section-logs").innerHTML = `<div class="loading" style="color:var(--red)">Error: ${e.message}</div>`;
-  }
+// ── TABS ──
+
+// ── USER IDENTITY ──
+function getUsername(){return localStorage.getItem("pa_username")||"";}
+function ensureUsername(callback){
+  const user=getUsername();if(user){callback(user);return;}
+  const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:28px;text-align:center";
+  bx.innerHTML="<div style='font-size:28px;margin-bottom:12px'>&#128100;</div><div style='font-weight:700;font-size:16px;margin-bottom:6px'>Welcome to Product Advisor</div><div style='color:var(--muted);font-size:12px;margin-bottom:20px'>Please enter your name to continue.</div>";
+  const inp=document.createElement("input");inp.id="uname-inp";inp.placeholder="Your full name...";
+  inp.style.cssText="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px;box-sizing:border-box";
+  const btn=document.createElement("button");btn.textContent="Continue →";
+  btn.style.cssText="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600";
+  box: { bx.appendChild(inp);bx.appendChild(btn);ov.appendChild(bx);document.body.appendChild(ov);setTimeout(()=>inp.focus(),100); }
+  const save=()=>{const name=inp.value.trim();if(!name){inp.style.border="1px solid var(--red)";return;}localStorage.setItem("pa_username",name);ov.remove();callback(name);};
+  btn.onclick=save;inp.onkeydown=e=>{if(e.key==="Enter")save();};
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  COMMENTS
-// ╚═══════════════════════════════════════════════════════════════
-let cmtTable, cmtId, cmtList;
-
-function parseComments(raw) {
-  if (!raw) return [];
-  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+// ── COMMENTS ──
+function parseComments(v){try{return v?JSON.parse(v):[];}catch{return[];}}
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function saveCommentsToState(table,id,updated){
+  const str=JSON.stringify(updated);
+  if(table==="vendors")state.vendors=state.vendors.map(v=>v.id===id?{...v,capspire_comments:str}:v);
+  else if(table==="products")state.products=state.products.map(p=>p.id===id?{...p,capspire_comments:str}:p);
+  else if(table==="commodities")state.commodities=state.commodities.map(c=>c.id===id?{...c,capspire_comments:str}:c);
 }
-
-function renderComments(list) {
-  if (!list || !list.length) return '<div style="color:var(--muted);font-size:12px;padding:8px">No comments yet.</div>';
-  return list.map((c, i) => `
-    <div class="comment-block">
-      <div class="comment-meta">${escH(c.user || "")} · ${escH(c.date || "")}</div>
-      <div class="comment-text">${escH(c.text || "")}</div>
-      <div style="margin-top:6px;display:flex;gap:4px">
-        <button class="btn" style="font-size:10px;padding:2px 7px" data-ca="edit" data-ci="${i}">Edit</button>
-        <button class="btn btn-danger" style="font-size:10px;padding:2px 7px" data-ca="del" data-ci="${i}">Delete</button>
-      </div>
-    </div>`
+let cmtTable="",cmtId=null,cmtList=[];
+function renderComments(comments){
+  if(!comments||!comments.length)return "<div style='color:var(--muted);font-size:11px;padding:4px 0'>No comments yet</div>";
+  return comments.map((c,i)=>
+    "<div class='comment-block'><div style='display:flex;align-items:center;gap:6px;margin-bottom:4px'>" +
+    "<span class='comment-meta'>&#128100; "+escH(c.user)+" &nbsp;&middot;&nbsp; "+escH(c.date)+"</span>" +
+    "<button data-ci='"+i+"' data-ca='edit' style='margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#9998; Edit</button>" +
+    "<button data-ci='"+i+"' data-ca='del' style='background:none;border:1px solid var(--red);color:var(--red);font-size:10px;cursor:pointer;padding:2px 6px;border-radius:4px'>&#128465;</button>" +
+    "</div><div class='comment-text'>"+escH(c.text)+"</div></div>"
   ).join("");
 }
-
-function saveCommentsToState(table, id, list) {
-  const sk = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
-  if (state[sk]) state[sk] = state[sk].map(r => r.id === id ? {...r, capspire_comments: JSON.stringify(list)} : r);
+function refreshCmtModal(){const el=document.getElementById("cmt-list");if(el)el.innerHTML=renderComments(cmtList);}
+function editCmt(idx){
+  const c=cmtList[idx];
+  const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
+  const t=document.createElement("div");t.style.cssText="font-weight:700;font-size:14px;margin-bottom:14px";t.textContent="Edit Comment";
+  const ta=document.createElement("textarea");ta.style.cssText="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";ta.value=c.text;
+  const row=document.createElement("div");row.style.cssText="display:flex;gap:8px;margin-top:12px";
+  const sb=document.createElement("button");sb.style.cssText="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";sb.textContent="Save";
+  const cb=document.createElement("button");cb.style.cssText="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit";cb.textContent="Cancel";
+  cb.onclick=()=>ov.remove();row.appendChild(sb);row.appendChild(cb);bx.appendChild(t);bx.appendChild(ta);bx.appendChild(row);ov.appendChild(bx);
+  document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>ta.focus(),100);
+  sb.onclick=async()=>{const txt=ta.value.trim();if(!txt)return;cmtList[idx]={...c,text:txt};ov.remove();
+    try{await apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}});saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();render();}catch(e){alert("Error: "+e.message);}};
 }
-
-function refreshCmtModal() {
-  const lst = document.getElementById("cmt-list");
-  if (lst) lst.innerHTML = renderComments(cmtList);
+function delCmt(idx){
+  if(!confirm("Delete this comment?"))return;
+  cmtList.splice(idx,1);
+  apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}})
+    .then(()=>{saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();render();})
+    .catch(e=>alert("Error: "+e.message));
 }
-
-function editCmt(idx) {
-  const c = cmtList[idx];
-  const ov = document.createElement("div");
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px";
-  const bx = document.createElement("div");
-  bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
-  const t = document.createElement("div"); t.style.cssText = "font-weight:700;font-size:14px;margin-bottom:14px"; t.textContent = "Edit Comment";
-  const ta = document.createElement("textarea"); ta.value = c.text || "";
-  ta.style.cssText = "width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
-  const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;margin-top:12px";
-  const sb = document.createElement("button"); sb.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; sb.textContent = "Save";
-  const cb = document.createElement("button"); cb.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit"; cb.textContent = "Cancel";
-  cb.onclick = () => ov.remove(); row.appendChild(sb); row.appendChild(cb); bx.appendChild(t); bx.appendChild(ta); bx.appendChild(row); ov.appendChild(bx);
-  document.body.appendChild(ov); ov.onclick = e => { if (e.target === ov) ov.remove(); }; setTimeout(() => ta.focus(), 100);
-  sb.onclick = async () => {
-    const txt = ta.value.trim(); if (!txt) return;
-    cmtList[idx] = {...c, text: txt}; ov.remove();
-    try {
-      await apiFetch(cmtTable + "?id=eq." + cmtId, {method:"PATCH", body:{capspire_comments: JSON.stringify(cmtList)}});
-      saveCommentsToState(cmtTable, cmtId, cmtList); refreshCmtModal(); render();
-    } catch(e) { showToast("Error: " + e.message, "error"); }
-  };
-}
-
-function delCmt(idx) {
-  if (!confirm("Delete this comment?")) return;
-  cmtList.splice(idx, 1);
-  apiFetch(cmtTable + "?id=eq." + cmtId, {method:"PATCH", body:{capspire_comments: JSON.stringify(cmtList)}})
-    .then(() => { saveCommentsToState(cmtTable, cmtId, cmtList); refreshCmtModal(); render(); })
-    .catch(e => showToast("Error: " + e.message, "error"));
-}
-
-function openAddComment(table, id) {
-  const sk = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
-  const row = state[sk].find(r => r.id === id);
-  const existing = parseComments(row?.capspire_comments);
-  ensureUsername(user => {
-    const ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
-    const bx = document.createElement("div"); bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
-    const t1 = document.createElement("div"); t1.style.cssText = "font-weight:700;font-size:14px;margin-bottom:4px"; t1.textContent = "Add Comment";
-    const t2 = document.createElement("div"); t2.style.cssText = "font-size:11px;color:var(--muted);margin-bottom:14px"; t2.textContent = "Commenting as " + user;
-    const ta = document.createElement("textarea"); ta.placeholder = "Write your comment here...";
-    ta.style.cssText = "width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
-    const btns = document.createElement("div"); btns.style.cssText = "display:flex;gap:8px;margin-top:12px";
-    const sb = document.createElement("button"); sb.style.cssText = "padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; sb.textContent = "Save";
-    const cb = document.createElement("button"); cb.style.cssText = "padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit"; cb.textContent = "Cancel";
-    cb.onclick = () => ov.remove(); btns.appendChild(sb); btns.appendChild(cb);
-    bx.appendChild(t1); bx.appendChild(t2); bx.appendChild(ta); bx.appendChild(btns); ov.appendChild(bx);
-    document.body.appendChild(ov); ov.onclick = e => { if (e.target === ov) ov.remove(); }; setTimeout(() => ta.focus(), 100);
-    sb.onclick = async () => {
-      const txt = ta.value.trim(); if (!txt) { alert("Please write a comment first."); return; }
-      const now = new Date();
-      const ds = now.toLocaleDateString("en-GB") + ", " + now.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
-      const updated = [...existing, {user, date: ds, text: txt}]; ov.remove();
-      try {
-        await apiFetch(table + "?id=eq." + id, {method:"PATCH", body:{capspire_comments: JSON.stringify(updated)}});
-        saveCommentsToState(table, id, updated); render();
-        showToast("Comment saved");
-      } catch(e) { showToast("Error: " + e.message, "error"); }
+function openAddComment(table,id){
+  const sk=table==="vendors"?"vendors":table==="products"?"products":"commodities";
+  const row=state[sk].find(r=>r.id===id);
+  const existing=parseComments(row?.capspire_comments);
+  ensureUsername(user=>{
+    const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px";
+    const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:460px;padding:20px";
+    const t1=document.createElement("div");t1.style.cssText="font-weight:700;font-size:14px;margin-bottom:4px";t1.textContent="Add Comment";
+    const t2=document.createElement("div");t2.style.cssText="font-size:11px;color:var(--muted);margin-bottom:14px";t2.textContent="Commenting as "+user;
+    const ta=document.createElement("textarea");ta.placeholder="Write your comment here...";
+    ta.style.cssText="width:100%;min-height:90px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box";
+    const btns=document.createElement("div");btns.style.cssText="display:flex;gap:8px;margin-top:12px";
+    const sb=document.createElement("button");sb.style.cssText="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";sb.textContent="Save";
+    const cb=document.createElement("button");cb.style.cssText="padding:6px 14px;background:var(--bg3);color:var(--muted);border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit";cb.textContent="Cancel";
+    cb.onclick=()=>ov.remove();btns.appendChild(sb);btns.appendChild(cb);
+    bx.appendChild(t1);bx.appendChild(t2);bx.appendChild(ta);bx.appendChild(btns);ov.appendChild(bx);
+    document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>ta.focus(),100);
+    sb.onclick=async()=>{
+      const txt=ta.value.trim();if(!txt){alert("Please write a comment first.");return;}
+      const now=new Date();const ds=now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+      const updated=[...existing,{user,date:ds,text:txt}];ov.remove();
+      try{await apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}});saveCommentsToState(table,id,updated);render();}
+      catch(e){alert("Error: "+e.message);}
     };
   });
 }
-
-function showComments(table, id) {
-  const sk = table === "vendors" ? "vendors" : table === "products" ? "products" : "commodities";
-  const row = state[sk].find(r => r.id === id);
-  cmtTable = table; cmtId = id; cmtList = parseComments(row?.capspire_comments);
-  const d = document.createElement("div"); d.id = "cmt-overlay";
-  d.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
-  const bx = document.createElement("div"); bx.style.cssText = "background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px";
-  const hd = document.createElement("div"); hd.style.cssText = "display:flex;align-items:center;margin-bottom:14px";
-  const ht = document.createElement("strong"); ht.textContent = "capSpire Comments";
-  const hc = document.createElement("button"); hc.style.cssText = "margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer"; hc.textContent = "✕"; hc.onclick = () => d.remove();
-  hd.appendChild(ht); hd.appendChild(hc);
-  const lst = document.createElement("div"); lst.id = "cmt-list"; lst.innerHTML = renderComments(cmtList);
-  const ab = document.createElement("button"); ab.style.cssText = "margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit"; ab.textContent = "+ Add Comment";
-  ab.onclick = () => { d.remove(); openAddComment(table, id); };
-  bx.appendChild(hd); bx.appendChild(lst); bx.appendChild(ab); d.appendChild(bx); document.body.appendChild(d);
-  d.onclick = e => { if (e.target === d) d.remove(); };
-  lst.addEventListener("click", e => {
-    const btn = e.target.closest("[data-ca]"); if (!btn) return;
-    const idx = parseInt(btn.dataset.ci);
-    if (btn.dataset.ca === "edit") editCmt(idx); else if (btn.dataset.ca === "del") delCmt(idx);
-  });
+function showComments(table,id){
+  const sk=table==="vendors"?"vendors":table==="products"?"products":"commodities";
+  const row=state[sk].find(r=>r.id===id);
+  cmtTable=table;cmtId=id;cmtList=parseComments(row?.capspire_comments);
+  const d=document.createElement("div");d.id="cmt-overlay";
+  d.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  const bx=document.createElement("div");bx.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:20px";
+  const hd=document.createElement("div");hd.style.cssText="display:flex;align-items:center;margin-bottom:14px";
+  const ht=document.createElement("strong");ht.textContent="capSpire Comments";
+  const hc=document.createElement("button");hc.style.cssText="margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer";hc.textContent="x";hc.onclick=()=>d.remove();
+  hd.appendChild(ht);hd.appendChild(hc);
+  const lst=document.createElement("div");lst.id="cmt-list";lst.innerHTML=renderComments(cmtList);
+  const ab=document.createElement("button");ab.style.cssText="margin-top:14px;width:100%;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";ab.textContent="+ Add Comment";
+  ab.onclick=()=>{d.remove();openAddComment(table,id);};
+  bx.appendChild(hd);bx.appendChild(lst);bx.appendChild(ab);d.appendChild(bx);document.body.appendChild(d);
+  d.onclick=e=>{if(e.target===d)d.remove();};
+  lst.addEventListener("click",e=>{const btn=e.target.closest("[data-ca]");if(!btn)return;const idx=parseInt(btn.dataset.ci);if(btn.dataset.ca==="edit")editCmt(idx);else if(btn.dataset.ca==="del")delCmt(idx);});
 }
-
-function commentCell(table, row) {
-  const comments = parseComments(row.capspire_comments); const count = comments.length;
+function commentCell(table,row){
+  const comments=parseComments(row.capspire_comments);const count=comments.length;
   return "<td style='min-width:180px'><div style='display:flex;align-items:center;gap:6px'>" +
-    "<span style='font-size:11px;color:var(--muted)'>" + (count ? count + " comment" + (count > 1 ? "s" : "") : "No comments") + "</span>" +
-    "<button data-ct='" + table + "' data-cid='" + row.id + "' data-ca='view' class='btn' style='font-size:10px;padding:2px 7px'>View</button>" +
-    "<button data-ct='" + table + "' data-cid='" + row.id + "' data-ca='add' class='btn btn-primary' style='font-size:10px;padding:2px 7px'>+ Add</button>" +
+    "<span style='font-size:11px;color:var(--muted)'>"+(count?count+" comment"+(count>1?"s":""):"No comments")+"</span>" +
+    "<button data-ct='"+table+"' data-cid='"+row.id+"' data-ca='view' class='btn' style='font-size:10px;padding:2px 7px'>View</button>" +
+    "<button data-ct='"+table+"' data-cid='"+row.id+"' data-ca='add' class='btn btn-primary' style='font-size:10px;padding:2px 7px'>+ Add</button>" +
     "</div></td>";
 }
-
-document.addEventListener("click", e => {
-  const btn = e.target.closest("[data-ca]"); if (!btn || !btn.dataset.ct) return;
-  const action = btn.dataset.ca, table = btn.dataset.ct, id = parseInt(btn.dataset.cid);
-  if (action === "view") showComments(table, id); else if (action === "add") openAddComment(table, id);
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-ca]");if(!btn||!btn.dataset.ct)return;
+  const action=btn.dataset.ca,table=btn.dataset.ct,id=parseInt(btn.dataset.cid);
+  if(action==="view")showComments(table,id);else if(action==="add")openAddComment(table,id);
 });
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — OVERVIEW
-// ╚═══════════════════════════════════════════════════════════════
-function renderOverview() {
-  const {vendors, products, ctrm} = state;
-  const byType = {};
-  products.forEach(p => { byType[p.product_type] = (byType[p.product_type] || 0) + 1; });
-  const deployed = ctrm.filter(r => getCode(r.coverage_level) === "D").length;
-  const pct = ctrm.length ? Math.round(deployed / ctrm.length * 100) : 0;
-  const regions = {};
-  vendors.forEach(v => {
-    const h = (v.headquarters || "").toLowerCase(); let r = "Other";
-    if (h.includes("uk") || h.includes("london") || h.includes("united kingdom")) r = "United Kingdom";
-    else if (h.includes("usa") || h.includes("houston") || h.includes("florida") || h.includes("texas") || h.includes("new york") || h.includes("arkansas") || h.includes("bentonville")) r = "USA";
-    else if (h.includes("singapore")) r = "Singapore";
-    else if (h.includes("dubai") || h.includes("uae")) r = "UAE";
-    else if (h.includes("netherlands")) r = "Netherlands";
-    else if (h.includes("germany") || h.includes("switzerland") || h.includes("france")) r = "Europe (Other)";
-    else if (h.includes("india")) r = "India";
-    else if (h.includes("australia")) r = "Australia";
-    regions[r] = (regions[r] || 0) + 1;
-  });
+// ── ACTIVITY LOGS ──
+async function logAction(action,tableName,recordId,recordName,details){
+  try{await apiFetch("activity_logs",{method:"POST",body:{action,table_name:tableName,record_id:recordId||null,record_name:recordName||null,user_name:getUsername()||"Unknown",details:details?JSON.stringify(details):null}});}
+  catch(e){console.warn("Log:",e.message);}
+}
+async function renderLogs(){
+  document.getElementById("section-logs").innerHTML='<div class="loading">Loading logs...</div>';
+  try{
+    const logs=await apiFetch("activity_logs",{params:{order:"created_at.desc",limit:200}});
+    const ac={INSERT:"var(--green)",UPDATE:"var(--yellow)",DELETE:"var(--red)",IMPORT:"var(--accent)",ERROR:"var(--red)"};
+    const rows=logs.map(l=>{
+      const dt=new Date(l.created_at);
+      const ds=dt.toLocaleDateString("en-GB")+" "+dt.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+      const col=ac[l.action]||"var(--muted)";
+      let det="";try{const d=JSON.parse(l.details);det=Object.entries(d).map(([k,v])=>k+": "+v).join(", ");}catch{}
+      return "<tr>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);white-space:nowrap;font-size:11px'>"+ds+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);font-weight:600'>"+escH(l.user_name||"")+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border)'><span style='background:"+col+"22;color:"+col+";border:1px solid "+col+"44;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600'>"+l.action+"</span></td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted)'>"+escH((l.table_name||"").replace(/_/g," "))+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border)'>"+escH(String(l.record_name||l.record_id||""))+"</td>" +
+        "<td style='padding:7px 14px;border-bottom:1px solid var(--row-border);color:var(--muted);font-size:11px;max-width:300px'>"+escH(det)+"</td>" +
+        "</tr>";
+    }).join("");
+    document.getElementById("section-logs").innerHTML='<div class="card"><div class="card-head"><span class="card-title">Activity Logs</span><span class="card-meta">'+logs.length+' entries</span><button class="btn" style="margin-left:8px" onclick="renderLogs()">Refresh</button></div>'+(logs.length===0?'<div class="loading">No activity yet</div>':'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;white-space:nowrap">Date & Time</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">User</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Action</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Table</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Record</th><th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase">Details</th></tr></thead><tbody>'+rows+'</tbody></table></div>')+'</div>';
+  }catch(e){document.getElementById("section-logs").innerHTML='<div class="loading" style="color:var(--red)">Error: '+e.message+'</div>';}
+}
 
-  const stats = [
-    {n: vendors.length, l: "Vendors", icon: "🏢"},
-    {n: products.length, l: "Products", icon: "📦"},
-    {n: products.filter(p => p.product_type === "CTRM Solutions").length, l: "CTRM Products", icon: "⚡"},
-    {n: ctrm.length > 0 ? pct + "%" : (state.ctrmLoading ? "Loading…" : "N/A"), l: "CTRM Deployed Rate", icon: "📈"},
-  ];
+const TABS=[
+  {id:"overview",label:"📊 Overview"},
+  {id:"vendors",label:"🏢 Vendors"},
+  {id:"products",label:"📦 Products"},
+  {id:"commodities",label:"🌾 Commodities"},
+  {id:"ctrm",label:"⚡ CTRM"},
+  {id:"risk",label:"🛡 Risk"},
+  {id:"geo",label:"🌍 Geographic"},
+  {id:"customertype",label:"👥 Customer Types"},
+  {id:"contacts",label:"👤 Contacts"},
+  {id:"reporting",label:"📈 Reporting"},
+  {id:"import",label:"📥 Import Data"},
+  {id:"logs",label:"📋 Activity Logs"}
+];
+let activeTab="overview";
+function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
+function setTab(id){activeTab=id;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById("section-"+id).classList.add("active");initNav();render();}
 
-  document.getElementById("section-overview").innerHTML = `
-    <div class="stat-grid">
-      ${stats.map(st => `
-        <div class="stat">
-          <div style="font-size:22px;margin-bottom:6px">${st.icon}</div>
-          <div class="stat-n">${st.n}</div>
-          <div class="stat-l">${st.l}</div>
-        </div>`).join("")}
-    </div>
+// ── OVERVIEW ──
+function renderOverview(){
+  const{vendors,products,ctrm}=state;
+  const byType={};products.forEach(p=>{byType[p.product_type]=(byType[p.product_type]||0)+1;});
+  const deployed=ctrm.filter(r=>getCode(r.coverage_level)==="D").length;
+  const pct=ctrm.length?Math.round(deployed/ctrm.length*100):0;
+  const regions={};vendors.forEach(v=>{const h=(v.headquarters||"").toLowerCase();let r="Other";if(h.includes("uk")||h.includes("london")||h.includes("united kingdom"))r="United Kingdom";else if(h.includes("usa")||h.includes("houston")||h.includes("florida")||h.includes("texas")||h.includes("new york")||h.includes("arkansas")||h.includes("bentonville"))r="USA";else if(h.includes("singapore"))r="Singapore";else if(h.includes("dubai")||h.includes("uae"))r="UAE";else if(h.includes("netherlands"))r="Netherlands";else if(h.includes("germany")||h.includes("switzerland")||h.includes("france"))r="Europe (Other)";else if(h.includes("india"))r="India";else if(h.includes("australia"))r="Australia";regions[r]=(regions[r]||0)+1;});
+  document.getElementById("section-overview").innerHTML=`
+    <div class="stat-grid">${[{n:vendors.length,l:"Vendors"},{n:products.length,l:"Products"},{n:products.filter(p=>p.product_type==="CTRM Solutions").length,l:"CTRM Products"},{n:ctrm.length>0?pct+"%":"Loading...",l:"CTRM Deployed Rate"}].map(st=>`<div class="stat"><div class="stat-n">${st.n}</div><div class="stat-l">${st.l}</div></div>`).join("")}</div>
     <div class="two-col">
-      <div class="card">
-        <div class="card-head"><span class="card-title">📦 Products by Type</span></div>
-        <div style="padding:16px">
-          ${Object.entries(byType).sort((a,b) => b[1] - a[1]).map(([t,c]) => `
-            <div style="margin-bottom:12px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                <span style="font-size:12px">${t}</span>
-                <strong style="color:var(--accent)">${c}</strong>
-              </div>
-              ${bar(c / products.length * 100, "var(--accent)")}
-            </div>`).join("")}
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><span class="card-title">🌍 Vendors by Region</span></div>
-        <div style="padding:16px">
-          ${Object.entries(regions).sort((a,b) => b[1] - a[1]).map(([r,c]) => `
-            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--row-border)">
-              <span>${r}</span>
-              <strong style="color:var(--accent)">${c}</strong>
-            </div>`).join("")}
-        </div>
-      </div>
+      <div class="card"><div class="card-head"><span class="card-title">Products by Type</span></div><div style="padding:14px">${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>${t}</span><strong style="color:var(--accent)">${c}</strong></div>${bar(c/products.length*100,"var(--accent)")}</div>`).join("")}</div></div>
+      <div class="card"><div class="card-head"><span class="card-title">Vendors by Region</span></div><div style="padding:14px">${Object.entries(regions).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<div class="row-item"><span>${r}</span><strong style="color:var(--accent)">${c}</strong></div>`).join("")}</div></div>
     </div>`;
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — VENDORS
-// ╚═══════════════════════════════════════════════════════════════
-function renderVendors() {
-  const q = (state.filters.v_q || "").toLowerCase();
-  const rows = state.vendors.filter(v => !q || Object.values(v).some(val => (val || "").toString().toLowerCase().includes(q)));
-  const page = state.pages.vendors || 0; const PER = 15;
-  const paged = rows.slice(page * PER, (page + 1) * PER);
-  document.getElementById("section-vendors").innerHTML = `
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">🏢 Vendors</span>
-        <span class="card-meta">${state.vendors.length} vendors</span>
-        <button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button>
-      </div>
-      <div class="filters">
-        <input id="search-v_q" value="${state.filters.v_q || ""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">
-        ${resetBtn("v_")}
-        <button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button>
-      </div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead>
-        <tbody>
-        ${paged.map(v => `<tr>
-          <td style="color:var(--accent);width:40px">${v.id}</td>
-          <td><a onclick="navToTab('products','p_vendor','${(v.vendor_name || "").replace(/'/g, "\\'")}');return false;" href="#">${v.vendor_name || ""}</a></td>
-          <td style="color:var(--muted);max-width:180px">${(v.headquarters || "").replace(/\n/g, " ")}</td>
-          <td><a href="https://${v.website}" target="_blank" rel="noopener">${v.website || ""}</a></td>
-          <td>${bdg(v.industries_served, v.industries_served?.includes("Risk") ? "var(--purple)" : "var(--accent)")}</td>
-          ${commentCell("vendors", v)}
-          <td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td>
-        </tr>`).join("")}
-        </tbody>
-      </table></div>
-      ${pagerHtml("vendors", page, rows.length, PER)}
-    </div>`;
+// ── VENDORS ──
+function renderVendors(){
+  const q=(state.filters.v_q||"").toLowerCase();
+  const rows=state.vendors.filter(v=>!q||Object.values(v).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  const page=state.pages.vendors||0;const PER=15;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-vendors").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
+    <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${commentCell("vendors",v)}<td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — PRODUCTS
-// ╚═══════════════════════════════════════════════════════════════
-function renderProducts() {
-  const q = (state.filters.p_q || "").toLowerCase();
-  const typeF = state.filters.p_type || "";
-  const vendorF = state.filters.p_vendor || "";
-  const types = [...new Set(state.products.map(p => p.product_type).filter(Boolean))].sort();
-  const vendors = [...new Set(state.products.map(p => p.vendor).filter(Boolean))].sort();
-  const rows = state.products.filter(p =>
-    (!typeF || p.product_type === typeF) &&
-    (!vendorF || p.vendor === vendorF) &&
-    (!q || Object.values(p).some(val => (val || "").toString().toLowerCase().includes(q)))
-  );
-  const page = state.pages.products || 0; const PER = 15;
-  const paged = rows.slice(page * PER, (page + 1) * PER);
-  document.getElementById("section-products").innerHTML = `
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">📦 Products</span>
-        <span class="card-meta">${state.products.length} products</span>
-        <button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredProducts(),'products','Products')">⬇ Excel</button>
-      </div>
-      <div class="filters">
-        <input id="search-p_q" value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
-        <select onchange="sf('p_type',this.value)">${selOpts(types, typeF, "All Types")}</select>
-        <select onchange="sf('p_vendor',this.value)">${selOpts(vendors, vendorF, "All Vendors")}</select>
-        ${resetBtn("p_")}
-        <button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
-      </div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead>
-        <tbody>
-        ${paged.map(p => `<tr>
-          <td style="color:var(--accent);width:40px">${p.id}</td>
-          <td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name || ""}</a></td>
-          <td>${bdg(p.product_type?.includes("Risk") ? "Risk" : "CTRM", p.product_type?.includes("Risk") ? "var(--purple)" : "var(--accent)")}</td>
-          <td><a onclick="navToTab('vendors','v_q','${(p.vendor || "").replace(/'/g, "\\'")}');return false;" href="#">${p.vendor || ""}</a></td>
-          <td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model || ""}</td>
-          <td style="color:var(--yellow);font-weight:600">${p.version_info || ""}</td>
-          <td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes || "").slice(0, 50)}${(p.notes || "").length > 50 ? "…" : ""}</td>
-          <td style="white-space:nowrap">
-            <button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product_name)}',{source_table:'products'})">capSpire Feedback</button>
-            <button class="btn" onclick="openProductModal(${p.id})">Edit</button>
-          </td>
-        </tr>`).join("")}
-        </tbody>
-      </table></div>
-      ${pagerHtml("products", page, rows.length, PER)}
-    </div>`;
+// ── PRODUCTS ──
+function renderProducts(){
+  const q=(state.filters.p_q||"").toLowerCase();
+  const typeF=state.filters.p_type||"";
+  const vendorF=state.filters.p_vendor||"";
+  const types=[...new Set(state.products.map(p=>p.product_type).filter(Boolean))].sort();
+  const vendors=[...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
+  const rows=state.products.filter(p=>(!typeF||p.product_type===typeF)&&(!vendorF||p.vendor===vendorF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q))));
+  const page=state.pages.products||0;const PER=15;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-products").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">📦 Products</span><span class="card-meta">${state.products.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredProducts(),'products','Products')">⬇ Excel</button></div>
+    <div class="filters">
+      <input id="search-p_q" value="${q}" oninput="sf('p_q',this.value)" placeholder="Search all columns...">
+      <select onchange="sf('p_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      <select onchange="sf('p_vendor',this.value)">${selOpts(vendors,vendorF,"All Vendors")}</select>
+      ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product_name)}',{source_table:'products'})">capSpire Feedback</button><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — COMMODITIES (view switcher)
-// ╚═══════════════════════════════════════════════════════════════
-function renderCommodities() {
-  if (state.filters.com_view === "coverage") renderCommCoverage();
-  else renderCommoditiesView();
+// ── COMMODITIES ──
+function renderCommodities(){
+  const q=(state.filters.com_q||"").toLowerCase();
+  const rows=state.commodities.filter(c=>!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q)));
+  const page=state.pages.commodities||0;const PER=20;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
+    <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td>${commentCell("commodities",c)}<td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
 }
 
-function renderCommoditiesView() {
-  const q = (state.filters.pcc_q || "").toLowerCase();
-  const typeF = state.filters.pcc_type || "";
-  const prods = [...new Set(state.pcc.map(p => p.product).filter(Boolean))].sort();
-  const types = [...new Set(state.pcc.map(p => p.product_type).filter(Boolean))].sort();
-  const covs = ["Covered", "Partially Covered", "Not Covered", "Can be covered"];
-  const coms = [...new Set(state.pcc.map(p => p.commodity).filter(Boolean))].sort();
-  let rows = state.pcc.filter(p => (!typeF || p.product_type === typeF) && (!q || Object.values(p).some(val => (val || "").toString().toLowerCase().includes(q))));
-  rows = msFilter(rows, "product", "pcc_prod");
-  rows = msFilter(rows, "commodity", "pcc_com");
-  if (state.filters.pcc_cov && !Array.isArray(state.filters.pcc_cov)) rows = rows.filter(r => r.coverage_level === state.filters.pcc_cov);
-  else rows = msFilter(rows, "coverage_level", "pcc_cov");
-  const page = state.pages.pcc || 0; const PER = 30;
-  const paged = rows.slice(page * PER, (page + 1) * PER);
-  document.getElementById("section-commodities").innerHTML = `
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">🌾 Commodity Coverage</span>
-        <span class="card-meta">${rows.length} results</span>
-        <button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button>
-      </div>
-      <div class="filters">
-        <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
-        <select onchange="sf('pcc_type',this.value)">${selOpts(types, typeF, "All Types")}</select>
-        ${createMultiSelect("pcc_prod", prods, state.filters.pcc_prod || [], "All Products", "pcc_prod")}
-        ${createMultiSelect("pcc_com", coms, state.filters.pcc_com || [], "All Commodities", "pcc_com")}
-        <select onchange="sf('pcc_cov',this.value)">${selOpts(covs, state.filters.pcc_cov || "", "All Coverage")}</select>
-        ${resetBtn("pcc_")}
-      </div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead>
-        <tbody>
-        ${paged.map(p => `<tr>
-          <td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product || ""}</a></td>
-          <td>${bdg(p.product_type?.includes("Risk") ? "Risk" : "CTRM", p.product_type?.includes("Risk") ? "var(--purple)" : "var(--accent)")}</td>
-          <td>${bdg(p.commodity, "var(--green)")}</td>
-          <td style="color:${p.coverage_level === "Covered" ? "var(--green)" : p.coverage_level === "Partially Covered" ? "var(--yellow)" : "var(--red)"};font-weight:600">${p.coverage_level || ""}</td>
-          <td style="white-space:nowrap">
-            <button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level || "")}',coverage_opts:'pcc',source_table:'pcc',pcc_row_id:${p.id}})">capSpire Feedback</button>
-            <button class="btn" onclick="openPCCModal(${p.id})">Edit</button>
-          </td>
-        </tr>`).join("")}
-        </tbody>
-      </table></div>
-      ${pagerHtml("pcc", page, rows.length, PER)}
-    </div>`;
+// ── COMMODITY COVERAGE ──
+function renderCommCoverage(){
+  const q=(state.filters.pcc_q||"").toLowerCase();
+  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
+  const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
+  const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
+  const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
+  const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); if(state.filters.pcc_cov&&!Array.isArray(state.filters.pcc_cov))rows=rows.filter(r=>r.coverage_level===state.filters.pcc_cov);else rows=msFilter(rows,'coverage_level','pcc_cov');
+  const page=state.pages.pcc||0;const PER=30;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
+    <div class="filters">
+      <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      ${createMultiSelect('pcc_prod', prods, state.filters.pcc_prod||[], 'All Products', 'pcc_prod')}
+      ${createMultiSelect('pcc_com', coms, state.filters.pcc_com||[], 'All Commodities', 'pcc_com')}
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,state.filters.pcc_cov||'','All Coverage')}</select>
+      ${resetBtn('pcc_')}
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc',source_table:'pcc',pcc_row_id:${p.id}})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}</div>`;
 }
 
-function renderCommCoverage() {
-  const q = (state.filters.com_q || "").toLowerCase();
-  const rows = state.commodities.filter(c => !q || Object.values(c).some(val => (val || "").toString().toLowerCase().includes(q)));
-  const page = state.pages.commodities || 0; const PER = 20;
-  const paged = rows.slice(page * PER, (page + 1) * PER);
-  document.getElementById("section-commodities").innerHTML = `
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">🌾 Commodities</span>
-        <span class="card-meta">${state.commodities.length} commodities</span>
-        <button class="btn" style="margin-left:auto" onclick="state.filters.com_view='';render()">← Coverage View</button>
-        <button class="btn btn-primary" style="margin-left:8px" onclick="openCommodityModal(null)">+ Add</button>
-      </div>
-      <div class="filters">
-        <input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search...">
-        ${resetBtn("com_")}
-      </div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>ID</th><th>Commodity Name</th><th></th></tr></thead>
-        <tbody>
-        ${paged.map(c => `<tr>
-          <td style="color:var(--accent);width:40px">${c.id}</td>
-          <td style="font-weight:600">${c.commodity_name || ""}</td>
-          <td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button></td>
-        </tr>`).join("")}
-        </tbody>
-      </table></div>
-      ${pagerHtml("commodities", page, rows.length, PER)}
-    </div>`;
-}
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — CTRM, RISK, GEO, CUSTOMER TYPES, CONTACTS
-// ╚═══════════════════════════════════════════════════════════════
 // ── CTRM ──
 function renderCTRM(){
   const q=(state.filters.ctrm_q||"").toLowerCase();
@@ -1278,9 +647,17 @@ function renderContacts(){
   </div>`;
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — REPORTING
-// ╚═══════════════════════════════════════════════════════════════
+// ── IMPORT DATA ──
+const ALL_TABLES=[
+  {id:"vendors",label:"Vendors",cols:["id","vendor_name","headquarters","website","industries_served"]},
+  {id:"products",label:"Products",cols:["id","product_name","product_type","vendor","product_type2","deployment_model","version_info","licensing_model","notes"]},
+  {id:"product_commodities_coverage",label:"Commodity Coverage",cols:["id","product","product_type","commodity","coverage_level"]},
+  {id:"product_function_ctrm",label:"CTRM Coverage",cols:["id","product","function_name","commodity","coverage_level"]},
+  {id:"product_function_risk",label:"Risk Coverage",cols:["id","product","category","function_name","coverage_level"]},
+  {id:"geographic_coverage",label:"Geographic Coverage",cols:["id","product_type","product","north_america","europe_russia","south_america","middle_east_africa","asia_australia"]},
+  {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
+  {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
+];
 // ── REPORTING ──
 function renderReporting(){
   const activeReport = state.activeReport || null;
@@ -1533,20 +910,15 @@ function renderReportIntelligence(el, backBtn, report){
   wrap.appendChild(grid); el.appendChild(wrap);
 }
 
-async function renderIntelligenceDetail(el, backBtn, report, productName){
-  // Garantir que os clients estão actualizados (sem cache stale)
-  const cacheKey = "pa_cache_product_clients";
-  try {
-    const cached = localStorage.getItem(cacheKey);
-    if (!cached) {
-      state.clients = await getAll("product_clients");
-    }
-  } catch(e) {}
+function renderIntelligenceDetail(el, backBtn, report, productName){
   const prod=(state.products||[]).find(p=>p.product_name===productName)||{product_name:productName};
   const pcc=(state.pcc||[]).filter(r=>r.product===productName);
   const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
   const risk=(state.risk||[]).filter(r=>r.product===productName);
+  // Usar sempre clients frescos — recarregar em background se necessário
   const clients=(state.clients||[]).filter(c=>c.product===productName);
+  // Se não há clients carregados, buscar agora
+  if(!state._clientsLoaded){state._clientsLoaded=true;getAll("product_clients").then(d=>{state.clients=d;render();}).catch(()=>{});}
   const activeSection=state._intSection||"pcc";
   const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
   const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||""; const fCtrmCov=state._intFCtrmCov||"";
@@ -1644,7 +1016,7 @@ async function renderIntelligenceDetail(el, backBtn, report, productName){
   if(activeSection==="pcc"){
     const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
-    const fbPcc=clients.filter(c=>c.source_table==="pcc"||c.source_table==="products");
+    const fbPcc=clients.filter(c=>["pcc","products"].includes(c.source_table));
     let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
     const filtersHtml=`<div class="filters" style="border-radius:8px;margin-bottom:10px">
       <select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>${coms.map(c=>`<option value="${c}" ${c===fPccCom?"selected":""}>${c}</option>`).join("")}</select>
@@ -1734,10 +1106,6 @@ function toggleIntRow(id){
   if(btn) btn.textContent=btn.textContent.includes("▼")?btn.textContent.replace("▼","▲"):btn.textContent.replace("▲","▼");
 }
 
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER — IMPORT
-// ╚═══════════════════════════════════════════════════════════════
 function renderImport(){
   document.getElementById("section-import").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">📥 Import Data</span></div>
@@ -1867,10 +1235,6 @@ function getVals(keys){
   const r={};keys.forEach((k,i)=>{const v=els[i]?.value||"";r[k]=(k==="id"&&v==="")?null:v;});return r;
 }
 
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  PRODUCT DETAIL SIDE PANEL & CLIENT FEEDBACK
-// ╚═══════════════════════════════════════════════════════════════
 // ── PRODUCT DETAIL SIDE PANEL ──
 function openProductDetail(productName, ctx){
   document.getElementById("product-detail-panel")?.remove();
@@ -2147,16 +1511,15 @@ async function saveClient(productName, clientId){
       if(!state.clients)state.clients=[];
       if(res[0])state.clients.push(res[0]);
     }
+    // Recarregar todos os clients para garantir dados frescos no Intelligence
     invalidateCache("product_clients");
-    // Recarregar TODOS os clients do Supabase para garantir dados frescos
-    state.clients = await getAll("product_clients");
+    try{state.clients=await getAll("product_clients");}catch(e){}
     document.getElementById("client-form-panel")?.remove();
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-    showToast("Feedback saved");
-    // Re-renderizar o report de intelligence se estiver aberto
-    if(activeTab==="reporting" && state.activeReport==="intelligence") renderReporting();
-  }catch(e){showToast("Error: "+e.message,"error");}
+    // Se o Intelligence estiver aberto, re-renderizar
+    if(activeTab==="reporting"&&state.activeReport==="intelligence"){state.activeReport="intelligence";render();}
+  }catch(e){alert("Error saving: "+e.message);}
 }
 
 async function deleteClient(clientId, productName){
@@ -2165,17 +1528,13 @@ async function deleteClient(clientId, productName){
     await apiFetch("product_clients",{method:"DELETE",params:{id:"eq."+clientId}});
     state.clients=(state.clients||[]).filter(c=>c.id!==clientId);
     invalidateCache("product_clients");
-    state.clients = await getAll("product_clients");
+    try{state.clients=await getAll("product_clients");}catch(e){}
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-    showToast("Feedback deleted");
-    if(activeTab==="reporting" && state.activeReport==="intelligence") renderReporting();
-  }catch(e){showToast("Error: "+e.message,"error");}
+    if(activeTab==="reporting"&&state.activeReport==="intelligence"){render();}
+  }catch(e){alert("Error deleting: "+e.message);}
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  MODALS (Add / Edit records)
-// ╚═══════════════════════════════════════════════════════════════
 function openVendorModal(id){
   const v=id?state.vendors.find(x=>x.id===id):null;
   openModal(v?"Edit Vendor":"Add Vendor",[
@@ -2302,28 +1661,33 @@ function render(){
   else if(activeTab==="logs")renderLogs();
 }
 
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  RENDER DISPATCHER
-// ╚═══════════════════════════════════════════════════════════════
-function render() {
-  if      (activeTab === "overview")     renderOverview();
-  else if (activeTab === "vendors")      renderVendors();
-  else if (activeTab === "products")     renderProducts();
-  else if (activeTab === "commodities")  renderCommodities();
-  else if (activeTab === "ctrm")         renderCTRM();
-  else if (activeTab === "risk")         renderRisk();
-  else if (activeTab === "geo")          renderGeo();
-  else if (activeTab === "customertype") renderCustomerType();
-  else if (activeTab === "contacts")     renderContacts();
-  else if (activeTab === "reporting")    renderReporting();
-  else if (activeTab === "import")       renderImport();
-  else if (activeTab === "logs")         renderLogs();
+function renderCommoditiesView(){
+  const q=(state.filters.pcc_q||"").toLowerCase();
+  const pF=state.filters.pcc_prod||"";const typeF=state.filters.pcc_type||"";const covF=state.filters.pcc_cov||"";const comF=state.filters.pcc_com||"";
+  const prods=[...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
+  const types=[...new Set(state.pcc.map(p=>p.product_type).filter(Boolean))].sort();
+  const covs=["Covered","Partially Covered","Not Covered","Can be covered"];
+  const coms=[...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
+  let rows=state.pcc.filter(p=>(!typeF||p.product_type===typeF)&&(!q||Object.values(p).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','pcc_prod'); rows=msFilter(rows,'commodity','pcc_com'); if(state.filters.pcc_cov&&!Array.isArray(state.filters.pcc_cov))rows=rows.filter(r=>r.coverage_level===state.filters.pcc_cov);else rows=msFilter(rows,'coverage_level','pcc_cov');
+  const page=state.pages.pcc||0;const PER=30;
+  const paged=rows.slice(page*PER,(page+1)*PER);
+  document.getElementById("section-commodities").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
+    <div class="filters">
+      <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
+      <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
+      ${createMultiSelect('pcc_prod', prods, state.filters.pcc_prod||[], 'All Products', 'pcc_prod')}
+      ${createMultiSelect('pcc_com', coms, state.filters.pcc_com||[], 'All Commodities', 'pcc_com')}
+      <select onchange="sf('pcc_cov',this.value)">${selOpts(covs,state.filters.pcc_cov||'','All Coverage')}</select>
+      ${resetBtn('pcc_')}
+    </div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Type</th><th>Commodity</th><th>Coverage Level</th><th></th></tr></thead><tbody>
+    ${paged.map(p=>`<tr><td><a onclick="navToIntelligence('${escAttr(p.product)}');return false;" href="#">${p.product||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a href="#" class="ctrm-com-link" data-prod="${escAttr(p.product)}" data-com="${escAttr(p.commodity)}" style="text-decoration:none">${bdg(p.commodity,"var(--green)")}</a></td><td style="color:${p.coverage_level==="Covered"?"var(--green)":p.coverage_level==="Partially Covered"?"var(--yellow)":"var(--red)"};font-weight:600">${p.coverage_level||""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product)}',{commodity:'${escAttr(p.commodity)}',coverage_level:'${escAttr(p.coverage_level||"")}',coverage_opts:'pcc',source_table:'pcc',pcc_row_id:${p.id}})">capSpire Feedback</button><button class="btn" onclick="openPCCModal(${p.id})">Edit</button></td></tr>`).join("")}
+    </tbody></table></div>${pagerHtml("pcc",page,rows.length,PER)}
+  </div>`;
 }
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  EXPORT TO EXCEL
-// ╚═══════════════════════════════════════════════════════════════
+// ── INIT ──
 // ── EXPORT TO EXCEL ──
 function exportToExcel(data, filename, sheetName) {
   if (!data || data.length === 0) { alert("No data to export."); return; }
@@ -2394,9 +1758,6 @@ function getFilteredContacts() {
 }
 
 
-// ╔═══════════════════════════════════════════════════════════════
-// ║  MULTI-SELECT DROPDOWN
-// ╚═══════════════════════════════════════════════════════════════
 // ── MULTI-SELECT DROPDOWN ──
 function createMultiSelect(id, options, selectedValues, placeholder, onChangeKey) {
   const selected = selectedValues || [];
@@ -2488,63 +1849,28 @@ function msFilter(data, field, filterKey) {
 }
 
 
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  INIT — Carrega todos os dados do Supabase
-// ╚═══════════════════════════════════════════════════════════════
-async function init() {
-  document.getElementById("section-overview").innerHTML = `
-    <div class="loading">
-      <div class="loading-spinner"></div>
-      <div style="margin-top:8px">Connecting to database...</div>
-    </div>`;
+async function init(){
+  document.getElementById("section-overview").innerHTML='<div class="loading">Connecting to database...</div>';
   initNav();
-  try {
-    // Carregar tabelas principais em paralelo
-    const [v, p, ct_data, g, pcc, risk, ct, com, clients] = await Promise.all([
-      getAll("vendors"),
-      getAll("products"),
-      getAll("product_contacts"),
-      getAll("geographic_coverage"),
-      getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),
-      getAll("customer_type_coverage"),
-      getAll("commodities"),
-      getAll("product_clients"),
+  try{
+    const[v,p,ct_data,g,pcc,risk,ct,com,clients]=await Promise.all([
+      getAll("vendors"),getAll("products"),getAll("product_contacts"),
+      getAll("geographic_coverage"),getAll("product_commodities_coverage"),
+      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities"),
+      getAll("product_clients")
     ]);
-    state.vendors    = v;
-    state.products   = p;
-    state.contacts   = ct_data;
-    state.geo        = g;
-    state.pcc        = pcc;
-    state.risk       = risk;
-    state.ct         = ct;
-    state.commodities = com;
-    state.clients    = clients;
-    state.ctrmLoading = true;
+    state.vendors=v;state.products=p;state.contacts=ct_data;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
+    state._clientsLoaded=true;
+    state.ctrmLoading=true;
     render();
-
-    // CTRM é a maior tabela — carrega depois
-    const ctrm = await getAll("product_function_ctrm");
-    state.ctrm = ctrm;
-    state.ctrmLoading = false;
-    if (activeTab === "ctrm" || activeTab === "overview") render();
-
-  } catch(e) {
-    document.getElementById("section-overview").innerHTML = `
-      <div class="loading" style="color:var(--red)">
-        <div style="font-size:24px;margin-bottom:8px">⚠️</div>
-        Connection error: ${e.message}
-        <br><small style="color:var(--muted);margin-top:8px;display:block">
-          Check your Supabase URL and API key in the config section.
-        </small>
-      </div>`;
+    const ctrm=await getAll("product_function_ctrm");
+    state.ctrm=ctrm;state.ctrmLoading=false;
+    if(activeTab==="ctrm"||activeTab==="overview")render();
+  }catch(e){
+    document.getElementById("section-overview").innerHTML=`<div class="loading" style="color:var(--red)">Connection error: ${e.message}</div>`;
   }
 }
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  AUTH
-// ╚═══════════════════════════════════════════════════════════════
 // ── AUTH (using Supabase REST directly) ──
 const AUTH_URL = SB_URL + "/auth/v1";
 let currentSession = null;
@@ -2664,10 +1990,6 @@ window.addEventListener("load", function() {
   checkAuth();
 });
 
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  CHAT / INTERACTIVE SEARCH
-// ╚═══════════════════════════════════════════════════════════════
 // ── CHATBOX ──
 let chatOpen = false;
 let chatState = {}; // tracks current conversation state
@@ -3136,22 +2458,6 @@ document.body.insertAdjacentHTML("beforeend",`
     <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
   </div>
 `);
-
-// ╔═══════════════════════════════════════════════════════════════
-// ║  STARTUP
-// ╚═══════════════════════════════════════════════════════════════
-window.addEventListener("load", function() {
-  // Restaurar tema guardado
-  try {
-    const savedTheme = localStorage.getItem("pa_theme");
-    if (savedTheme === "light") {
-      isDark = false;
-      document.body.classList.add("light");
-      document.getElementById("theme-btn").textContent = "🌙 Dark";
-    }
-  } catch(e) {}
-  checkAuth();
-});
 </script>
 </body>
 </html>
