@@ -665,6 +665,11 @@ const ALL_TABLES=[
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
 // ── REPORTING ──
+
+// ── HELPER FUNCTIONS ──
+function normName(s){ return (s||"").toLowerCase().trim().replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim(); }
+function findExact(arr, field, val){ return (arr||[]).find(r=>(r[field]||"")===val)?.[field] || val; }
+
 function renderReporting(){
   const activeReport = state.activeReport || null;
   const el = document.getElementById("section-reporting");
