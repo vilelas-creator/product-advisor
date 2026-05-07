@@ -1368,17 +1368,19 @@ function openClientForm(productName, clientId, ctx){
   window._cfProductName = productName;
   window._cfClientId = clientId;
   window._cfExisting = existing;
-  // Reset blocks for new form session
-  window._cfPccBlocks = null;
-  window._cfCtrmBlocks = null;
-  window._cfRiskBlocks = null;
-  window._cfSelectedComs = null;
-  window._cfSavedClient = undefined;
-  window._cfSavedRegion = undefined;
-  window._cfSavedYear = undefined;
-  window._cfSavedNotes = undefined;
-  window._cfSavedProject = undefined;
-  window._cfSavedSP = undefined;
+  // Reset blocks for new form session, but pre-load existing data if editing
+  window._cfSelectedComs = existing?.commodities
+    ? existing.commodities.split(',').map(s=>s.trim()).filter(Boolean)
+    : null;
+  try { window._cfPccBlocks  = existing?.pcc_blocks  ? JSON.parse(existing.pcc_blocks)  : null; } catch(e){ window._cfPccBlocks=null; }
+  try { window._cfCtrmBlocks = existing?.ctrm_blocks ? JSON.parse(existing.ctrm_blocks) : null; } catch(e){ window._cfCtrmBlocks=null; }
+  try { window._cfRiskBlocks = existing?.risk_blocks ? JSON.parse(existing.risk_blocks) : null; } catch(e){ window._cfRiskBlocks=null; }
+  window._cfSavedClient  = existing?.client_name    || undefined;
+  window._cfSavedRegion  = existing?.region         || undefined;
+  window._cfSavedYear    = existing?.since_year     ? String(existing.since_year) : undefined;
+  window._cfSavedNotes   = existing?.notes          || undefined;
+  window._cfSavedProject = existing?.project_name   || undefined;
+  window._cfSavedSP      = existing?.sharepoint_link|| undefined;
   const isVendorCtx = (ctx?.source_table === 'vendor');
   const initType = isVendorCtx ? 'vendor' : (ctx?.source_table || existing?.source_table || 'products');
 
