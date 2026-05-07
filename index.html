@@ -1422,7 +1422,7 @@ function openClientForm(productName, clientId, ctx){
     '</div>' +
     '<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">' +
       '<button onclick="document.getElementById(\'client-form-panel\').remove()" class="btn" style="font-size:12px">Cancel</button>' +
-      '<button onclick="saveClient(\'' + productName.replace(/'/g,"\\'") + '\',' + (clientId||"null") + ')" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>' +
+      '<button onclick="cfSave()" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>' +
     '</div>';
 
   document.body.appendChild(form);
@@ -1828,6 +1828,11 @@ function collectCfBlocks(type){
   return [];
 }
 
+
+function cfSave(){
+  saveClient(window._cfProductName, window._cfClientId||null);
+}
+
 async function saveClient(productName, clientId){
   // Save current tab values before collecting
   saveCfBlockValues();
@@ -1845,6 +1850,7 @@ async function saveClient(productName, clientId){
 
   // Collect ALL tabs data regardless of which tab is active
   const commodities = (window._cfSelectedComs||[]).filter(Boolean).join(", ") || null;
+  let functionName=null, category=null, coverageLevel=null;
 
   // PCC blocks - from memory (saved by saveCfBlockValues)
   let pccBlocks = null;
