@@ -841,39 +841,70 @@ function navToCtrmFromHeatmap(product, commodity){
 }
 
 function exportHeatmapExcel(){
-  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
   const{products,commodities,map,fbByProduct}=window._heatmapData||{};
   if(!products||!commodities){alert("No data to export.");return;}
-  const wb=XLSX.utils.book_new();
 
-  // Sheet 1: Official coverage
-  const wsData=[["Product",...commodities]];
-  products.forEach(p=>{
-    wsData.push([p,...commodities.map(c=>{
-      const v=map[p+"||"+c];
-      return v||"";
-    })]);
-  });
-  const ws1=XLSX.utils.aoa_to_sheet(wsData);
-  ws1['!cols']=[{wch:30},...commodities.map(()=>({wch:18}))];
-  XLSX.utils.book_append_sheet(wb,ws1,"Official Coverage");
+  const covColor=v=>v==="Covered"?"#22c55e":v&&v.includes("Partial")?"#f59e0b":v==="Not Covered"?"#ef4444":null;
+  const covLetter=v=>v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
+  const fbColor=v=>v==="Covered"||v==="Deployed"?"#22c55e":v&&(v.includes("Partial")||v==="Capable")?"#f59e0b":v&&v.includes("Not")?"#ef4444":null;
+  const fbLetter=v=>v==="Covered"||v==="Deployed"?"C":v&&(v.includes("Partial")||v==="Capable")?"P":v&&v.includes("Not")?"✗":"?";
 
-  // Sheet 2: capSpire Feedback
-  const fbData=[["Product","Client",...commodities]];
-  products.forEach(p=>{
-    const fbs=fbByProduct[p]||[];
-    if(!fbs.length) return;
-    fbs.forEach(fb=>{
-      fbData.push([p,fb.client,...commodities.map(c=>fb.comMap[c]||"")]);
-    });
-  });
-  if(fbData.length>1){
-    const ws2=XLSX.utils.aoa_to_sheet(fbData);
-    ws2['!cols']=[{wch:30},{wch:20},...commodities.map(()=>({wch:18}))];
-    XLSX.utils.book_append_sheet(wb,ws2,"capSpire Feedback");
+  function cell(text, bg, color, bold, italic, border){
+    let style="padding:4px 6px;font-size:11px;white-space:nowrap;";
+    if(bg) style+="background:"+bg+";";
+    if(color) style+="color:"+color+";";
+    if(bold) style+="font-weight:bold;";
+    if(italic) style+="font-style:italic;";
+    if(border) style+="border-left:3px solid #3b82f6;";
+    return "<td style='"+style+"'>"+text+"</td>";
   }
 
-  XLSX.writeFile(wb,"coverage_heatmap.xlsx");
+  let html="<html><head><meta charset='utf-8'></head><body>";
+  html+="<table border='1' cellspacing='0' cellpadding='0' style='border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px'>";
+
+  // Header row
+  html+="<tr>";
+  html+=cell("PRODUCT","#1e293b","#94a3b8",true,false,false);
+  commodities.forEach(c=>{
+    html+=cell(c,"#1e293b","#94a3b8",true,false,false);
+  });
+  html+="</tr>";
+
+  // Data rows
+  products.forEach(p=>{
+    // Official row
+    html+="<tr>";
+    html+=cell(p,"#1e2840","#60a5fa",true,false,false);
+    commodities.forEach(c=>{
+      const v=map[p+"||"+c];
+      const bg=covColor(v)||"#0f172a";
+      const ltr=covLetter(v);
+      html+=cell(ltr,bg,v?"#ffffff":"#334155",true,false,false);
+    });
+    html+="</tr>";
+
+    // Feedback rows
+    const fbs=fbByProduct[p]||[];
+    fbs.forEach(fb=>{
+      html+="<tr>";
+      html+=cell("  💬 "+fb.client,"#0f172a","#60a5fa",false,true,true);
+      commodities.forEach(c=>{
+        const cv=fb.comMap[c];
+        if(!cv){ html+=cell("","#0f172a","",false,false,false); return; }
+        const bg=fbColor(cv)||"#1e293b";
+        html+=cell(fbLetter(cv),bg,"#ffffff",true,false,false);
+      });
+      html+="</tr>";
+    });
+  });
+
+  html+="</table></body></html>";
+
+  const blob=new Blob([html],{type:"application/vnd.ms-excel;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="coverage_heatmap.xls"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 
