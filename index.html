@@ -998,13 +998,15 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
     return clients.filter(c=>c.source_table===type&&matchFn(c));
   }
 
-  function renderFbRows(fbs, type){
+  function renderFbRows(fbs, type, matchFn){
     if(!fbs.length) return "";
     return fbs.map(f=>{
       let blocks=[];
       try{ if(type==='pcc'&&f.pcc_blocks) blocks=JSON.parse(f.pcc_blocks); }catch(e){}
       try{ if(type==='ctrm'&&f.ctrm_blocks) blocks=JSON.parse(f.ctrm_blocks); }catch(e){}
       try{ if(type==='risk'&&f.risk_blocks) blocks=JSON.parse(f.risk_blocks); }catch(e){}
+      // Filter blocks to only show the one matching the current official row
+      if(matchFn && blocks.length) blocks = blocks.filter(matchFn);
       const blockHtml = blocks.length ? blocks.map(b=>
         "<span style='font-size:10px;padding:1px 6px;background:var(--bg2);border-radius:3px;margin:1px'>"
         +(b.commodity||b.category?"<span style='color:var(--accent)'>"+escH(b.commodity||b.category||"")+"</span> ":"")
@@ -1023,11 +1025,11 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
     }).join("");
   }
 
-  function fbToggleRow(rowId, fbs, type){
+  function fbToggleRow(rowId, fbs, type, matchFn){
     if(!fbs.length) return {btn:"", rows:""};
     const uid = "fb-"+rowId;
     const btn = "<button onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.arr').textContent=d.style.display==='none'?'▼':'▲'\" style='font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px'>💬 "+fbs.length+" <span class='arr'>▼</span></button>";
-    const rows = "<tr id='"+uid+"' style='display:none'><td colspan='10' style='padding:2px 12px 6px 12px;background:var(--bg3)'>"+renderFbRows(fbs,type)+"</td></tr>";
+    const rows = "<tr id='"+uid+"' style='display:none'><td colspan='10' style='padding:2px 12px 6px 12px;background:var(--bg3)'>"+renderFbRows(fbs,type,matchFn)+"</td></tr>";
     return {btn, rows};
   }
 
@@ -1096,7 +1098,8 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         if(blocks.length) return blocks.some(b=>b.commodity===r.commodity);
         return (c.commodities||"").split(",").map(s=>s.trim()).includes(r.commodity);
       });
-      const {btn,rows:fbRows}=fbToggleRow("pcc-"+r.id, fbs, "pcc");
+      const matchFn=b=>b.commodity===r.commodity;
+      const {btn,rows:fbRows}=fbToggleRow("pcc-"+r.id, fbs, "pcc", matchFn);
       const cColor=covColor(r.coverage_level);
       html+='<tr style="border-bottom:1px solid var(--row-border)">'
         +'<td style="padding:8px 12px;font-weight:600">'+escH(r.commodity)+'</td>'
@@ -1150,7 +1153,8 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
           if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity));
           return c.function_name===r.function_name;
         });
-        const {btn,rows:fbRows}=fbToggleRow("ctrm-"+r.id, fbs, "ctrm");
+        const matchFnCtrm=b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity);
+        const {btn,rows:fbRows}=fbToggleRow("ctrm-"+r.id, fbs, "ctrm", matchFnCtrm);
         html+='<tr style="border-bottom:1px solid var(--row-border)">'
           +'<td style="padding:8px 12px;font-weight:600">'+escH(r.function_name)+'</td>'
           +'<td style="padding:8px 12px">'+bdg(r.commodity,"var(--accent)")+'</td>'
@@ -1198,7 +1202,8 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
           if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.category||b.category===r.category));
           return c.function_name===r.function_name;
         });
-        const {btn,rows:fbRows}=fbToggleRow("risk-"+r.id, fbs, "risk");
+        const matchFnRisk=b=>b.function_name===r.function_name&&(!b.category||b.category===r.category);
+        const {btn,rows:fbRows}=fbToggleRow("risk-"+r.id, fbs, "risk", matchFnRisk);
         html+='<tr style="border-bottom:1px solid var(--row-border)">'
           +'<td style="padding:8px 12px">'+bdg(r.category,"var(--purple)")+'</td>'
           +'<td style="padding:8px 12px;font-weight:600">'+escH(r.function_name)+'</td>'
