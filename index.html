@@ -1492,16 +1492,20 @@ function openClientForm(productName, clientId, ctx){
         <input id="cf-year" type="number" value="${existing?.since_year||""}" placeholder="e.g. 2020" min="1990" max="2099" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
       <div id="cf-notes-wrap"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Notes</label>
         <textarea id="cf-notes" placeholder="Additional notes..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box">${existing?.notes||""}</textarea></div>
-      ${isVendorCtx ? '' : '<div id="cf-sharepoint-wrap" style="display:none"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">SharePoint Folder Link</label><input id="cf-sharepoint" value="${escAttr(existing?.sharepoint_link||"")}" placeholder="https://..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>'}
+      ${isVendorCtx ? '' : '<div id="cf-sharepoint-wrap" style="display:none"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">SharePoint Folder Link</label><input id="cf-sharepoint" value="" placeholder="https://..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>'}
     </div>
     <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
       <button onclick="document.getElementById('client-form-panel').remove()" class="btn" style="font-size:12px">Cancel</button>
       <button onclick="saveClient('${escAttr(productName)}',${clientId||"null"})" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>
     </div>`;
   document.body.appendChild(form);
+  // Set field values that can't be set in innerHTML template
+  const spEl = document.getElementById("cf-sharepoint");
+  if(spEl && existing?.sharepoint_link) spEl.value = existing.sharepoint_link;
+  const projEl = document.getElementById("cf-project");
+  if(projEl && existing?.project_name) projEl.value = existing.project_name;
   window._cfType = initType;
   if(isVendorCtx){
-    // Vendor mode: just show notes field, hide dynamic
     document.getElementById("cf-project-wrap").style.display="block";
     document.getElementById("cf-notes-wrap").style.display="block";
   } else {
@@ -1563,11 +1567,14 @@ function cfSetType(type){
     renderPccBlocks(container);
 
   } else if(type==='ctrm'){
-    // CTRM tab: one block per entry: commodity(dropdown), function(dropdown), coverage, notes + add button
+    // CTRM tab: use commodities from Product tab, with function dropdowns
     const pccComs=[...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
     const allComs=pccComs.length?pccComs:[...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const allFns=[...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.function_name).filter(Boolean))].sort();
     const allFnsGlobal=allFns.length?allFns:[...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
+    // Use commodities from Product tab selection if available
+    const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
+    const comsToUse = productTabComs.length ? productTabComs : (ctx?.commodity ? [ctx.commodity] : []);
     // Parse existing blocks
     let existingBlocks = [];
     try { existingBlocks = existing?.ctrm_blocks ? JSON.parse(existing.ctrm_blocks) : []; } catch(e){}
@@ -1575,13 +1582,14 @@ function cfSetType(type){
     const prefillFn = ctx?.function_name || null;
     const prefillCov = ctx?.coverage_level || null;
     if(!existingBlocks.length && (prefillCom||prefillFn)) existingBlocks=[{commodity:prefillCom||'',function_name:prefillFn||'',coverage_level:prefillCov||'',notes:''}];
+    if(!existingBlocks.length && comsToUse.length) existingBlocks=comsToUse.map(c=>({commodity:c,function_name:'',coverage_level:'',notes:''}));
     if(!existingBlocks.length) existingBlocks=[{commodity:'',function_name:'',coverage_level:'',notes:''}];
     window._cfCtrmBlocks = existingBlocks;
     window._cfCtrmAllComs = allComs;
     window._cfCtrmAllFns = allFnsGlobal;
     renderCtrmBlocks(container);
 
-  } else if(type==='risk'){
+    } else if(type==='risk'){
     // Risk tab: category(dropdown), function(filtered dropdown), coverage, notes + add button
     const allCats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
     let existingBlocks = [];
