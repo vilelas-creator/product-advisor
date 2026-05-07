@@ -2154,83 +2154,106 @@ function createMultiSelect(id, options, selectedValues, placeholder, onChangeKey
   const label = selected.length === 0 ? placeholder :
     selected.length === 1 ? selected[0] :
     selected.length + ' selected';
+  const allSel = options.length > 0 && options.every(o=>selected.includes(o));
 
-  return `<div class="ms-wrap" id="ms-${id}" style="position:relative;display:inline-block">
-    <button class="ms-btn" onclick="toggleMultiSelect('${id}')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:120px;justify-content:space-between">
-      <span>${label}</span><span style="font-size:9px;color:var(--muted)">▼</span>
-    </button>
-    <div class="ms-dropdown" id="ms-drop-${id}" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:4px;max-height:260px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.4);min-width:160px">
-      <div style="display:flex;border-bottom:1px solid var(--border)">
-        <button onclick="msSelectAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;color:var(--accent);font-family:inherit">(All)</button>
-        <button onclick="msClearAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:inherit">Clear</button>
-      </div>
-      ${options.map(opt => `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border);white-space:nowrap" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><input type="checkbox" value="${opt}" ${selected.includes(opt)?'checked':''} onchange="msChange('${id}','${onChangeKey}')" style="margin:0;cursor:pointer;accent-color:var(--accent)">${opt}</label>`).join('')}
-    </div>
-  </div>`;
+  let html = '<div class="ms-wrap" id="ms-'+id+'" style="position:relative;display:inline-block">';
+  html += '<button class="ms-btn" type="button" onclick="toggleMultiSelect(\''+id+'\')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:120px;justify-content:space-between"><span>'+escH(label)+'</span><span style="font-size:9px;color:var(--muted)">&#9660;</span></button>';
+  html += '<div class="ms-dropdown" id="ms-drop-'+id+'" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.5);width:220px">';
+  // Search
+  html += '<div style="padding:6px 8px;border-bottom:1px solid var(--border)"><input id="ms-search-'+id+'" type="text" placeholder="Search..." oninput="msSearch(\''+id+'\')" style="width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>';
+  // Select All
+  html += '<div style="padding:5px 8px;border-bottom:2px solid var(--border);background:var(--bg3)"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text);font-weight:600"><input type="checkbox" id="ms-all-'+id+'" '+(allSel?'checked':'')+' onchange="msToggleAll(\''+id+'\',\''+onChangeKey+'\')" style="margin:0;cursor:pointer;accent-color:var(--accent);width:14px;height:14px">(Select All)</label></div>';
+  // Options
+  html += '<div id="ms-list-'+id+'" style="max-height:200px;overflow-y:auto">';
+  options.forEach(opt => {
+    const chk = selected.includes(opt) ? 'checked' : '';
+    html += '<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border)" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'"><input type="checkbox" value="'+escAttr(opt)+'" '+chk+' onchange="msChange(\''+id+'\',\''+onChangeKey+'\')" style="margin:0;cursor:pointer;accent-color:var(--accent);width:14px;height:14px">'+escH(opt)+'</label>';
+  });
+  html += '</div>';
+  // OK / Cancel
+  html += '<div style="display:flex;gap:6px;padding:8px;border-top:1px solid var(--border);justify-content:flex-end"><button type="button" onclick="msCancel(\''+id+'\')" style="padding:4px 14px;font-size:12px;font-family:inherit;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer">Cancel</button><button type="button" onclick="msApply(\''+id+'\',\''+onChangeKey+'\')" style="padding:4px 14px;font-size:12px;font-family:inherit;background:var(--accent);border:none;border-radius:4px;color:#fff;cursor:pointer;font-weight:600">OK</button></div>';
+  html += '</div></div>';
+  return html;
 }
 
-
-function toggleMultiSelect(id) {
+function toggleMultiSelect(id){
+  const drop = document.getElementById('ms-drop-'+id);
+  if(!drop) return;
   // Close all other dropdowns first
-  document.querySelectorAll('.ms-dropdown').forEach(d => {
-    if (d.id !== 'ms-drop-' + id) d.style.display = 'none';
+  document.querySelectorAll('.ms-dropdown').forEach(d=>{ if(d.id!=='ms-drop-'+id) d.style.display='none'; });
+  const isOpen = drop.style.display !== 'none';
+  drop.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen) setTimeout(()=>document.getElementById('ms-search-'+id)?.focus(), 50);
+}
+
+function msSearch(id){
+  const q = (document.getElementById('ms-search-'+id)?.value||'').toLowerCase();
+  const list = document.getElementById('ms-list-'+id);
+  if(!list) return;
+  list.querySelectorAll('label').forEach(lbl=>{
+    const txt = lbl.textContent.toLowerCase();
+    lbl.style.display = txt.includes(q) ? '' : 'none';
   });
-  const drop = document.getElementById('ms-drop-' + id);
-  if (drop) drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+}
+
+function msToggleAll(id, key){
+  const allCb = document.getElementById('ms-all-'+id);
+  const list = document.getElementById('ms-list-'+id);
+  if(!allCb||!list) return;
+  list.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=allCb.checked);
+}
+
+function msChange(id, key){
+  // Update Select All checkbox state
+  const list = document.getElementById('ms-list-'+id);
+  const allCb = document.getElementById('ms-all-'+id);
+  if(!list||!allCb) return;
+  const all = list.querySelectorAll('input[type=checkbox]');
+  const checked = list.querySelectorAll('input[type=checkbox]:checked');
+  allCb.checked = all.length > 0 && all.length === checked.length;
+  allCb.indeterminate = checked.length > 0 && checked.length < all.length;
+}
+
+function msApply(id, key){
+  const list = document.getElementById('ms-list-'+id);
+  if(!list) return;
+  const selected = [...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
+  sf(key, selected.length ? selected : []);
+  document.getElementById('ms-drop-'+id).style.display = 'none';
+  // Reset search
+  const search = document.getElementById('ms-search-'+id);
+  if(search) search.value = '';
+  msSearch(id);
+}
+
+function msCancel(id){
+  document.getElementById('ms-drop-'+id).style.display = 'none';
+  const search = document.getElementById('ms-search-'+id);
+  if(search) search.value = '';
+  msSearch(id);
+}
+
+function msSelectAll(id, key){
+  const list = document.getElementById('ms-list-'+id);
+  if(list) list.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=true);
+  const allCb = document.getElementById('ms-all-'+id);
+  if(allCb) allCb.checked = true;
+}
+
+function msClearAll(id, key){
+  const list = document.getElementById('ms-list-'+id);
+  if(list) list.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
+  const allCb = document.getElementById('ms-all-'+id);
+  if(allCb) allCb.checked = false;
 }
 
 // Close dropdowns when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.ms-wrap')) {
-    document.querySelectorAll('.ms-dropdown').forEach(d => d.style.display = 'none');
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.ms-wrap')){
+    document.querySelectorAll('.ms-dropdown').forEach(d=>d.style.display='none');
   }
 });
 
-function msGetSelected(id) {
-  const drop = document.getElementById('ms-drop-' + id);
-  if (!drop) return [];
-  return [...drop.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
-}
-
-function msChange(id, filterKey) {
-  const selected = msGetSelected(id);
-  state.filters[filterKey] = selected;
-  state.pages = {};
-  // Update button label
-  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
-  if (btn) {
-    const label = selected.length === 0 ? getPlaceholder(filterKey) :
-      selected.length === 1 ? selected[0] :
-      selected.length + ' selected';
-    btn.childNodes[0].textContent = label + ' ';
-  }
-  render();
-}
-
-function msSelectAll(id, filterKey) {
-  const drop = document.getElementById('ms-drop-' + id);
-  if (!drop) return;
-  drop.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
-  state.filters[filterKey] = [];
-  state.pages = {};
-  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
-  if (btn) btn.childNodes[0].textContent = getPlaceholder(filterKey) + ' ';
-  render();
-}
-
-function msClearAll(id, filterKey) {
-  msSelectAll(id, filterKey);
-}
-
-function getPlaceholder(key) {
-  const map = {
-    'pcc_prod':'All Products','pcc_com':'All Commodities','pcc_cov':'All Coverage',
-    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_cov':'All Coverage',
-    'risk_prod':'All Products','risk_cov':'All Coverage',
-    'geo_prod':'All Products','ct_prod':'All Products','con_prod':'All Products'
-  };
-  return map[key] || 'All';
-}
 
 function msFilter(data, field, filterKey) {
   const selected = state.filters[filterKey];
