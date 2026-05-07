@@ -438,12 +438,30 @@ function renderVendors(){
   const rows=state.vendors.filter(v=>!q||Object.values(v).some(val=>(val||"").toString().toLowerCase().includes(q)));
   const page=state.pages.vendors||0;const PER=15;
   const paged=rows.slice(page*PER,(page+1)*PER);
-  document.getElementById("section-vendors").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
-    <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(v.vendor_name)}',{source_table:'vendor',vendor_name:'${escAttr(v.vendor_name)}'})" >capSpire Feedback</button><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
-    </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
+  const tbody=paged.map(v=>{
+    const vn=escAttr(v.vendor_name||"");
+    const vLink=escAttr(v.vendor_name||"");
+    return '<tr>'
+      +'<td style="color:var(--accent);width:40px">'+v.id+'</td>'
+      +'<td><a onclick="navToTab(\'products\',\'p_vendor\',\''+vLink+'\')" href="#">'+escH(v.vendor_name||"")+'</a></td>'
+      +'<td style="color:var(--muted);max-width:180px">'+escH((v.headquarters||"").replace(/\n/g," "))+'</td>'
+      +'<td><a href="https://'+escH(v.website||"")+'" target="_blank">'+escH(v.website||"")+'</a></td>'
+      +'<td>'+bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")+'</td>'
+      +'<td style="white-space:nowrap">'
+        +'<button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail(\''+vn+'\',{source_table:\'vendor\',vendor_name:\''+vn+'\'})">capSpire Feedback</button>'
+        +'<button class="btn" onclick="openVendorModal('+v.id+')">Edit</button>'
+      +'</td>'
+      +'</tr>';
+  }).join("");
+  document.getElementById("section-vendors").innerHTML=
+    '<div class="card">'
+    +'<div class="card-head"><span class="card-title">&#127970; Vendors</span><span class="card-meta">'+state.vendors.length+' vendors</span>'
+    +'<button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),\'vendors\',\'Vendors\')">&#8595; Excel</button></div>'
+    +'<div class="filters"><input id="search-v_q" value="'+(state.filters.v_q||"")+'" oninput="sf(\'v_q\',this.value)" placeholder="Search all columns...">'+resetBtn('v_')+'<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead>'
+    +'<tbody>'+tbody+'</tbody></table></div>'
+    +pagerHtml("vendors",page,rows.length,PER)
+    +'</div>';
 }
 
 // ── PRODUCTS ──
