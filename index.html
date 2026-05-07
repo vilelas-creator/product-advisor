@@ -1372,6 +1372,7 @@ function openClientForm(productName, clientId, ctx){
   window._cfPccBlocks = null;
   window._cfCtrmBlocks = null;
   window._cfRiskBlocks = null;
+  window._cfSelectedComs = null;
   window._cfSavedClient = undefined;
   window._cfSavedRegion = undefined;
   window._cfSavedYear = undefined;
@@ -1553,8 +1554,11 @@ function cfSetType(type){
     // Commodities multiselect
     const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
     const allComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
-    const selComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : (ctx?.commodity ? [ctx.commodity] : []);
-    window._cfSelectedComs = [...selComs];
+    // Only reset selection if no previous selection exists in this session
+    if(!window._cfSelectedComs || window._cfSelectedComs.length === 0){
+      const selComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : (ctx?.commodity ? [ctx.commodity] : []);
+      window._cfSelectedComs = [...selComs];
+    }
     window._cfAllComs = allComs;
     container.innerHTML = '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">COMMODITIES</label><div id="cf-coms-ms-wrap"></div></div>';
     buildCfComsMultiselect();
