@@ -913,7 +913,7 @@ function renderReportVendor(el,backBtn,report){
   wrap.appendChild(hdr);
   const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px";
   data.forEach(d=>{
-    const{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts}=d;
+    const{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts,vFeedback}=d;
     const card=document.createElement("div"); card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
     card.onmouseover=()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)"; card.onmouseout=()=>card.style.boxShadow="";
     const barCov=covTotal?Math.round(covCovered/covTotal*100):0; const barPartial=covTotal?Math.round(covPartial/covTotal*100):0; const barNot=covTotal?100-barCov-barPartial:0;
