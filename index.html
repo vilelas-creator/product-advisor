@@ -149,14 +149,6 @@ a:hover{text-decoration:underline;}
   </div>
 </div>
 <script>
-// ── localStorage seguro (fallback para memória quando bloqueado pelo browser) ──
-const _store = {};
-const safeStorage = {
-  getItem:    k => { try { return localStorage.getItem(k); } catch(e) { return _store[k]??null; } },
-  setItem:    (k,v) => { try { localStorage.setItem(k,v); } catch(e) { _store[k]=v; } },
-  removeItem: k => { try { localStorage.removeItem(k); } catch(e) { delete _store[k]; } },
-};
-
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
 const GROQ_MODEL="llama-3.3-70b-versatile";
@@ -180,22 +172,10 @@ async function apiFetch(table,opts={}){
   if(!res.ok)throw new Error(await res.text());
   const t=await res.text();return t?JSON.parse(t):[];
 }
-async function getAll(table,skipCache=false){
-  // Cache simples em memória (não localStorage para evitar problemas de stale)
-  if(!window._memCache)window._memCache={};
-  const cacheKey=table;
-  const CACHE_MS=5*60*1000; // 5 minutos
-  if(!skipCache&&window._memCache[cacheKey]){
-    const{data,ts}=window._memCache[cacheKey];
-    if(Date.now()-ts<CACHE_MS)return data;
-  }
+async function getAll(table){
   const all=[];let offset=0;
   while(true){const b=await apiFetch(table,{params:{limit:1000,offset,order:"id"}});all.push(...b);if(b.length<1000)break;offset+=1000;}
-  window._memCache[cacheKey]={data:all,ts:Date.now()};
   return all;
-}
-function invalidateCache(table){
-  if(window._memCache&&window._memCache[table])delete window._memCache[table];
 }
 
 function bdg(label,color){return`<span class="badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${label||""}</span>`;}
@@ -276,7 +256,7 @@ function showComments(table,id){
 // ── TABS ──
 
 // ── USER IDENTITY ──
-function getUsername(){return safeStorage.getItem("pa_username")||"";}
+function getUsername(){return localStorage.getItem("pa_username")||"";}
 function ensureUsername(callback){
   const user=getUsername();if(user){callback(user);return;}
   const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px";
@@ -287,7 +267,7 @@ function ensureUsername(callback){
   const btn=document.createElement("button");btn.textContent="Continue →";
   btn.style.cssText="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:600";
   box: { bx.appendChild(inp);bx.appendChild(btn);ov.appendChild(bx);document.body.appendChild(ov);setTimeout(()=>inp.focus(),100); }
-  const save=()=>{const name=inp.value.trim();if(!name){inp.style.border="1px solid var(--red)";return;}safeStorage.setItem("pa_username",name);ov.remove();callback(name);};
+  const save=()=>{const name=inp.value.trim();if(!name){inp.style.border="1px solid var(--red)";return;}localStorage.setItem("pa_username",name);ov.remove();callback(name);};
   btn.onclick=save;inp.onkeydown=e=>{if(e.key==="Enter")save();};
 }
 
@@ -667,13 +647,6 @@ const ALL_TABLES=[
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
 // ── REPORTING ──
-function renderReportIntelligence(el){
-  // Wrapper para re-renderizar só o intelligence sem tocar no resto
-  const selProd = state._intProd;
-  if(!selProd) return;
-  const backBtn = `<button class="btn" onclick="state.activeReport=null;state._intProd=null;render()">← Back</button>`;
-  renderIntelligenceDetail(el, backBtn, "intelligence", selProd);
-}
 function renderReporting(){
   const activeReport = state.activeReport || null;
   const el = document.getElementById("section-reporting");
@@ -930,10 +903,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const pcc=(state.pcc||[]).filter(r=>r.product===productName);
   const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
   const risk=(state.risk||[]).filter(r=>r.product===productName);
-  // Usar sempre clients frescos — recarregar em background se necessário
   const clients=(state.clients||[]).filter(c=>c.product===productName);
-  // Se não há clients carregados, buscar agora
-  if(!state._clientsLoaded){state._clientsLoaded=true;getAll("product_clients").then(d=>{state.clients=d;render();}).catch(()=>{});}
   const activeSection=state._intSection||"pcc";
   const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
   const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||""; const fCtrmCov=state._intFCtrmCov||"";
@@ -1031,7 +1001,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   if(activeSection==="pcc"){
     const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
-    const fbPcc=clients.filter(c=>["pcc","products"].includes(c.source_table));
+    const fbPcc=clients.filter(c=>c.source_table==="pcc"||(c.source_table==="products"&&false));
     let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
     const filtersHtml=`<div class="filters" style="border-radius:8px;margin-bottom:10px">
       <select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>${coms.map(c=>`<option value="${c}" ${c===fPccCom?"selected":""}>${c}</option>`).join("")}</select>
@@ -1526,19 +1496,9 @@ async function saveClient(productName, clientId){
       if(!state.clients)state.clients=[];
       if(res[0])state.clients.push(res[0]);
     }
-    // 1. Fechar form PRIMEIRO para não corromper campos
     document.getElementById("client-form-panel")?.remove();
-    // 2. Recarregar clients frescos do Supabase
-    invalidateCache("product_clients");
-    try{state.clients=await getAll("product_clients");}catch(e){}
-    // 3. Actualizar lista no painel de detalhe se estiver aberto
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-    // 4. Re-renderizar o Intelligence se estiver aberto (sem chamar render() global)
-    if(activeTab==="reporting" && state.activeReport==="intelligence" && state._intProd===productName){
-      const el=document.getElementById("section-reporting");
-      if(el) renderReportIntelligence(el);
-    }
   }catch(e){alert("Error saving: "+e.message);}
 }
 
@@ -1547,11 +1507,8 @@ async function deleteClient(clientId, productName){
   try{
     await apiFetch("product_clients",{method:"DELETE",params:{id:"eq."+clientId}});
     state.clients=(state.clients||[]).filter(c=>c.id!==clientId);
-    invalidateCache("product_clients");
-    try{state.clients=await getAll("product_clients");}catch(e){}
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-    if(activeTab==="reporting"&&state.activeReport==="intelligence"){render();}
   }catch(e){alert("Error deleting: "+e.message);}
 }
 
@@ -1881,7 +1838,6 @@ async function init(){
     ]);
     state.vendors=v;state.products=p;state.contacts=ct_data;
     state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
-    state._clientsLoaded=true;
     state.ctrmLoading=true;
     render();
     const ctrm=await getAll("product_function_ctrm");
@@ -1927,7 +1883,7 @@ async function doLogin() {
   if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
   try {
     const data = await authFetch("/token?grant_type=password", {body: {email, password}});
-    safeStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, user: data.user}));
+    localStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, user: data.user}));
     onLogin(data.user);
   } catch(e) {
     errEl.textContent = e.message;
@@ -1966,7 +1922,7 @@ async function showForgotPassword() {
 function onLogin(user) {
   currentUser = user;
   const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-  safeStorage.setItem("pa_username", name);
+  localStorage.setItem("pa_username", name);
   document.getElementById("auth-screen").style.display = "none";
   document.querySelector("header").style.display = "flex";
   document.querySelector("main").style.display = "block";
@@ -1978,8 +1934,8 @@ function onLogin(user) {
 }
 
 function doLogout() {
-  safeStorage.removeItem("pa_session");
-  safeStorage.removeItem("pa_username");
+  localStorage.removeItem("pa_session");
+  localStorage.removeItem("pa_username");
   location.reload();
 }
 
@@ -1987,7 +1943,7 @@ async function checkAuth() {
   document.getElementById("auth-screen").style.display = "flex";
   // Check for existing session
   try {
-    const saved = safeStorage.getItem("pa_session");
+    const saved = localStorage.getItem("pa_session");
     if (saved) {
       const session = JSON.parse(saved);
       if (session?.user) {
