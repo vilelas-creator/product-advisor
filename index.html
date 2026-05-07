@@ -786,17 +786,17 @@ function renderReportHeatmap(el,backBtn,report){
 
     // One feedback row per client
     fbEntries.forEach(fb=>{
-      tbodyHtml+=`<tr class="hm-fb-${pid}" style="display:none;background:var(--bg3)">
-        <td style="position:sticky;left:0;z-index:1;background:var(--bg3);padding:4px 10px 4px 24px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);white-space:nowrap;font-size:11px;color:var(--muted)">
+      tbodyHtml+=`<tr class="hm-fb-${pid}" style="display:none;background:var(--bg)">
+        <td style="position:sticky;left:0;z-index:1;background:var(--bg);padding:3px 10px 3px 28px;border-bottom:1px solid var(--row-border);border-right:2px solid var(--accent);white-space:nowrap;font-size:11px;color:var(--accent);font-style:italic">
           💬 ${escH(fb.client)}
         </td>
         ${orderedComs.map(c=>{
           const cv=fb.comMap[c];
-          if(!cv) return`<td style="border-bottom:1px solid var(--row-border)"></td>`;
+          if(!cv) return`<td style="background:var(--bg);border-bottom:1px solid var(--row-border)"></td>`;
           const col=fbColor(cv);
           const letter=cv==="Covered"||cv==="Deployed"?"C":cv&&(cv.includes("Partial")||cv==="Capable")?"P":cv&&cv.includes("Not")?"✗":"?";
-          return`<td style="text-align:center;padding:3px;border-bottom:1px solid var(--row-border)">
-            <span title="${fb.client}: ${cv}" style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-size:9px;font-weight:700;line-height:22px">${letter}</span>
+          return`<td style="text-align:center;padding:3px;background:var(--bg);border-bottom:1px solid var(--row-border)">
+            <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${fb.client} feedback: ${cv}" style="display:inline-block;width:22px;height:22px;border-radius:4px;border:2px solid ${col};background:transparent;color:${col};font-size:9px;font-weight:700;line-height:18px;cursor:pointer">${letter}</span>
           </td>`;
         }).join("")}
       </tr>`;
@@ -819,6 +819,63 @@ function renderReportHeatmap(el,backBtn,report){
     </table></div></div></div>`;
   window._heatmapData={products,commodities:orderedComs,map,fbByProduct};
 }
+
+function navToPccFromHeatmap(product){
+  // Link to Product Intelligence report for this product
+  state.activeReport='intelligence';
+  state._intProd=product;
+  state._intSection='pcc';
+  state._intFPccCom='';state._intFPccCov='';
+  state._intFCtrmFn='';state._intFCtrmCom='';
+  state._intFRiskCat='';state._intFRiskFn='';
+  setTab('reporting');
+}
+
+function navToCtrmFromHeatmap(product, commodity){
+  // Link to CTRM coverage page filtered by product + commodity
+  Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
+  state.filters['ctrm_prod']=[product];
+  state.filters['ctrm_com']=[commodity];
+  state.pages={};
+  setTab('ctrm');
+}
+
+function exportHeatmapExcel(){
+  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
+  const{products,commodities,map,fbByProduct}=window._heatmapData||{};
+  if(!products||!commodities){alert("No data to export.");return;}
+  const wb=XLSX.utils.book_new();
+
+  // Sheet 1: Official coverage
+  const wsData=[["Product",...commodities]];
+  products.forEach(p=>{
+    wsData.push([p,...commodities.map(c=>{
+      const v=map[p+"||"+c];
+      return v||"";
+    })]);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(wsData);
+  ws1['!cols']=[{wch:30},...commodities.map(()=>({wch:18}))];
+  XLSX.utils.book_append_sheet(wb,ws1,"Official Coverage");
+
+  // Sheet 2: capSpire Feedback
+  const fbData=[["Product","Client",...commodities]];
+  products.forEach(p=>{
+    const fbs=fbByProduct[p]||[];
+    if(!fbs.length) return;
+    fbs.forEach(fb=>{
+      fbData.push([p,fb.client,...commodities.map(c=>fb.comMap[c]||"")]);
+    });
+  });
+  if(fbData.length>1){
+    const ws2=XLSX.utils.aoa_to_sheet(fbData);
+    ws2['!cols']=[{wch:30},{wch:20},...commodities.map(()=>({wch:18}))];
+    XLSX.utils.book_append_sheet(wb,ws2,"capSpire Feedback");
+  }
+
+  XLSX.writeFile(wb,"coverage_heatmap.xlsx");
+}
+
 
 function renderReportVendor(el,backBtn,report){
   const vendors=state.vendors||[]; const products=state.products||[]; const pcc=state.pcc||[]; const geo=state.geo||[]; const contacts=state.contacts||[];
