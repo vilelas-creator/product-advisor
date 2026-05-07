@@ -1827,6 +1827,9 @@ function collectCfBlocks(type){
 }
 
 async function saveClient(productName, clientId){
+  // Save current tab values before collecting
+  saveCfBlockValues();
+
   const clientName = document.getElementById("cf-client")?.value?.trim();
   if(!clientName){ alert("Client name is required."); return; }
   const region      = document.getElementById("cf-region")?.value?.trim()||null;
@@ -1838,28 +1841,28 @@ async function saveClient(productName, clientId){
   const isVendorCtx = sourceTable === 'vendor';
   const userName    = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
 
-  let commodities=null, functionName=null, category=null, coverageLevel=null;
-  let pccBlocks=null, ctrmBlocks=null, riskBlocks=null;
+  // Collect ALL tabs data regardless of which tab is active
+  const commodities = (window._cfSelectedComs||[]).filter(Boolean).join(", ") || null;
 
-  if(isVendorCtx){
-    // vendor: just core fields
-  } else if(sourceTable==='products'){
-    commodities = (window._cfSelectedComs||[]).join(", ");
-  } else if(sourceTable==='pcc'){
-    const blocks = collectCfBlocks('pcc');
-    pccBlocks = blocks.length ? JSON.stringify(blocks) : null;
-    if(blocks.length===1){ commodities=blocks[0].commodity; coverageLevel=blocks[0].coverage_level; }
-    else if(blocks.length>1){ commodities=blocks.map(b=>b.commodity).join(', '); }
-  } else if(sourceTable==='ctrm'){
-    const blocks = collectCfBlocks('ctrm');
-    ctrmBlocks = blocks.length ? JSON.stringify(blocks) : null;
-    if(blocks.length===1){ commodities=blocks[0].commodity; functionName=blocks[0].function_name; coverageLevel=blocks[0].coverage_level; }
-    else if(blocks.length>1){ functionName=blocks.map(b=>b.function_name).filter(Boolean).join(', '); }
-  } else if(sourceTable==='risk'){
-    const blocks = collectCfBlocks('risk');
-    riskBlocks = blocks.length ? JSON.stringify(blocks) : null;
-    if(blocks.length===1){ category=blocks[0].category; functionName=blocks[0].function_name; coverageLevel=blocks[0].coverage_level; }
-    else if(blocks.length>1){ category=blocks.map(b=>b.category).filter(Boolean).join(', '); functionName=blocks.map(b=>b.function_name).filter(Boolean).join(', '); }
+  // PCC blocks - from memory (saved by saveCfBlockValues)
+  let pccBlocks = null;
+  if(window._cfPccBlocks && window._cfPccBlocks.length){
+    const valid = window._cfPccBlocks.filter(b=>b.commodity);
+    if(valid.length) pccBlocks = JSON.stringify(valid);
+  }
+
+  // CTRM blocks - from memory
+  let ctrmBlocks = null;
+  if(window._cfCtrmBlocks && window._cfCtrmBlocks.length){
+    const valid = window._cfCtrmBlocks.filter(b=>b.commodity||b.function_name);
+    if(valid.length) ctrmBlocks = JSON.stringify(valid);
+  }
+
+  // Risk blocks - from memory
+  let riskBlocks = null;
+  if(window._cfRiskBlocks && window._cfRiskBlocks.length){
+    const valid = window._cfRiskBlocks.filter(b=>b.category||b.function_name);
+    if(valid.length) riskBlocks = JSON.stringify(valid);
   }
 
   const body = {
