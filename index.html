@@ -962,7 +962,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
 
   // ── Vendor feedback row ──
   // Also include product-level feedbacks (from Product tab) in header
-  const productLevelClients = clients.filter(c=>c.source_table==='products'||(!c.pcc_blocks&&!c.ctrm_blocks&&!c.risk_blocks&&c.product===productName));
+  const productLevelClients = clients.filter(c=>!c.pcc_blocks&&!c.ctrm_blocks&&!c.risk_blocks);
   const allHeaderFeedback = [...productLevelClients, ...vendorClients];
   function vendorFbHtml(){
     if(!allHeaderFeedback.length) return "";
@@ -1026,7 +1026,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   function fbToggleRow(rowId, fbs, type){
     if(!fbs.length) return {btn:"", rows:""};
     const uid = "fb-"+rowId;
-    const btn = "<button onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none'\" style='font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px'>💬 "+fbs.length+" FB</button>";
+    const btn = "<button onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.arr').textContent=d.style.display==='none'?'▼':'▲'\" style='font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px'>💬 "+fbs.length+" <span class='arr'>▼</span></button>";
     const rows = "<tr id='"+uid+"' style='display:none'><td colspan='10' style='padding:2px 12px 6px 12px;background:var(--bg3)'>"+renderFbRows(fbs,type)+"</td></tr>";
     return {btn, rows};
   }
@@ -1034,7 +1034,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   // ── Header ──
   const hdr=document.createElement("div");
   hdr.innerHTML=
-    "<button onclick=\"state._intProd=null;state._intSection=null;renderReporting()\" class=\"btn\" style=\"margin-bottom:12px;display:inline-flex;align-items:center;gap:5px\">&#8592; Back to Products</button>"
+    "<button onclick=\"state._intProd=null;state._intSection=null;state._intFPccCom='';state._intFPccCov='';state._intFCtrmFn='';state._intFCtrmCom='';state._intFCtrmCov='';state._intFRiskCat='';state._intFRiskFn='';renderReporting()\" class=\"btn\" style=\"margin-bottom:12px;display:inline-flex;align-items:center;gap:5px\">&#8592; Back to Products</button>"
     +"<div class=\"card\" style=\"margin-bottom:14px\">"
       +"<div style=\"padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px\">"
         +"<div style='flex:1'>"
