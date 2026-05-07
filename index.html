@@ -1516,6 +1516,7 @@ function getRiskFnsByCategory(cat){
 }
 
 function cfSetType(type){
+  saveCfBlockValues(); // Save current values before switching tab
   window._cfType = type;
   const productName = window._cfProductName;
   const existing = window._cfExisting;
@@ -1592,6 +1593,8 @@ function cfSetType(type){
     window._cfRiskAllCats = allCats;
     renderRiskBlocks(container);
   }
+  // Restore top-level fields after tab switch
+  setTimeout(restoreCfTopFields, 0);
 }
 
 function renderPccBlocks(container){
@@ -1693,15 +1696,85 @@ function cfRiskCatChanged(i){
   const fns = getRiskFnsByCategory(cat);
   fnEl.innerHTML = '<option value="">— Select —</option>' + fns.map(f=>'<option value="'+escAttr(f)+'">'+escH(f)+'</option>').join('');
   if(window._cfRiskBlocks && window._cfRiskBlocks[i]) window._cfRiskBlocks[i].category = cat;
+  if(window._cfRiskBlocks && window._cfRiskBlocks[i]) window._cfRiskBlocks[i].function_name = '';
+}
+
+
+function saveCfBlockValues(){
+  // Save current DOM values back to blocks arrays before re-rendering
+  const type = window._cfType;
+  if(type==='pcc' && window._cfPccBlocks){
+    window._cfPccBlocks.forEach((_,i)=>{
+      const com  = document.getElementById('cf-pcc-com-'+i);
+      const cov  = document.getElementById('cf-pcc-cov-'+i);
+      const note = document.getElementById('cf-pcc-notes-'+i);
+      if(com)  window._cfPccBlocks[i].commodity      = com.value;
+      if(cov)  window._cfPccBlocks[i].coverage_level = cov.value;
+      if(note) window._cfPccBlocks[i].notes          = note.value;
+    });
+  } else if(type==='ctrm' && window._cfCtrmBlocks){
+    window._cfCtrmBlocks.forEach((_,i)=>{
+      const com  = document.getElementById('cf-ctrm-com-'+i);
+      const fn   = document.getElementById('cf-ctrm-fn-'+i);
+      const cov  = document.getElementById('cf-ctrm-cov-'+i);
+      const note = document.getElementById('cf-ctrm-notes-'+i);
+      if(com)  window._cfCtrmBlocks[i].commodity      = com.value;
+      if(fn)   window._cfCtrmBlocks[i].function_name  = fn.value;
+      if(cov)  window._cfCtrmBlocks[i].coverage_level = cov.value;
+      if(note) window._cfCtrmBlocks[i].notes          = note.value;
+    });
+  } else if(type==='risk' && window._cfRiskBlocks){
+    window._cfRiskBlocks.forEach((_,i)=>{
+      const cat  = document.getElementById('cf-risk-cat-'+i);
+      const fn   = document.getElementById('cf-risk-fn-'+i);
+      const cov  = document.getElementById('cf-risk-cov-'+i);
+      const note = document.getElementById('cf-risk-notes-'+i);
+      if(cat)  window._cfRiskBlocks[i].category       = cat.value;
+      if(fn)   window._cfRiskBlocks[i].function_name  = fn.value;
+      if(cov)  window._cfRiskBlocks[i].coverage_level = cov.value;
+      if(note) window._cfRiskBlocks[i].notes          = note.value;
+    });
+  }
+  // Also save top-level fields
+  const client = document.getElementById('cf-client');
+  const region = document.getElementById('cf-region');
+  const year   = document.getElementById('cf-year');
+  const notes  = document.getElementById('cf-notes');
+  const proj   = document.getElementById('cf-project');
+  const sp     = document.getElementById('cf-sharepoint');
+  if(client) window._cfSavedClient  = client.value;
+  if(region) window._cfSavedRegion  = region.value;
+  if(year)   window._cfSavedYear    = year.value;
+  if(notes)  window._cfSavedNotes   = notes.value;
+  if(proj)   window._cfSavedProject = proj.value;
+  if(sp)     window._cfSavedSP      = sp.value;
+}
+
+function restoreCfTopFields(){
+  // Restore top-level fields after tab switch
+  const client = document.getElementById('cf-client');
+  const region = document.getElementById('cf-region');
+  const year   = document.getElementById('cf-year');
+  const notes  = document.getElementById('cf-notes');
+  const proj   = document.getElementById('cf-project');
+  const sp     = document.getElementById('cf-sharepoint');
+  if(client && window._cfSavedClient !== undefined) client.value = window._cfSavedClient;
+  if(region && window._cfSavedRegion !== undefined) region.value = window._cfSavedRegion;
+  if(year   && window._cfSavedYear   !== undefined) year.value   = window._cfSavedYear;
+  if(notes  && window._cfSavedNotes  !== undefined) notes.value  = window._cfSavedNotes;
+  if(proj   && window._cfSavedProject!== undefined) proj.value   = window._cfSavedProject;
+  if(sp     && window._cfSavedSP     !== undefined) sp.value     = window._cfSavedSP;
 }
 
 function addCfBlock(type){
+  saveCfBlockValues();
   if(type==='pcc'){ window._cfPccBlocks = window._cfPccBlocks||[]; window._cfPccBlocks.push({commodity:'',coverage_level:'',notes:''}); renderPccBlocks(document.getElementById('cf-dynamic-fields')); }
   else if(type==='ctrm'){ window._cfCtrmBlocks = window._cfCtrmBlocks||[]; window._cfCtrmBlocks.push({commodity:'',function_name:'',coverage_level:'',notes:''}); renderCtrmBlocks(document.getElementById('cf-dynamic-fields')); }
   else if(type==='risk'){ window._cfRiskBlocks = window._cfRiskBlocks||[]; window._cfRiskBlocks.push({category:'',function_name:'',coverage_level:'',notes:''}); renderRiskBlocks(document.getElementById('cf-dynamic-fields')); }
 }
 
 function removeCfBlock(type,idx){
+  saveCfBlockValues();
   if(type==='pcc'&&window._cfPccBlocks){ window._cfPccBlocks.splice(idx,1); renderPccBlocks(document.getElementById('cf-dynamic-fields')); }
   else if(type==='ctrm'&&window._cfCtrmBlocks){ window._cfCtrmBlocks.splice(idx,1); renderCtrmBlocks(document.getElementById('cf-dynamic-fields')); }
   else if(type==='risk'&&window._cfRiskBlocks){ window._cfRiskBlocks.splice(idx,1); renderRiskBlocks(document.getElementById('cf-dynamic-fields')); }
