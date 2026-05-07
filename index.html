@@ -904,7 +904,8 @@ function renderReportVendor(el,backBtn,report){
     const regionCols=Object.keys(vGeo[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
     const covRegions=regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE"));
     const vContacts=contacts.filter(c=>normName(c.vendor)===vn||normName(c.vendor).includes(vn.slice(0,12)));
-    return{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts};
+    const vFeedback=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(v.vendor_name||""));
+    return{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts,vFeedback};
   }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
   el.innerHTML=""; const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
   const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
@@ -930,14 +931,28 @@ function renderReportVendor(el,backBtn,report){
         <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}${!covTotal?`<div style="flex:1;background:var(--border)"></div>`:""}</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap"><span style="font-size:10px;color:var(--green)">● Covered: ${covCovered}</span><span style="font-size:10px;color:var(--yellow)">● Partial: ${covPartial}</span><span style="font-size:10px;color:var(--red)">● Not Covered: ${covNot}</span></div>
         <div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">Product × Commodity combinations</div></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
         <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--accent)">${vProds.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div></div>
         <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--green)">${coms.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Commodities</div></div>
         <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--purple)">${covRegions.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Regions</div></div>
+        <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--yellow)">${vFeedback.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Feedbacks</div></div>
       </div>
       ${coms.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Commodities</div><div style="display:flex;flex-wrap:wrap;gap:4px">${comsVisible} ${comsMore}</div>${comsHiddenHtml}</div>`:""}
       ${covRegions.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regions Present</div><div style="display:flex;flex-wrap:wrap;gap:4px">${regDisplay}</div></div>`:""}
       ${vContacts.length?`<div style="padding-top:4px;border-top:1px solid var(--border)"><a href="#" onclick="navToContactsByVendor('${escAttr(v.vendor_name)}');return false;" style="font-size:11px;color:var(--accent);text-decoration:none">👤 ${vContacts.length} contact${vContacts.length>1?"s":""} →</a></div>`:""}
+      ${vFeedback.length?`<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+        <div style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">capSpire Feedback (${vFeedback.length})</div>
+        ${vFeedback.slice(0,2).map(f=>`<div style="font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <strong style="color:var(--text)">${escH(f.client_name||"")}</strong>
+            ${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}
+            ${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}
+            ${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}
+          </div>
+          ${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}
+        </div>`).join("")}
+        ${vFeedback.length>2?`<div style="font-size:10px;color:var(--muted);text-align:right">+${vFeedback.length-2} more</div>`:""}
+      </div>`:""}
     </div>`;
     grid.appendChild(card);
   });
