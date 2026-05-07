@@ -168,7 +168,9 @@ async function apiFetch(table,opts={}){
   let url=SB_URL+"/rest/v1/"+table;
   const qp=new URLSearchParams(params);
   if([...qp].length)url+="?"+qp;
-  const res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+  const session=JSON.parse(localStorage.getItem("pa_session")||"{}");
+  const token=session?.access_token||SB_KEY;
+  const res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
   if(!res.ok)throw new Error(await res.text());
   const t=await res.text();return t?JSON.parse(t):[];
 }
