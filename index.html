@@ -1368,6 +1368,16 @@ function openClientForm(productName, clientId, ctx){
   window._cfProductName = productName;
   window._cfClientId = clientId;
   window._cfExisting = existing;
+  // Reset blocks for new form session
+  window._cfPccBlocks = null;
+  window._cfCtrmBlocks = null;
+  window._cfRiskBlocks = null;
+  window._cfSavedClient = undefined;
+  window._cfSavedRegion = undefined;
+  window._cfSavedYear = undefined;
+  window._cfSavedNotes = undefined;
+  window._cfSavedProject = undefined;
+  window._cfSavedSP = undefined;
   const isVendorCtx = (ctx?.source_table === 'vendor');
   const initType = isVendorCtx ? 'vendor' : (ctx?.source_table || existing?.source_table || 'products');
 
@@ -1554,26 +1564,24 @@ function cfSetType(type){
     const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
     const allComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
 
-    let existingBlocks = [];
-    try { existingBlocks = existing?.pcc_blocks ? JSON.parse(existing.pcc_blocks) : []; } catch(e){}
-
-    if(!existingBlocks.length){
-      if(ctx?.commodity){
-        // Coming from a specific PCC row - prefill that commodity + coverage
-        existingBlocks = [{commodity:ctx.commodity, coverage_level:ctx.coverage_level||'', notes:''}];
-      } else {
-        // Coming from Product tab - use commodities selected in Product tab
-        const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
-        if(productTabComs.length){
-          existingBlocks = productTabComs.map(c=>({commodity:c, coverage_level:'', notes:''}));
+    // If user already filled blocks in this session, keep them
+    if(!window._cfPccBlocks || window._cfPccBlocks.length === 0){
+      let existingBlocks = [];
+      try { existingBlocks = existing?.pcc_blocks ? JSON.parse(existing.pcc_blocks) : []; } catch(e){}
+      if(!existingBlocks.length){
+        if(ctx?.commodity){
+          existingBlocks = [{commodity:ctx.commodity, coverage_level:ctx.coverage_level||'', notes:''}];
         } else {
-          // No selection - show one empty block
-          existingBlocks = [{commodity:'', coverage_level:'', notes:''}];
+          const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
+          if(productTabComs.length){
+            existingBlocks = productTabComs.map(c=>({commodity:c, coverage_level:'', notes:''}));
+          } else {
+            existingBlocks = [{commodity:'', coverage_level:'', notes:''}];
+          }
         }
       }
+      window._cfPccBlocks = existingBlocks;
     }
-
-    window._cfPccBlocks = existingBlocks;
     window._cfPccAllComs = allComs;
     renderPccBlocks(container);
 
@@ -1584,25 +1592,24 @@ function cfSetType(type){
     const allFns = [...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.function_name).filter(Boolean))].sort();
     const allFnsGlobal = allFns.length ? allFns : [...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
 
-    let existingBlocks = [];
-    try { existingBlocks = existing?.ctrm_blocks ? JSON.parse(existing.ctrm_blocks) : []; } catch(e){}
-
-    if(!existingBlocks.length){
-      if(ctx?.commodity || ctx?.function_name){
-        // Coming from a specific CTRM row
-        existingBlocks = [{commodity:ctx.commodity||'', function_name:ctx.function_name||'', coverage_level:ctx.coverage_level||'', notes:''}];
-      } else {
-        // Coming from Product tab - use commodities selected in Product tab
-        const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
-        if(productTabComs.length){
-          existingBlocks = productTabComs.map(c=>({commodity:c, function_name:'', coverage_level:'', notes:''}));
+    // If user already filled blocks in this session, keep them
+    if(!window._cfCtrmBlocks || window._cfCtrmBlocks.length === 0){
+      let existingBlocks = [];
+      try { existingBlocks = existing?.ctrm_blocks ? JSON.parse(existing.ctrm_blocks) : []; } catch(e){}
+      if(!existingBlocks.length){
+        if(ctx?.commodity || ctx?.function_name){
+          existingBlocks = [{commodity:ctx.commodity||'', function_name:ctx.function_name||'', coverage_level:ctx.coverage_level||'', notes:''}];
         } else {
-          existingBlocks = [{commodity:'', function_name:'', coverage_level:'', notes:''}];
+          const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
+          if(productTabComs.length){
+            existingBlocks = productTabComs.map(c=>({commodity:c, function_name:'', coverage_level:'', notes:''}));
+          } else {
+            existingBlocks = [{commodity:'', function_name:'', coverage_level:'', notes:''}];
+          }
         }
       }
+      window._cfCtrmBlocks = existingBlocks;
     }
-
-    window._cfCtrmBlocks = existingBlocks;
     window._cfCtrmAllComs = allComs;
     window._cfCtrmAllFns = allFnsGlobal;
     renderCtrmBlocks(container);
@@ -1610,11 +1617,14 @@ function cfSetType(type){
   } else if(type==='risk'){
     // One block per entry with category + filtered function dropdowns
     const allCats = [...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-    let existingBlocks = [];
-    try { existingBlocks = existing?.risk_blocks ? JSON.parse(existing.risk_blocks) : []; } catch(e){}
-    if(!existingBlocks.length && (ctx?.category||ctx?.function_name)) existingBlocks = [{category:ctx.category||'', function_name:ctx.function_name||'', coverage_level:ctx.coverage_level||'', notes:''}];
-    if(!existingBlocks.length) existingBlocks = [{category:'', function_name:'', coverage_level:'', notes:''}];
-    window._cfRiskBlocks = existingBlocks;
+    // If user already filled blocks in this session, keep them
+    if(!window._cfRiskBlocks || window._cfRiskBlocks.length === 0){
+      let existingBlocks = [];
+      try { existingBlocks = existing?.risk_blocks ? JSON.parse(existing.risk_blocks) : []; } catch(e){}
+      if(!existingBlocks.length && (ctx?.category||ctx?.function_name)) existingBlocks = [{category:ctx.category||'', function_name:ctx.function_name||'', coverage_level:ctx.coverage_level||'', notes:''}];
+      if(!existingBlocks.length) existingBlocks = [{category:'', function_name:'', coverage_level:'', notes:''}];
+      window._cfRiskBlocks = existingBlocks;
+    }
     window._cfRiskAllCats = allCats;
     renderRiskBlocks(container);
   }
