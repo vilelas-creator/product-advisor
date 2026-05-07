@@ -961,9 +961,13 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
 
   // ── Vendor feedback row ──
+  // Also include product-level feedbacks (from Product tab) in header
+  const productLevelClients = clients.filter(c=>c.source_table==='products'||(!c.pcc_blocks&&!c.ctrm_blocks&&!c.risk_blocks&&c.product===productName));
+  const allHeaderFeedback = [...productLevelClients, ...vendorClients];
   function vendorFbHtml(){
-    if(!vendorClients.length) return "";
-    const rows = vendorClients.map(f=>
+    if(!allHeaderFeedback.length) return "";
+    const fbs = allHeaderFeedback;
+    const rows = fbs.map(f=>
       "<div style='background:var(--bg3);border-radius:6px;padding:8px 12px;margin:4px 0;font-size:11px'>"
       +"<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center'>"
       +"<strong style='color:var(--text)'>"+escH(f.client_name||"")+"</strong>"
@@ -976,11 +980,11 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       +"</div>"
     ).join("");
     // If more than 2, wrap in dropdown
-    if(vendorClients.length>2){
+    if(fbs.length>2){
       const uid="vfb-"+productName.replace(/[^a-z0-9]/gi,"_");
       return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
         +"<div onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('span.arr').textContent=d.style.display==='none'?'▾':'▴'\" style='cursor:pointer;font-size:11px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:6px'>"
-        +"💬 capSpire Vendor Feedback ("+vendorClients.length+") <span class='arr'>▾</span></div>"
+        +"💬 capSpire Feedback ("+fbs.length+") <span class='arr'>▾</span></div>"
         +"<div id='"+uid+"' style='display:none;margin-top:6px'>"+rows+"</div>"
         +"</div>";
     }
@@ -1069,7 +1073,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
     const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
     const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
-    const fbPcc=clients.filter(c=>c.source_table==="pcc"||c.source_table==="products");
+    const fbPcc=clients.filter(c=>c.pcc_blocks||(c.commodities&&c.source_table==="products"));
     let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
 
     let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
@@ -1115,7 +1119,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
     const fns=[...new Set(ctrm.map(r=>r.function_name).filter(Boolean))].sort();
     const coms=[...new Set(ctrm.map(r=>r.commodity).filter(Boolean))].sort();
     const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||""; const fCtrmCov=state._intFCtrmCov||"";
-    const fbCtrm=clients.filter(c=>c.source_table==="ctrm");
+    const fbCtrm=clients.filter(c=>c.ctrm_blocks);
     let rows=ctrm.filter(r=>(!fCtrmFn||r.function_name===fCtrmFn)&&(!fCtrmCom||r.commodity===fCtrmCom));
 
     let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
@@ -1163,7 +1167,7 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
     const cats=[...new Set(risk.map(r=>r.category).filter(Boolean))].sort();
     const fns=[...new Set(risk.map(r=>r.function_name).filter(Boolean))].sort();
     const fRiskCat=state._intFRiskCat||""; const fRiskFn=state._intFRiskFn||"";
-    const fbRisk=clients.filter(c=>c.source_table==="risk");
+    const fbRisk=clients.filter(c=>c.risk_blocks);
     let rows=risk.filter(r=>(!fRiskCat||r.category===fRiskCat)&&(!fRiskFn||r.function_name===fRiskFn));
 
     let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
