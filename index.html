@@ -844,62 +844,41 @@ function exportHeatmapExcel(){
   const{products,commodities,map,fbByProduct}=window._heatmapData||{};
   if(!products||!commodities){alert("No data to export.");return;}
 
-  const covColor=v=>v==="Covered"?"#22c55e":v&&v.includes("Partial")?"#f59e0b":v==="Not Covered"?"#ef4444":null;
+  const covBg=v=>v==="Covered"?"#16a34a":v&&v.includes("Partial")?"#d97706":v==="Not Covered"?"#dc2626":"#ffffff";
   const covLetter=v=>v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
-  const fbColor=v=>v==="Covered"||v==="Deployed"?"#22c55e":v&&(v.includes("Partial")||v==="Capable")?"#f59e0b":v&&v.includes("Not")?"#ef4444":null;
+  const fbBg=v=>v==="Covered"||v==="Deployed"?"#16a34a":v&&(v.includes("Partial")||v==="Capable")?"#d97706":v&&v.includes("Not")?"#dc2626":"#f1f5f9";
   const fbLetter=v=>v==="Covered"||v==="Deployed"?"C":v&&(v.includes("Partial")||v==="Capable")?"P":v&&v.includes("Not")?"✗":"?";
 
-  function cell(text, bg, color, bold, italic, border){
-    let style="padding:4px 6px;font-size:11px;white-space:nowrap;";
-    if(bg) style+="background:"+bg+";";
-    if(color) style+="color:"+color+";";
-    if(bold) style+="font-weight:bold;";
-    if(italic) style+="font-style:italic;";
-    if(border) style+="border-left:3px solid #3b82f6;";
-    return "<td style='"+style+"'>"+text+"</td>";
+  function td(text,bg,color,bold,italic,leftBorder){
+    let s="padding:4px 8px;font-size:11px;white-space:nowrap;background:"+(bg||"#ffffff")+";color:"+(color||"#000000")+";";
+    if(bold) s+="font-weight:bold;";
+    if(italic) s+="font-style:italic;";
+    if(leftBorder) s+="border-left:3px solid #2563eb;";
+    return "<td style='"+s+"'>"+text+"</td>";
   }
 
   let html="<html><head><meta charset='utf-8'></head><body>";
   html+="<table border='1' cellspacing='0' cellpadding='0' style='border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px'>";
+  html+="<tr>"+td("PRODUCT","#e2e8f0","#000000",true)+commodities.map(c=>td(c,"#e2e8f0","#000000",true)).join("")+"</tr>";
 
-  // Header row
-  html+="<tr>";
-  html+=cell("PRODUCT","#1e293b","#94a3b8",true,false,false);
-  commodities.forEach(c=>{
-    html+=cell(c,"#1e293b","#94a3b8",true,false,false);
-  });
-  html+="</tr>";
-
-  // Data rows
   products.forEach(p=>{
-    // Official row
-    html+="<tr>";
-    html+=cell(p,"#1e2840","#60a5fa",true,false,false);
+    html+="<tr>"+td(p,"#ffffff","#1d4ed8",true);
     commodities.forEach(c=>{
       const v=map[p+"||"+c];
-      const bg=covColor(v)||"#0f172a";
-      const ltr=covLetter(v);
-      html+=cell(ltr,bg,v?"#ffffff":"#334155",true,false,false);
+      html+=td(v?covLetter(v):"","#ffffff"===covBg(v)?covBg(v):covBg(v),v?"#ffffff":"#94a3b8",!!v);
     });
     html+="</tr>";
-
-    // Feedback rows
-    const fbs=fbByProduct[p]||[];
-    fbs.forEach(fb=>{
-      html+="<tr>";
-      html+=cell("  💬 "+fb.client,"#0f172a","#60a5fa",false,true,true);
+    (fbByProduct[p]||[]).forEach(fb=>{
+      html+="<tr>"+td("    💬 "+fb.client,"#eff6ff","#1d4ed8",false,true,true);
       commodities.forEach(c=>{
         const cv=fb.comMap[c];
-        if(!cv){ html+=cell("","#0f172a","",false,false,false); return; }
-        const bg=fbColor(cv)||"#1e293b";
-        html+=cell(fbLetter(cv),bg,"#ffffff",true,false,false);
+        html+=cv?td(fbLetter(cv),fbBg(cv),"#ffffff",true):td("","#ffffff","");
       });
       html+="</tr>";
     });
   });
 
   html+="</table></body></html>";
-
   const blob=new Blob([html],{type:"application/vnd.ms-excel;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -1050,7 +1029,7 @@ function renderReportIntelligence(el, backBtn, report){
   const hdr=document.createElement("div");
   hdr.innerHTML=`${backBtn}<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${prods.length} products</span></div>
     <div class="filters" style="margin-bottom:16px;border-radius:8px">
-      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;renderReporting()" placeholder="Search product..." style="width:180px">
+      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;clearTimeout(window._intQTimer);window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var el=document.getElementById('int-q');if(el){var v=el.value;el.focus();el.value='';el.value=v;}},0);},300)" placeholder="Search product..." style="width:180px">
       <select onchange="state._intFVendor=this.value;renderReporting()" style="font-size:12px"><option value="">All Vendors</option>${vendors.map(v=>`<option value="${v}" ${v===fVendor?"selected":""}>${v}</option>`).join("")}</select>
       <select onchange="state._intFType=this.value;renderReporting()" style="font-size:12px"><option value="">All Types</option>${types.map(t=>`<option value="${t}" ${t===fType?"selected":""}>${t}</option>`).join("")}</select>
       <button class="btn btn-reset" onclick="state._intFVendor='';state._intFType='';state._intFQ='';renderReporting()">↺ Reset</button>
@@ -1101,8 +1080,8 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
 
   // ── Vendor feedback row ──
   // Also include product-level feedbacks (from Product tab) in header
-  const productLevelClients = clients.filter(c=>!c.pcc_blocks&&!c.ctrm_blocks&&!c.risk_blocks);
-  const allHeaderFeedback = [...productLevelClients, ...vendorClients];
+  // Header shows ALL product feedback as a summary (client info only, not blocks)
+  const allHeaderFeedback = [...clients, ...vendorClients];
   function vendorFbHtml(){
     if(!allHeaderFeedback.length) return "";
     const fbs = allHeaderFeedback;
