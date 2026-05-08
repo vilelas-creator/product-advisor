@@ -940,19 +940,31 @@ function renderReportVendor(el,backBtn,report){
       ${coms.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Commodities</div><div style="display:flex;flex-wrap:wrap;gap:4px">${comsVisible} ${comsMore}</div>${comsHiddenHtml}</div>`:""}
       ${covRegions.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regions Present</div><div style="display:flex;flex-wrap:wrap;gap:4px">${regDisplay}</div></div>`:""}
       ${vContacts.length?`<div style="padding-top:4px;border-top:1px solid var(--border)"><a href="#" onclick="navToContactsByVendor('${escAttr(v.vendor_name)}');return false;" style="font-size:11px;color:var(--accent);text-decoration:none">👤 ${vContacts.length} contact${vContacts.length>1?"s":""} →</a></div>`:""}
-      ${vFeedback.length?`<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
-        <div style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">capSpire Feedback (${vFeedback.length})</div>
-        ${vFeedback.slice(0,2).map(f=>`<div style="font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px">
+      ${(()=>{
+        if(!vFeedback.length) return "";
+        const vid2="vfb2-"+v.vendor_name.replace(/[^a-z0-9]/gi,"_");
+        const fbRows=vFeedback.map(f=>`<div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <strong style="color:var(--text)">${escH(f.client_name||"")}</strong>
             ${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}
             ${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}
             ${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}
+            ${f.created_by?`<span style="color:var(--muted);font-size:10px">👤 ${escH(f.created_by)}</span>`:""}
           </div>
           ${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}
-        </div>`).join("")}
-        ${vFeedback.length>2?`<div style="font-size:10px;color:var(--muted);text-align:right">+${vFeedback.length-2} more</div>`:""}
-      </div>`:""}
+        </div>`).join("");
+        const collapsed=vFeedback.length>2;
+        return `<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px">capSpire Feedback (${vFeedback.length})</span>
+            ${collapsed?`<button onclick="const d=document.getElementById('${vid2}');d.style.display=d.style.display==='none'?'block':'none';this.textContent=this.textContent==='▼ Show all'?'▲ Hide':'▼ Show all'" style="font-size:10px;background:none;border:none;color:var(--accent);cursor:pointer;padding:0">▼ Show all</button>`:""}
+          </div>
+          ${collapsed
+            ? `<div>${vFeedback.slice(0,2).map(f=>`<div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="color:var(--text)">${escH(f.client_name||"")}</strong>${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}</div>${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}</div>`).join("")}</div>
+               <div id="${vid2}" style="display:none">${vFeedback.slice(2).map(f=>`<div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="color:var(--text)">${escH(f.client_name||"")}</strong>${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}</div>${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}</div>`).join("")}</div>`
+            : fbRows}
+        </div>`;
+      })()}
     </div>`;
     grid.appendChild(card);
   });
@@ -1095,8 +1107,8 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
 
   // ── Vendor feedback row ──
   // Also include product-level feedbacks (from Product tab) in header
-  // Header shows ALL product feedback as a summary (client info only, not blocks)
-  const allHeaderFeedback = [...clients, ...vendorClients];
+  // Header shows only product-level feedback (not vendor-level)
+  const allHeaderFeedback = [...clients];
   function vendorFbHtml(){
     if(!allHeaderFeedback.length) return "";
     const fbs = allHeaderFeedback;
