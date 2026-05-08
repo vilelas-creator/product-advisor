@@ -163,12 +163,51 @@ function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!is
 let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
 let modalSaveFn=null;
 
+
+async function getAuthToken(){
+  const session=JSON.parse(localStorage.getItem("pa_session")||"{}");
+  return session?.access_token||SB_KEY;
+}
+
+async function refreshSession(){
+  try{
+    const session=JSON.parse(localStorage.getItem("pa_session")||"{}");
+    const refreshToken=session?.refresh_token;
+    if(!refreshToken) return null;
+    const res=await fetch(AUTH_URL+"/token?grant_type=refresh_token",{
+      method:"POST",
+      headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({refresh_token:refreshToken})
+    });
+    if(!res.ok) return null;
+    const data=await res.json();
+    if(data.access_token){
+      const newSession={access_token:data.access_token,refresh_token:data.refresh_token||refreshToken,user:data.user||session.user};
+      localStorage.setItem("pa_session",JSON.stringify(newSession));
+      return data.access_token;
+    }
+  }catch(e){}
+  return null;
+}
+
 async function apiFetch(table,opts={}){
   const{method="GET",body,params={}}=opts;
   let url=SB_URL+"/rest/v1/"+table;
   const qp=new URLSearchParams(params);
   if([...qp].length)url+="?"+qp;
-  const res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+  let token=await getAuthToken();
+  let res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+  if(res.status===401){
+    const newToken=await refreshSession();
+    if(newToken){
+      token=newToken;
+      res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+    } else {
+      localStorage.removeItem("pa_session");
+      location.reload();
+      return [];
+    }
+  }
   if(!res.ok)throw new Error(await res.text());
   const t=await res.text();return t?JSON.parse(t):[];
 }
@@ -871,6 +910,19 @@ function navToProductsByVendorCom(vendor){
 }
 
 
+
+function intSearch(val){
+  state._intFQ=val;
+  clearTimeout(window._intQTimer);
+  window._intQTimer=setTimeout(function(){
+    renderReporting();
+    setTimeout(function(){
+      var el=document.getElementById('int-q');
+      if(el) el.focus();
+    },0);
+  },300);
+}
+
 function renderReportIntelligence(el, backBtn, report){
   const selProd = state._intProd || null;
   if(selProd) { renderIntelligenceDetail(el, backBtn, report, selProd); return; }
@@ -892,7 +944,7 @@ function renderReportIntelligence(el, backBtn, report){
   const hdr=document.createElement("div");
   hdr.innerHTML=`${backBtn}<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${prods.length} products</span></div>
     <div class="filters" style="margin-bottom:16px;border-radius:8px">
-      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;renderReporting()" placeholder="Search product..." style="width:180px">
+      <input id="int-q" value="${fQ}" oninput="intSearch(this.value)" placeholder="Search product..." style="width:180px">
       <select onchange="state._intFVendor=this.value;renderReporting()" style="font-size:12px"><option value="">All Vendors</option>${vendors.map(v=>`<option value="${v}" ${v===fVendor?"selected":""}>${v}</option>`).join("")}</select>
       <select onchange="state._intFType=this.value;renderReporting()" style="font-size:12px"><option value="">All Types</option>${types.map(t=>`<option value="${t}" ${t===fType?"selected":""}>${t}</option>`).join("")}</select>
       <button class="btn btn-reset" onclick="state._intFVendor='';state._intFType='';state._intFQ='';renderReporting()">↺ Reset</button>
@@ -930,54 +982,110 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
   const risk=(state.risk||[]).filter(r=>r.product===productName);
   const clients=(state.clients||[]).filter(c=>c.product===productName);
+  const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
   const activeSection=state._intSection||"pcc";
-  const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
-  const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||""; const fCtrmCov=state._intFCtrmCov||"";
-  const fRiskCat=state._intFRiskCat||""; const fRiskFn=state._intFRiskFn||""; const fRiskCov=state._intFRiskCov||"";
+  const isCtrmOnly=ctrm.length>0&&risk.length===0;
+  const isRiskOnly=risk.length>0&&ctrm.length===0;
   const covPct=pcc.length?Math.round(pcc.filter(r=>r.coverage_level==="Covered").length/pcc.length*100):null;
+  const covColor=lv=>lv==="Covered"||lv==="Deployed"?"var(--green)":lv&&(lv.includes("Partial")||lv==="Capable")?"var(--yellow)":"var(--red)";
+
+  // ── Helper: render feedback rows for a client ──────────────────
+  function renderFbRows(fbs, type, matchFn){
+    if(!fbs.length) return "";
+    return fbs.map(f=>{
+      let blocks=[];
+      try{ if(type==='pcc'&&f.pcc_blocks) blocks=JSON.parse(f.pcc_blocks); }catch(e){}
+      try{ if(type==='ctrm'&&f.ctrm_blocks) blocks=JSON.parse(f.ctrm_blocks); }catch(e){}
+      try{ if(type==='risk'&&f.risk_blocks) blocks=JSON.parse(f.risk_blocks); }catch(e){}
+      if(matchFn&&blocks.length) blocks=blocks.filter(matchFn);
+      const blockHtml=blocks.length?blocks.map(b=>
+        '<span style="font-size:10px;padding:1px 6px;background:var(--bg2);border-radius:3px;margin:1px">'
+        +(b.commodity||b.category?'<span style="color:var(--accent)">'+escH(b.commodity||b.category||"")+'</span> ':'')
+        +(b.function_name?'<em>'+escH(b.function_name)+'</em> ':'')
+        +(b.coverage_level?'<span style="color:'+covColor(b.coverage_level)+'">● '+escH(b.coverage_level)+'</span>':'')
+        +(b.notes?'<span style="color:var(--muted);font-style:italic"> '+escH(b.notes)+'</span>':'')
+        +'</span>'
+      ).join(""):(f.coverage_level?'<span style="color:'+covColor(f.coverage_level)+'">● '+escH(f.coverage_level)+'</span> ':'')+
+        (f.notes?'<span style="color:var(--muted);font-style:italic">'+escH(f.notes)+'</span>':'');
+      return '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:5px 10px;margin:2px 0 2px 16px;border-radius:0 4px 4px 0;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+        +'<strong>'+escH(f.client_name||"")+'</strong>'
+        +(f.region?'<span style="color:var(--muted)">📍'+escH(f.region)+'</span>':'')
+        +(f.since_year?'<span style="color:var(--muted)">📅'+f.since_year+'</span>':'')
+        +blockHtml+'</div>';
+    }).join("");
+  }
+
+  // ── Helper: toggle button + hidden rows ───────────────────────
+  function fbToggleRow(rowId, fbs, type, matchFn){
+    if(!fbs.length) return {btn:"", rows:""};
+    const uid="fb-"+rowId;
+    const btn='<button onclick="const d=document.getElementById(\''+uid+'\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.arr\').textContent=d.style.display===\'none\'?\'▼\':\'▲\'" style="font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px">💬 '+fbs.length+' <span class="arr">▼</span></button>';
+    const rows='<tr id="'+uid+'" style="display:none"><td colspan="10" style="padding:2px 12px 6px 12px;background:var(--bg3)">'+renderFbRows(fbs,type,matchFn)+'</td></tr>';
+    return {btn, rows};
+  }
+
+  // ── Header: vendor feedback dropdown ──────────────────────────
+  function vendorFbHtml(){
+    // Show only product-level feedbacks (not vendor-level) in header
+    const allHeaderFeedback=[...clients];
+    if(!allHeaderFeedback.length) return "";
+    const fbs=allHeaderFeedback;
+    const rows=fbs.map(f=>
+      "<div style='background:var(--bg3);border-radius:6px;padding:8px 12px;margin:4px 0;font-size:11px'>"
+      +"<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center'>"
+      +"<strong style='color:var(--text)'>"+escH(f.client_name||"")+"</strong>"
+      +(f.project_name?"<span style='color:var(--muted)'>📁 "+escH(f.project_name)+"</span>":"")
+      +(f.region?"<span style='color:var(--muted)'>📍 "+escH(f.region)+"</span>":"")
+      +(f.since_year?"<span style='color:var(--muted)'>📅 "+f.since_year+"</span>":"")
+      +(f.created_by?"<span style='color:var(--muted)'>👤 "+escH(f.created_by)+"</span>":"")
+      +"</div>"
+      +(f.notes?"<div style='color:var(--muted);margin-top:3px;font-style:italic'>"+escH(f.notes)+"</div>":"")
+      +"</div>"
+    ).join("");
+    const collapsed=fbs.length>2;
+    const uid="hfb-"+productName.replace(/[^a-z0-9]/gi,"_");
+    if(collapsed){
+      return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
+        +"<div onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.arr').textContent=d.style.display==='none'?'▾':'▴'\" style='cursor:pointer;font-size:11px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:6px'>"
+        +"capSpire Feedback ("+fbs.length+") <span class='arr'>▾</span></div>"
+        +"<div id='"+uid+"' style='display:none;margin-top:6px'>"+rows+"</div>"
+        +"</div>";
+    }
+    return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
+      +"<div style='font-size:11px;color:var(--accent);font-weight:600;margin-bottom:5px'>capSpire Feedback ("+fbs.length+")</div>"
+      +rows+"</div>";
+  }
 
   el.innerHTML="";
   const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
 
-  function fbCard(f){
-    const covColor=f.coverage_level==="Covered"||f.coverage_level==="Deployed"?"var(--green)":f.coverage_level&&(f.coverage_level.includes("Partial")||f.coverage_level==="Capable")?"var(--yellow)":"var(--red)";
-    return "<div style='background:var(--bg2);border-left:3px solid var(--accent);padding:8px 12px;margin:4px 0;font-size:11px;border-radius:0 6px 6px 0'>"
-      +"<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:3px'>"
-      +"<span style='font-weight:700;color:var(--text)'>"+(f.client_name||"")+"</span>"
-      +(f.coverage_level?"<span style='font-weight:600;color:"+covColor+"'>\u25cf "+f.coverage_level+"</span>":"")
-      +(f.region?"<span style='color:var(--muted)'>\ud83d\udccd "+f.region+"</span>":"")
-      +(f.since_year?"<span style='color:var(--muted)'>\ud83d\udcc5 "+f.since_year+"</span>":"")
-      +(f.created_by?"<span style='color:var(--muted)'>\ud83d\udc64 "+f.created_by+"</span>":"")
-      +"</div>"
-      +(f.notes?"<div style='color:var(--muted);font-style:italic'>"+f.notes+"</div>":"")
-      +"</div>";
-  }
-
-  // Product header
+  // ── Header card ───────────────────────────────────────────────
   const hdr=document.createElement("div");
-  hdr.innerHTML=`
-    <button onclick="state._intProd=null;state._intSection=null;renderReporting()" class="btn" style="margin-bottom:12px;display:inline-flex;align-items:center;gap:5px">&#8592; Back to Products</button>
-    <div class="card" style="margin-bottom:14px">
-      <div style="padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="font-size:17px;font-weight:700;color:var(--text)">
-            <a href="#" onclick="navToTab('products','p_q','${escAttr(productName)}');return false;" style="color:var(--accent)">${productName}</a>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-top:3px">${prod.vendor||""} ${prod.product_type?"&#183; "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):""}</div>
-          ${prod.deployment_model?`<div style="font-size:11px;color:var(--muted);margin-top:4px">Deployment: ${prod.deployment_model}</div>`:""}
-          ${prod.version_info?`<div style="font-size:11px;color:var(--yellow);margin-top:2px">Version: ${prod.version_info}</div>`:""}
-        </div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap">
-          ${covPct!==null?`<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Coverage</div></div>`:""}
-          <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${clients.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Feedbacks</div></div>
-        </div>
-      </div>
-    </div>`;
+  hdr.innerHTML=
+    '<button onclick="state._intProd=null;state._intSection=null;state._intFPccCom=\'\';state._intFPccCov=\'\';state._intFCtrmFn=\'\';state._intFCtrmCom=\'\';state._intFRiskCat=\'\';state._intFRiskFn=\'\';renderReporting()" class="btn" style="margin-bottom:12px;display:inline-flex;align-items:center;gap:5px">&#8592; Back to Products</button>'
+    +'<div class="card" style="margin-bottom:14px">'
+      +'<div style="padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">'
+        +'<div style="flex:1">'
+          +'<div style="font-size:17px;font-weight:700;color:var(--text)">'
+            +'<a href="#" onclick="navToTab(\'products\',\'p_q\',\''+escAttr(productName)+'\');return false;" style="color:var(--accent)">'+escH(productName)+'</a>'
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escH(prod.vendor||"")+(prod.product_type?' &nbsp;·&nbsp; '+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):"")+'</div>'
+          +(prod.deployment_model?'<div style="font-size:11px;color:var(--muted);margin-top:4px">Deployment: '+escH(prod.deployment_model)+'</div>':"")
+          +(prod.version_info?'<div style="font-size:11px;color:var(--yellow);margin-top:2px">Version: '+escH(prod.version_info)+'</div>':"")
+          +vendorFbHtml()
+        +'</div>'
+        +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">'
+          +(covPct!==null?'<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:'+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+'">'+covPct+'%</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Coverage</div></div>':"")
+          +'<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">'+clients.length+'</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Feedbacks</div></div>'
+          +'<button class="btn btn-success" style="font-size:11px;padding:5px 12px" onclick="exportProductIntelligenceExcel(\''+escAttr(productName)+'\')">&#8595; Export</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
   wrap.appendChild(hdr);
 
-  // Section tabs
+  // ── Section tabs ──────────────────────────────────────────────
   const tabsDiv=document.createElement("div"); tabsDiv.style.cssText="display:flex;gap:4px;margin-bottom:14px";
-  [["pcc","\ud83c\udf3e Commodity"],["ctrm","\u26a1 CTRM"],["risk","\ud83d\udee1 Risk"]].forEach(([id,label])=>{
+  [["pcc","🌾 Commodity"],["ctrm","⚡ CTRM"],["risk","🛡 Risk"]].forEach(([id,label])=>{
     const btn=document.createElement("button");
     btn.className="tab"+(activeSection===id?" active":"");
     btn.textContent=label;
@@ -986,126 +1094,186 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   });
   wrap.appendChild(tabsDiv);
 
-  const content=document.createElement("div");
+  const contentDiv=document.createElement("div");
 
-  function officialTable(cols, rows, filtersHtml){
-    if(rows.length===0&&!filtersHtml) return "<div style='padding:20px;color:var(--muted);font-size:13px;text-align:center'>No official data for this product.</div>";
-    return filtersHtml
-      +"<div style='overflow-x:auto;margin-bottom:16px'><table style='width:100%;border-collapse:collapse;font-size:12px'>"
-      +"<thead><tr>"+cols.map(c=>"<th style='padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left'>"+c+"</th>").join("")+"</tr></thead>"
-      +"<tbody>"+rows+"</tbody></table></div>";
-  }
-
-  function feedbackTable(fb){
-    if(fb.length===0) return "<div style='padding:16px;color:var(--muted);font-size:12px'>No feedback for this section yet.</div>";
-    return "<div style='overflow-x:auto'><table style='width:100%;border-collapse:collapse;font-size:12px'>"
-      +"<thead><tr>"
-      +"<th style='padding:6px 10px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left'>Client</th>"
-      +"<th style='padding:6px 10px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left'>Coverage</th>"
-      +"<th style='padding:6px 10px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left'>Region</th>"
-      +"<th style='padding:6px 10px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left'>Year</th>"
-      +"<th style='padding:6px 10px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;text-align:left'>Notes</th>"
-      +"</tr></thead><tbody>"
-      +fb.map(f=>{
-        const covColor=f.coverage_level==="Covered"||f.coverage_level==="Deployed"?"var(--green)":f.coverage_level&&(f.coverage_level.includes("Partial")||f.coverage_level==="Capable")?"var(--yellow)":"var(--red)";
-        return "<tr style='border-bottom:1px solid var(--row-border)'>"
-          +"<td style='padding:7px 10px;font-weight:600;color:var(--text)'>"+(f.client_name||"")+"</td>"
-          +"<td style='padding:7px 10px'>"+(f.coverage_level?"<span style='font-weight:600;color:"+covColor+"'>"+f.coverage_level+"</span>":"<span style='color:var(--muted)'>—</span>")+"</td>"
-          +"<td style='padding:7px 10px;color:var(--muted)'>"+(f.region||"—")+"</td>"
-          +"<td style='padding:7px 10px;color:var(--muted)'>"+(f.since_year||"—")+"</td>"
-          +"<td style='padding:7px 10px;color:var(--muted);font-style:italic;max-width:200px'>"+(f.notes||"—")+"</td>"
-          +"</tr>";
-      }).join("")
-      +"</tbody></table></div>";
-  }
-
-  function sectionDivider(count){
-    return "<div style='margin:16px 0;border-top:1px solid var(--border);padding-top:12px'>"
-      +"<div style='font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px'>capSpire Feedback ("+count+")</div>";
-  }
-
+  // ── PCC SECTION ───────────────────────────────────────────────
   if(activeSection==="pcc"){
     const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
-    const fbPcc=clients.filter(c=>c.source_table==="pcc"||(c.source_table==="products"&&false));
+    const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
+    const fbPcc=clients.filter(c=>c.pcc_blocks||(c.commodities&&c.source_table==="products"));
     let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
-    const filtersHtml=`<div class="filters" style="border-radius:8px;margin-bottom:10px">
-      <select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>${coms.map(c=>`<option value="${c}" ${c===fPccCom?"selected":""}>${c}</option>`).join("")}</select>
-      <select onchange="state._intFPccCov=this.value;renderReporting()" style="font-size:12px"><option value="">All Coverage</option>${covs.map(c=>`<option value="${c}" ${c===fPccCov?"selected":""}>${c}</option>`).join("")}</select>
-      <button class="btn btn-reset" onclick="state._intFPccCom=\'\';state._intFPccCov=\'\';renderReporting()">&#8635; Reset</button>
-      <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows</span>
-    </div>`;
-    const rowsHtml=rows.map(r=>{
-      const covColor=r.coverage_level==="Covered"?"var(--green)":r.coverage_level?.includes("Partial")?"var(--yellow)":"var(--red)";
-      return "<tr style='border-bottom:1px solid var(--row-border)'>"
-        +"<td style='padding:8px 12px;font-weight:600'>"+(r.commodity||"")+"</td>"
-        +"<td style='padding:8px 12px'><span style='color:"+covColor+";font-weight:600'>"+(r.coverage_level||"")+"</span></td>"
-        +"</tr>";
-    }).join("");
-    content.innerHTML=officialTable(["Commodity","Official Coverage"],rowsHtml,filtersHtml)
-      +sectionDivider(fbPcc.length)+feedbackTable(fbPcc)+"</div>";
+    let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
+      +'<select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>'+coms.map(c=>'<option value="'+escAttr(c)+'" '+(c===fPccCom?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
+      +'<select onchange="state._intFPccCov=this.value;renderReporting()" style="font-size:12px"><option value="">All Coverage</option>'+covs.map(c=>'<option value="'+escAttr(c)+'" '+(c===fPccCov?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
+      +'<button class="btn btn-reset" onclick="state._intFPccCom=\'\';state._intFPccCov=\'\';renderReporting()">&#8635; Reset</button>'
+      +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
+      +'</div>';
+    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+      +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">COMMODITY</th>'
+      +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
+      +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
+      +'</tr></thead><tbody>';
+    rows.forEach(r=>{
+      const fbs=fbPcc.filter(c=>{
+        let blocks=[];
+        try{if(c.pcc_blocks)blocks=JSON.parse(c.pcc_blocks);}catch(e){}
+        if(blocks.length) return blocks.some(b=>b.commodity===r.commodity);
+        return (c.commodities||"").split(",").map(s=>s.trim()).includes(r.commodity);
+      });
+      const matchFn=b=>b.commodity===r.commodity;
+      const {btn,rows:fbRows}=fbToggleRow("pcc-"+r.id, fbs, "pcc", matchFn);
+      const cColor=covColor(r.coverage_level);
+      html+='<tr style="border-bottom:1px solid var(--row-border)">'
+        +'<td style="padding:8px 12px;font-weight:600">'+escH(r.commodity)+'</td>'
+        +'<td style="padding:8px 12px"><span style="color:'+cColor+';font-weight:600">'+escH(r.coverage_level||"–")+'</span></td>'
+        +'<td style="padding:8px 12px">'+btn+'</td>'
+        +'</tr>'+fbRows;
+    });
+    if(!rows.length&&fbPcc.length){
+      html+='<tr><td colspan="3" style="padding:12px;color:var(--muted);font-size:12px">No official data matching filters. capSpire feedback:</td></tr>';
+      html+='<tr><td colspan="3" style="padding:8px 12px">'+renderFbRows(fbPcc,"pcc")+'</td></tr>';
+    }
+    html+='</tbody></table></div>';
+    contentDiv.innerHTML=html;
 
+  // ── CTRM SECTION ──────────────────────────────────────────────
   } else if(activeSection==="ctrm"){
     const fns=[...new Set(ctrm.map(r=>r.function_name).filter(Boolean))].sort();
     const coms=[...new Set(ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-    const covs=["Deployed","Capable","Not Capable","N/A"];
-    const fbCtrm=clients.filter(c=>c.source_table==="ctrm");
-    let rows=ctrm.filter(r=>{
-      if(fCtrmFn&&r.function_name!==fCtrmFn) return false;
-      if(fCtrmCom&&r.commodity!==fCtrmCom) return false;
-      if(fCtrmCov&&COV_LABEL[getCode(r.coverage_level)]!==fCtrmCov) return false;
-      return true;
-    });
-    const filtersHtml=`<div class="filters" style="border-radius:8px;margin-bottom:10px">
-      <select onchange="state._intFCtrmFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>${fns.map(f=>`<option value="${f}" ${f===fCtrmFn?"selected":""}>${f}</option>`).join("")}</select>
-      <select onchange="state._intFCtrmCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>${coms.map(c=>`<option value="${c}" ${c===fCtrmCom?"selected":""}>${c}</option>`).join("")}</select>
-      <select onchange="state._intFCtrmCov=this.value;renderReporting()" style="font-size:12px"><option value="">All Coverage</option>${covs.map(c=>`<option value="${c}" ${c===fCtrmCov?"selected":""}>${c}</option>`).join("")}</select>
-      <button class="btn btn-reset" onclick="state._intFCtrmFn=\'\';state._intFCtrmCom=\'\';state._intFCtrmCov=\'\';renderReporting()">&#8635; Reset</button>
-      <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows</span>
-    </div>`;
-    const rowsHtml=rows.map(r=>{
-      const code=getCode(r.coverage_level);
-      return "<tr style='border-bottom:1px solid var(--row-border)'>"
-        +"<td style='padding:8px 12px;font-weight:600'>"+(r.function_name||"")+"</td>"
-        +"<td style='padding:8px 12px'>"+bdg(r.commodity,"var(--accent)")+"</td>"
-        +"<td style='padding:8px 12px'>"+bdg(COV_LABEL[code],COV_COLOR[code])+"</td>"
-        +"</tr>";
-    }).join("");
-    content.innerHTML=officialTable(["Function","Commodity","Official Coverage"],rowsHtml,filtersHtml)
-      +sectionDivider(fbCtrm.length)+feedbackTable(fbCtrm)+"</div>";
+    const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||"";
+    const fbCtrm=clients.filter(c=>c.ctrm_blocks);
+    let rows=ctrm.filter(r=>(!fCtrmFn||r.function_name===fCtrmFn)&&(!fCtrmCom||r.commodity===fCtrmCom));
+    let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
+      +'<select onchange="state._intFCtrmFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>'+fns.map(f=>'<option value="'+escAttr(f)+'" '+(f===fCtrmFn?"selected":"")+'>'+escH(f)+'</option>').join('')+'</select>'
+      +'<select onchange="state._intFCtrmCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>'+coms.map(c=>'<option value="'+escAttr(c)+'" '+(c===fCtrmCom?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
+      +'<button class="btn btn-reset" onclick="state._intFCtrmFn=\'\';state._intFCtrmCom=\'\';renderReporting()">&#8635; Reset</button>'
+      +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
+      +'</div>';
+    if(isRiskOnly&&!fbCtrm.length){
+      html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official CTRM data. No capSpire feedback yet.</div>';
+    } else if(isRiskOnly&&fbCtrm.length){
+      html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official CTRM data. Showing capSpire feedback only.</div>';
+      html+=renderFbRows(fbCtrm,"ctrm");
+    } else {
+      html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">FUNCTION</th>'
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">COMMODITY</th>'
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
+        +'<th></th></tr></thead><tbody>';
+      rows.forEach(r=>{
+        const code=getCode(r.coverage_level);
+        const fbs=fbCtrm.filter(c=>{
+          let blocks=[];
+          try{if(c.ctrm_blocks)blocks=JSON.parse(c.ctrm_blocks);}catch(e){}
+          if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity));
+          return c.function_name===r.function_name;
+        });
+        const matchFnCtrm=b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity);
+        const {btn,rows:fbRows}=fbToggleRow("ctrm-"+r.id, fbs, "ctrm", matchFnCtrm);
+        html+='<tr style="border-bottom:1px solid var(--row-border)">'
+          +'<td style="padding:8px 12px;font-weight:600">'+escH(r.function_name)+'</td>'
+          +'<td style="padding:8px 12px">'+bdg(r.commodity,"var(--accent)")+'</td>'
+          +'<td style="padding:8px 12px">'+bdg(COV_LABEL[code],COV_COLOR[code])+'</td>'
+          +'<td style="padding:8px 12px">'+btn+'</td>'
+          +'</tr>'+fbRows;
+      });
+      html+='</tbody></table></div>';
+    }
+    contentDiv.innerHTML=html;
 
+  // ── RISK SECTION ──────────────────────────────────────────────
   } else if(activeSection==="risk"){
     const cats=[...new Set(risk.map(r=>r.category).filter(Boolean))].sort();
     const fns=[...new Set(risk.map(r=>r.function_name).filter(Boolean))].sort();
-    const covs=["Deployed","Capable","Not Capable","N/A"];
-    const fbRisk=clients.filter(c=>c.source_table==="risk");
-    let rows=risk.filter(r=>{
-      if(fRiskCat&&r.category!==fRiskCat) return false;
-      if(fRiskFn&&r.function_name!==fRiskFn) return false;
-      if(fRiskCov&&COV_LABEL[getCode(r.coverage_level)]!==fRiskCov) return false;
-      return true;
-    });
-    const filtersHtml=`<div class="filters" style="border-radius:8px;margin-bottom:10px">
-      <select onchange="state._intFRiskCat=this.value;renderReporting()" style="font-size:12px"><option value="">All Categories</option>${cats.map(c=>`<option value="${c}" ${c===fRiskCat?"selected":""}>${c}</option>`).join("")}</select>
-      <select onchange="state._intFRiskFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>${fns.map(f=>`<option value="${f}" ${f===fRiskFn?"selected":""}>${f}</option>`).join("")}</select>
-      <select onchange="state._intFRiskCov=this.value;renderReporting()" style="font-size:12px"><option value="">All Coverage</option>${covs.map(c=>`<option value="${c}" ${c===fRiskCov?"selected":""}>${c}</option>`).join("")}</select>
-      <button class="btn btn-reset" onclick="state._intFRiskCat=\'\';state._intFRiskFn=\'\';state._intFRiskCov=\'\';renderReporting()">&#8635; Reset</button>
-      <span style="font-size:11px;color:var(--muted);margin-left:auto">${rows.length} rows</span>
-    </div>`;
-    const rowsHtml=rows.map(r=>{
-      const code=getCode(r.coverage_level);
-      return "<tr style='border-bottom:1px solid var(--row-border)'>"
-        +"<td style='padding:8px 12px'>"+bdg(r.category,"var(--purple)")+"</td>"
-        +"<td style='padding:8px 12px;font-weight:600'>"+(r.function_name||"")+"</td>"
-        +"<td style='padding:8px 12px'>"+bdg(COV_LABEL[code],COV_COLOR[code])+"</td>"
-        +"</tr>";
-    }).join("");
-    content.innerHTML=officialTable(["Category","Function","Official Coverage"],rowsHtml,filtersHtml)
-      +sectionDivider(fbRisk.length)+feedbackTable(fbRisk)+"</div>";
+    const fRiskCat=state._intFRiskCat||""; const fRiskFn=state._intFRiskFn||"";
+    const fbRisk=clients.filter(c=>c.risk_blocks);
+    let rows=risk.filter(r=>(!fRiskCat||r.category===fRiskCat)&&(!fRiskFn||r.function_name===fRiskFn));
+    let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
+      +'<select onchange="state._intFRiskCat=this.value;renderReporting()" style="font-size:12px"><option value="">All Categories</option>'+cats.map(c=>'<option value="'+escAttr(c)+'" '+(c===fRiskCat?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
+      +'<select onchange="state._intFRiskFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>'+fns.map(f=>'<option value="'+escAttr(f)+'" '+(f===fRiskFn?"selected":"")+'>'+escH(f)+'</option>').join('')+'</select>'
+      +'<button class="btn btn-reset" onclick="state._intFRiskCat=\'\';state._intFRiskFn=\'\';renderReporting()">&#8635; Reset</button>'
+      +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
+      +'</div>';
+    if(isCtrmOnly&&!fbRisk.length){
+      html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official Risk data. No capSpire feedback yet.</div>';
+    } else if(isCtrmOnly&&fbRisk.length){
+      html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official Risk data. Showing capSpire feedback only.</div>';
+      html+=renderFbRows(fbRisk,"risk");
+    } else {
+      html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">CATEGORY</th>'
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">FUNCTION</th>'
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
+        +'<th></th></tr></thead><tbody>';
+      rows.forEach(r=>{
+        const code=getCode(r.coverage_level);
+        const fbs=fbRisk.filter(c=>{
+          let blocks=[];
+          try{if(c.risk_blocks)blocks=JSON.parse(c.risk_blocks);}catch(e){}
+          if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.category||b.category===r.category));
+          return c.function_name===r.function_name;
+        });
+        const matchFnRisk=b=>b.function_name===r.function_name&&(!b.category||b.category===r.category);
+        const {btn,rows:fbRows}=fbToggleRow("risk-"+r.id, fbs, "risk", matchFnRisk);
+        html+='<tr style="border-bottom:1px solid var(--row-border)">'
+          +'<td style="padding:8px 12px">'+bdg(r.category,"var(--purple)")+'</td>'
+          +'<td style="padding:8px 12px;font-weight:600">'+escH(r.function_name)+'</td>'
+          +'<td style="padding:8px 12px">'+bdg(COV_LABEL[code],COV_COLOR[code])+'</td>'
+          +'<td style="padding:8px 12px">'+btn+'</td>'
+          +'</tr>'+fbRows;
+      });
+      html+='</tbody></table></div>';
+    }
+    contentDiv.innerHTML=html;
   }
 
-  wrap.appendChild(content);
+  wrap.appendChild(contentDiv);
   el.appendChild(wrap);
+}
+
+
+
+function exportProductIntelligenceExcel(productName){
+  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
+  const prod=(state.products||[]).find(p=>p.product_name===productName)||{};
+  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
+  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
+  const risk=(state.risk||[]).filter(r=>r.product===productName);
+  const clients=(state.clients||[]).filter(c=>c.product===productName);
+  const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Field","Value"],["Product",productName],["Vendor",prod.vendor||""],["Type",prod.product_type||""],["Deployment",prod.deployment_model||""],["Version",prod.version_info||""]]),"Product Info");
+  if(vendorClients.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Client","Project","Region","Since Year","Notes","Created By"],...vendorClients.map(c=>[c.client_name,c.project_name||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])]),"Vendor Feedback");
+  if(pcc.length){
+    const rows=[["Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
+    pcc.forEach(r=>{
+      const fbs=clients.filter(c=>{let b=[];try{if(c.pcc_blocks)b=JSON.parse(c.pcc_blocks);}catch(e){}return b.some(x=>x.commodity===r.commodity)||(c.commodities||"").includes(r.commodity);});
+      if(!fbs.length) rows.push([r.commodity,r.coverage_level,"","",""]);
+      else fbs.forEach(f=>{let b=[];try{if(f.pcc_blocks)b=JSON.parse(f.pcc_blocks);}catch(e){}const x=b.find(x=>x.commodity===r.commodity)||{};rows.push([r.commodity,r.coverage_level,f.client_name,x.coverage_level||f.coverage_level||"",x.notes||f.notes||""]);});
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Commodity Coverage");
+  }
+  if(ctrm.length){
+    const rows=[["Function","Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
+    ctrm.forEach(r=>{
+      const fbs=clients.filter(c=>{let b=[];try{if(c.ctrm_blocks)b=JSON.parse(c.ctrm_blocks);}catch(e){}return b.some(x=>x.function_name===r.function_name&&(!x.commodity||x.commodity===r.commodity));});
+      if(!fbs.length) rows.push([r.function_name,r.commodity||"",r.coverage_level,"","",""]);
+      else fbs.forEach(f=>{let b=[];try{if(f.ctrm_blocks)b=JSON.parse(f.ctrm_blocks);}catch(e){}const x=b.find(x=>x.function_name===r.function_name)||{};rows.push([r.function_name,r.commodity||"",r.coverage_level,f.client_name,x.coverage_level||f.coverage_level||"",x.notes||f.notes||""]);});
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"CTRM Coverage");
+  }
+  if(risk.length){
+    const rows=[["Category","Function","Official Coverage","FB Client","FB Coverage","FB Notes"]];
+    risk.forEach(r=>{
+      const fbs=clients.filter(c=>{let b=[];try{if(c.risk_blocks)b=JSON.parse(c.risk_blocks);}catch(e){}return b.some(x=>x.function_name===r.function_name&&(!x.category||x.category===r.category));});
+      if(!fbs.length) rows.push([r.category||"",r.function_name,r.coverage_level,"","",""]);
+      else fbs.forEach(f=>{let b=[];try{if(f.risk_blocks)b=JSON.parse(f.risk_blocks);}catch(e){}const x=b.find(x=>x.function_name===r.function_name)||{};rows.push([r.category||"",r.function_name,r.coverage_level,f.client_name,x.coverage_level||f.coverage_level||"",x.notes||f.notes||""]);});
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Risk Coverage");
+  }
+  if(clients.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Client","Project","Type","Commodity/Category","Function","Coverage","Region","Since Year","Notes","Created By"],...clients.map(c=>[c.client_name,c.project_name||"",c.source_table||"",c.commodities||c.category||"",c.function_name||"",c.coverage_level||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])]),"All Feedback");
+  XLSX.writeFile(wb,"product_"+productName.replace(/[^a-z0-9]/gi,"_")+".xlsx");
 }
 
 function toggleIntRow(id){
