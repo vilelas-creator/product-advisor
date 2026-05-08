@@ -71,7 +71,7 @@ a:hover{text-decoration:underline;}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-<div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
+<div id="auth-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-size:32px;margin-bottom:8px">📊</div>
@@ -163,7 +163,6 @@ function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!is
 let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
 let modalSaveFn=null;
 
-
 async function getAuthToken(){
   const session=JSON.parse(localStorage.getItem("pa_session")||"{}");
   return session?.access_token||SB_KEY;
@@ -197,12 +196,14 @@ async function apiFetch(table,opts={}){
   if([...qp].length)url+="?"+qp;
   let token=await getAuthToken();
   let res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
+  // If 401, try to refresh token and retry once
   if(res.status===401){
     const newToken=await refreshSession();
     if(newToken){
       token=newToken;
       res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
     } else {
+      // Session expired, force re-login
       localStorage.removeItem("pa_session");
       location.reload();
       return [];
@@ -480,8 +481,8 @@ function renderVendors(){
   document.getElementById("section-vendors").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td>${commentCell("vendors",v)}<td><button class="btn" onclick="openVendorModal(${v.id})">Edit</button></td></tr>`).join("")}
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn btn-primary\" style=\"font-size:11px;padding:3px 8px;margin-right:4px\" onclick=\"openProductDetail('${escAttr(v.vendor_name)}',{source_table:'vendor',vendor_name:'${escAttr(v.vendor_name)}'})\">capSpire Feedback</button><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
@@ -517,7 +518,7 @@ function renderCommodities(){
   document.getElementById("section-commodities").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
     <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th>capSpire Comments</th><th></th></tr></thead><tbody>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th></th></tr></thead><tbody>
     ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td>${commentCell("commodities",c)}<td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
 }
@@ -719,6 +720,11 @@ function renderReporting(){
   else if(activeReport==="intelligence") renderReportIntelligence(el,backBtn,report);
 }
 
+
+// ── HELPER FUNCTIONS FOR REPORTS ──
+function normName(s){ return (s||"").toLowerCase().trim().replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim(); }
+function findExact(arr,field,val){ const r=(arr||[]).find(r=>(r[field]||"")===val); return r?.[field]||val; }
+
 function renderReportHeatmap(el,backBtn,report){
   const pcc=state.pcc||[];
   const products=[...new Set(pcc.map(r=>r.product))].filter(Boolean).sort();
@@ -728,64 +734,161 @@ function renderReportHeatmap(el,backBtn,report){
   const orderedComs=[]; const usedNorm=new Set();
   COL_ORDER.forEach(col=>{const match=allComs.find(c=>normCom(c)===normCom(col));if(match&&!usedNorm.has(normCom(match))){orderedComs.push(match);usedNorm.add(normCom(match));}});
   allComs.sort().forEach(c=>{if(!usedNorm.has(normCom(c))){orderedComs.push(c);usedNorm.add(normCom(c));}});
-  const map={}; pcc.forEach(r=>{map[r.product+"||"+r.commodity]=r.coverage_level;});
+
+  // Official coverage map: product||commodity -> coverage_level
+  const map={};
+  pcc.forEach(r=>{map[r.product+"||"+r.commodity]=r.coverage_level;});
+
+  // capSpire feedback map: product -> [ {client, comMap:{commodity->coverage}} ]
+  // Each entry = one feedback record with its commodity coverages
+  const fbByProduct={};
+  (state.clients||[]).forEach(c=>{
+    if(!c.product) return;
+    const comMap={};
+    // From pcc_blocks
+    try{ if(c.pcc_blocks) JSON.parse(c.pcc_blocks).forEach(b=>{ if(b.commodity) comMap[b.commodity]=b.coverage_level||""; }); }catch(e){}
+    // From commodities field (product tab - no coverage per commodity)
+    if(!Object.keys(comMap).length && c.commodities){
+      c.commodities.split(",").map(s=>s.trim()).filter(Boolean).forEach(com=>{
+        comMap[com]=c.coverage_level||"";
+      });
+    }
+    if(!Object.keys(comMap).length) return;
+    if(!fbByProduct[c.product]) fbByProduct[c.product]=[];
+    fbByProduct[c.product].push({client:c.client_name||"?", comMap});
+  });
+
   const covColor=v=>v==="Covered"?"#22c55e":v&&v.includes("Partial")?"#f59e0b":v==="Not Covered"?"#ef4444":"transparent";
   const covLetter=v=>v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
-  el.innerHTML=`<div style="padding:16px">${backBtn}<div class="card"><div class="card-head"><span class="card-title">${report.icon} ${report.title}</span><span style="font-size:11px;color:var(--muted);margin-left:8px">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered</span><button onclick="exportHeatmapExcel()" class="btn btn-success" style="margin-left:auto;font-size:11px;padding:4px 10px">⬇ Excel</button></div>
-    <div style="overflow:auto;max-height:74vh"><table style="font-size:11px;border-collapse:collapse;min-width:100%"><thead><tr>
+  const fbColor=v=>v==="Covered"||v==="Deployed"?"#22c55e":v&&(v.includes("Partial")||v==="Capable")?"#f59e0b":v&&v.includes("Not")?"#ef4444":"#475569";
+
+  // Build table rows
+  let tbodyHtml="";
+  products.forEach(p=>{
+    const fbEntries=fbByProduct[p]||[];
+    const hasFb=fbEntries.length>0;
+    const pid="hm-"+p.replace(/[^a-z0-9]/gi,"_");
+
+    // Official row
+    tbodyHtml+=`<tr>
+      <td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis">
+        <a href="#" onclick="navToPccFromHeatmap('${escAttr(p)}');return false;" style="font-weight:600;color:var(--accent);text-decoration:none">${p}</a>
+        ${hasFb?`<button onclick="const rows=document.querySelectorAll('.hm-fb-${pid}');rows.forEach(r=>r.style.display=r.style.display==='none'?'table-row':'none');this.textContent=this.textContent.trim()==='▼'?'▲':'▼'" style="margin-left:6px;background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:0">▼</button>`:""}
+      </td>
+      ${orderedComs.map(c=>{
+        const v=map[p+"||"+c];
+        const col=covColor(v);
+        return`<td style="text-align:center;padding:3px;border-bottom:1px solid var(--row-border)">
+          <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${p} · ${c}: ${v||'–'}" style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${v?"1":".18"};cursor:${v?"pointer":"default"}">${covLetter(v)}</span>
+        </td>`;
+      }).join("")}
+    </tr>`;
+
+    // One feedback row per client
+    fbEntries.forEach(fb=>{
+      tbodyHtml+=`<tr class="hm-fb-${pid}" style="display:none;background:var(--bg)">
+        <td style="position:sticky;left:0;z-index:1;background:var(--bg);padding:3px 10px 3px 28px;border-bottom:1px solid var(--row-border);border-right:2px solid var(--accent);white-space:nowrap;font-size:11px;color:var(--accent);font-style:italic">
+          💬 ${escH(fb.client)}
+        </td>
+        ${orderedComs.map(c=>{
+          const cv=fb.comMap[c];
+          if(!cv) return`<td style="background:var(--bg);border-bottom:1px solid var(--row-border)"></td>`;
+          const col=fbColor(cv);
+          const letter=cv==="Covered"||cv==="Deployed"?"C":cv&&(cv.includes("Partial")||cv==="Capable")?"P":cv&&cv.includes("Not")?"✗":"?";
+          return`<td style="text-align:center;padding:3px;background:var(--bg);border-bottom:1px solid var(--row-border)">
+            <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${fb.client} feedback: ${cv}" style="display:inline-block;width:22px;height:22px;border-radius:4px;border:2px solid ${col};background:transparent;color:${col};font-size:9px;font-weight:700;line-height:18px;cursor:pointer">${letter}</span>
+          </td>`;
+        }).join("")}
+      </tr>`;
+    });
+  });
+
+  el.innerHTML=`<div style="padding:16px">${backBtn}<div class="card">
+    <div class="card-head">
+      <span class="card-title">${report.icon} ${report.title}</span>
+      <span style="font-size:10px;color:var(--muted);margin-left:8px">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered &nbsp;· &nbsp;▼ = capSpire feedback</span>
+      <button onclick="exportHeatmapExcel()" class="btn btn-success" style="margin-left:auto;font-size:11px;padding:4px 10px">⬇ Excel</button>
+    </div>
+    <div style="overflow:auto;max-height:74vh">
+    <table style="font-size:11px;border-collapse:collapse;min-width:100%">
+    <thead><tr>
       <th style="position:sticky;left:0;z-index:3;background:var(--bg3);padding:6px 10px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:190px">PRODUCT</th>
       ${orderedComs.map(c=>`<th style="padding:4px 5px;font-size:9px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;background:var(--bg3)" title="${c}">${c}</th>`).join("")}
-    </tr></thead><tbody>
-    ${products.map(p=>`<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${p}"><a href="#" onclick="navToPccFromHeatmap('${escAttr(p)}');return false;" style="font-weight:600;color:var(--accent);text-decoration:none">${p}</a></td>
-      ${orderedComs.map(c=>{const v=map[p+"||"+c];const col=covColor(v);return`<td style="text-align:center;padding:3px;border-bottom:1px solid var(--row-border)"><span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${p} · ${c}: ${v||'–'}" style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${v?"1":".18"};cursor:${v?"pointer":"default"}">${covLetter(v)}</span></td>`;}).join("")}
-    </tr>`).join("")}
-    </tbody></table></div></div></div>`;
-  window._heatmapData={products,commodities:orderedComs,map};
+    </tr></thead>
+    <tbody>${tbodyHtml}</tbody>
+    </table></div></div></div>`;
+  window._heatmapData={products,commodities:orderedComs,map,fbByProduct};
 }
 
 function navToPccFromHeatmap(product){
-  const exact=findExact(state.pcc,'product',product);
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
-  state.filters['pcc_prod']=[exact||product]; state.filters['com_view']='coverage'; state.pages={}; setTab('commodities');
+  // Link to Product Intelligence report for this product
+  state.activeReport='intelligence';
+  state._intProd=product;
+  state._intSection='pcc';
+  state._intFPccCom='';state._intFPccCov='';
+  state._intFCtrmFn='';state._intFCtrmCom='';
+  state._intFRiskCat='';state._intFRiskFn='';
+  setTab('reporting');
 }
-function navToCtrmFromHeatmap(product,commodity){
-  const exactProd=findExact(state.ctrm,'product',product);
-  const exactCom=findExact(state.ctrm,'commodity',commodity);
+
+function navToCtrmFromHeatmap(product, commodity){
+  // Link to CTRM coverage page filtered by product + commodity
   Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
-  state.filters['ctrm_prod']=[exactProd||product]; state.filters['ctrm_com']=[exactCom||commodity]; state.pages={}; setTab('ctrm');
+  state.filters['ctrm_prod']=[product];
+  state.filters['ctrm_com']=[commodity];
+  state.pages={};
+  setTab('ctrm');
 }
+
 function exportHeatmapExcel(){
-  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
-  const{products,commodities,map}=window._heatmapData||{};if(!products)return;
-  const wb=XLSX.utils.book_new(); const wsData=[["Product",...commodities]];
-  products.forEach(p=>wsData.push([p,...commodities.map(c=>{const v=map[p+"||"+c];return v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";})]));
-  const ws=XLSX.utils.aoa_to_sheet(wsData); ws['!cols']=[{wch:30},...commodities.map(()=>({wch:10}))];
-  XLSX.utils.book_append_sheet(wb,ws,"Coverage Heatmap"); XLSX.writeFile(wb,"coverage_heatmap.xlsx");
+  const{products,commodities,map,fbByProduct}=window._heatmapData||{};
+  if(!products||!commodities){alert("No data to export.");return;}
+
+  const covBg=v=>v==="Covered"?"#16a34a":v&&v.includes("Partial")?"#d97706":v==="Not Covered"?"#dc2626":"#ffffff";
+  const covLetter=v=>v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
+  const fbBg=v=>v==="Covered"||v==="Deployed"?"#16a34a":v&&(v.includes("Partial")||v==="Capable")?"#d97706":v&&v.includes("Not")?"#dc2626":"#f1f5f9";
+  const fbLetter=v=>v==="Covered"||v==="Deployed"?"C":v&&(v.includes("Partial")||v==="Capable")?"P":v&&v.includes("Not")?"✗":"?";
+
+  function td(text,bg,color,bold,italic,leftBorder){
+    let s="padding:4px 8px;font-size:11px;white-space:nowrap;background:"+(bg||"#ffffff")+";color:"+(color||"#000000")+";";
+    if(bold) s+="font-weight:bold;";
+    if(italic) s+="font-style:italic;";
+    if(leftBorder) s+="border-left:3px solid #2563eb;";
+    return "<td style='"+s+"'>"+text+"</td>";
+  }
+
+  let html="<html><head><meta charset='utf-8'></head><body>";
+  html+="<table border='1' cellspacing='0' cellpadding='0' style='border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px'>";
+  html+="<tr>"+td("PRODUCT","#e2e8f0","#000000",true)+commodities.map(c=>td(c,"#e2e8f0","#000000",true)).join("")+"</tr>";
+
+  products.forEach(p=>{
+    html+="<tr>"+td(p,"#ffffff","#1d4ed8",true);
+    commodities.forEach(c=>{
+      const v=map[p+"||"+c];
+      html+=td(v?covLetter(v):"","#ffffff"===covBg(v)?covBg(v):covBg(v),v?"#ffffff":"#94a3b8",!!v);
+    });
+    html+="</tr>";
+    (fbByProduct[p]||[]).forEach(fb=>{
+      html+="<tr>"+td("    💬 "+fb.client,"#eff6ff","#1d4ed8",false,true,true);
+      commodities.forEach(c=>{
+        const cv=fb.comMap[c];
+        html+=cv?td(fbLetter(cv),fbBg(cv),"#ffffff",true):td("","#ffffff","");
+      });
+      html+="</tr>";
+    });
+  });
+
+  html+="</table></body></html>";
+  const blob=new Blob([html],{type:"application/vnd.ms-excel;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="coverage_heatmap.xls"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-
-function vLandSearch(val){
-  state._vLandQ = val;
-  clearTimeout(window._vLandTimer);
-  window._vLandTimer = setTimeout(function(){
-    renderReporting();
-    setTimeout(function(){
-      var el = document.getElementById('vland-q');
-      if(el){ el.focus(); }
-    }, 0);
-  }, 300);
-}
-
-
-// ── Helper functions for reports ────────────────────────────────
-function normName(s){ return (s||"").toLowerCase().trim().replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim(); }
-function findExact(arr,field,val){ const r=(arr||[]).find(r=>(r[field]||"")===val); return r?.[field]||val; }
 
 function renderReportVendor(el,backBtn,report){
   const vendors=state.vendors||[]; const products=state.products||[]; const pcc=state.pcc||[]; const geo=state.geo||[]; const contacts=state.contacts||[];
-  const fVQ  =state._vLandQ||"";
-  const fVend=state._vLandV||[];
-  const fCom =state._vLandC||[];
   const data=vendors.map(v=>{
     const vn=normName(v.vendor_name);
     const vProds=products.filter(p=>normName(p.vendor)===vn||normName(p.vendor).includes(vn.slice(0,12))||vn.includes(normName(p.vendor).slice(0,12)));
@@ -801,32 +904,16 @@ function renderReportVendor(el,backBtn,report){
     const regionCols=Object.keys(vGeo[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
     const covRegions=regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE"));
     const vContacts=contacts.filter(c=>normName(c.vendor)===vn||normName(c.vendor).includes(vn.slice(0,12)));
-    return{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts};
+    const vFeedback=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(v.vendor_name||""));
+    return{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts,vFeedback};
   }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
-  let filtered=data;
-  if(fVQ) filtered=filtered.filter(d=>normName(d.v.vendor_name).includes(normName(fVQ)));
-  if(fVend&&fVend.length) filtered=filtered.filter(d=>fVend.includes(d.v.vendor_name));
-  if(fCom&&fCom.length) filtered=filtered.filter(d=>d.coms.some(c=>fCom.includes(c)));
   el.innerHTML=""; const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
-  const allVendorNames = data.map(d=>d.v.vendor_name).sort();
-  const allComs = [...new Set(data.flatMap(d=>d.coms))].sort();
-  const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap";
-  hdr.innerHTML=`${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${filtered.length} vendors</span>`;
+  const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
+  hdr.innerHTML=`${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} vendors</span>`;
   wrap.appendChild(hdr);
-  const filtersDiv=document.createElement("div");
-  filtersDiv.className="filters";
-  filtersDiv.style.cssText="margin-bottom:16px";
-  filtersDiv.innerHTML=
-    '<input id="vland-q" type="text" placeholder="Search vendors..." value="'+escAttr(fVQ)+'" '
-    +'oninput="vLandSearch(this.value)" '
-    +'style="padding:5px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;min-width:180px">'
-    +createMultiSelect("vland-v", allVendorNames, fVend, "All Vendors", "_vLandV")
-    +createMultiSelect("vland-c", allComs, fCom, "All Commodities", "_vLandC")
-    +'<button class="btn btn-reset" onclick="state._vLandQ=\'\';state._vLandV=[];state._vLandC=[];renderReporting()">&#8635; Reset</button>';
-  wrap.appendChild(filtersDiv);
   const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px";
-  filtered.forEach(d=>{
-    const{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts}=d;
+  data.forEach(d=>{
+    const{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts,vFeedback}=d;
     const card=document.createElement("div"); card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
     card.onmouseover=()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)"; card.onmouseout=()=>card.style.boxShadow="";
     const barCov=covTotal?Math.round(covCovered/covTotal*100):0; const barPartial=covTotal?Math.round(covPartial/covTotal*100):0; const barNot=covTotal?100-barCov-barPartial:0;
@@ -844,14 +931,28 @@ function renderReportVendor(el,backBtn,report){
         <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}${!covTotal?`<div style="flex:1;background:var(--border)"></div>`:""}</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap"><span style="font-size:10px;color:var(--green)">● Covered: ${covCovered}</span><span style="font-size:10px;color:var(--yellow)">● Partial: ${covPartial}</span><span style="font-size:10px;color:var(--red)">● Not Covered: ${covNot}</span></div>
         <div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">Product × Commodity combinations</div></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
         <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--accent)">${vProds.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div></div>
         <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--green)">${coms.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Commodities</div></div>
         <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--purple)">${covRegions.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Regions</div></div>
+        <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--yellow)">${vFeedback.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Feedbacks</div></div>
       </div>
       ${coms.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Commodities</div><div style="display:flex;flex-wrap:wrap;gap:4px">${comsVisible} ${comsMore}</div>${comsHiddenHtml}</div>`:""}
       ${covRegions.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regions Present</div><div style="display:flex;flex-wrap:wrap;gap:4px">${regDisplay}</div></div>`:""}
       ${vContacts.length?`<div style="padding-top:4px;border-top:1px solid var(--border)"><a href="#" onclick="navToContactsByVendor('${escAttr(v.vendor_name)}');return false;" style="font-size:11px;color:var(--accent);text-decoration:none">👤 ${vContacts.length} contact${vContacts.length>1?"s":""} →</a></div>`:""}
+      ${vFeedback.length?`<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+        <div style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">capSpire Feedback (${vFeedback.length})</div>
+        ${vFeedback.slice(0,2).map(f=>`<div style="font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <strong style="color:var(--text)">${escH(f.client_name||"")}</strong>
+            ${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}
+            ${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}
+            ${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}
+          </div>
+          ${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}
+        </div>`).join("")}
+        ${vFeedback.length>2?`<div style="font-size:10px;color:var(--muted);text-align:right">+${vFeedback.length-2} more</div>`:""}
+      </div>`:""}
     </div>`;
     grid.appendChild(card);
   });
@@ -922,19 +1023,6 @@ function navToProductsByVendorCom(vendor){
 }
 
 
-
-function intSearch(val){
-  state._intFQ=val;
-  clearTimeout(window._intQTimer);
-  window._intQTimer=setTimeout(function(){
-    renderReporting();
-    setTimeout(function(){
-      var el=document.getElementById('int-q');
-      if(el) el.focus();
-    },0);
-  },300);
-}
-
 function renderReportIntelligence(el, backBtn, report){
   const selProd = state._intProd || null;
   if(selProd) { renderIntelligenceDetail(el, backBtn, report, selProd); return; }
@@ -956,7 +1044,7 @@ function renderReportIntelligence(el, backBtn, report){
   const hdr=document.createElement("div");
   hdr.innerHTML=`${backBtn}<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${prods.length} products</span></div>
     <div class="filters" style="margin-bottom:16px;border-radius:8px">
-      <input id="int-q" value="${fQ}" oninput="intSearch(this.value)" placeholder="Search product..." style="width:180px">
+      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;clearTimeout(window._intQTimer);window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var el=document.getElementById('int-q');if(el){var v=el.value;el.focus();el.value='';el.value=v;}},0);},300)" placeholder="Search product..." style="width:180px">
       <select onchange="state._intFVendor=this.value;renderReporting()" style="font-size:12px"><option value="">All Vendors</option>${vendors.map(v=>`<option value="${v}" ${v===fVendor?"selected":""}>${v}</option>`).join("")}</select>
       <select onchange="state._intFType=this.value;renderReporting()" style="font-size:12px"><option value="">All Types</option>${types.map(t=>`<option value="${t}" ${t===fType?"selected":""}>${t}</option>`).join("")}</select>
       <button class="btn btn-reset" onclick="state._intFVendor='';state._intFType='';state._intFQ='';renderReporting()">↺ Reset</button>
@@ -994,55 +1082,25 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
   const risk=(state.risk||[]).filter(r=>r.product===productName);
   const clients=(state.clients||[]).filter(c=>c.product===productName);
+  const vendorName = (prod.vendor||"").toLowerCase().trim();
   const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
   const activeSection=state._intSection||"pcc";
-  const isCtrmOnly=ctrm.length>0&&risk.length===0;
-  const isRiskOnly=risk.length>0&&ctrm.length===0;
+  const isCtrmOnly = ctrm.length>0 && risk.length===0;
+  const isRiskOnly = risk.length>0 && ctrm.length===0;
   const covPct=pcc.length?Math.round(pcc.filter(r=>r.coverage_level==="Covered").length/pcc.length*100):null;
   const covColor=lv=>lv==="Covered"||lv==="Deployed"?"var(--green)":lv&&(lv.includes("Partial")||lv==="Capable")?"var(--yellow)":"var(--red)";
 
-  // ── Helper: render feedback rows for a client ──────────────────
-  function renderFbRows(fbs, type, matchFn){
-    if(!fbs.length) return "";
-    return fbs.map(f=>{
-      let blocks=[];
-      try{ if(type==='pcc'&&f.pcc_blocks) blocks=JSON.parse(f.pcc_blocks); }catch(e){}
-      try{ if(type==='ctrm'&&f.ctrm_blocks) blocks=JSON.parse(f.ctrm_blocks); }catch(e){}
-      try{ if(type==='risk'&&f.risk_blocks) blocks=JSON.parse(f.risk_blocks); }catch(e){}
-      if(matchFn&&blocks.length) blocks=blocks.filter(matchFn);
-      const blockHtml=blocks.length?blocks.map(b=>
-        '<span style="font-size:10px;padding:1px 6px;background:var(--bg2);border-radius:3px;margin:1px">'
-        +(b.commodity||b.category?'<span style="color:var(--accent)">'+escH(b.commodity||b.category||"")+'</span> ':'')
-        +(b.function_name?'<em>'+escH(b.function_name)+'</em> ':'')
-        +(b.coverage_level?'<span style="color:'+covColor(b.coverage_level)+'">● '+escH(b.coverage_level)+'</span>':'')
-        +(b.notes?'<span style="color:var(--muted);font-style:italic"> '+escH(b.notes)+'</span>':'')
-        +'</span>'
-      ).join(""):(f.coverage_level?'<span style="color:'+covColor(f.coverage_level)+'">● '+escH(f.coverage_level)+'</span> ':'')+
-        (f.notes?'<span style="color:var(--muted);font-style:italic">'+escH(f.notes)+'</span>':'');
-      return '<div style="background:var(--bg3);border-left:3px solid var(--accent);padding:5px 10px;margin:2px 0 2px 16px;border-radius:0 4px 4px 0;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-        +'<strong>'+escH(f.client_name||"")+'</strong>'
-        +(f.region?'<span style="color:var(--muted)">📍'+escH(f.region)+'</span>':'')
-        +(f.since_year?'<span style="color:var(--muted)">📅'+f.since_year+'</span>':'')
-        +blockHtml+'</div>';
-    }).join("");
-  }
+  el.innerHTML="";
+  const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
 
-  // ── Helper: toggle button + hidden rows ───────────────────────
-  function fbToggleRow(rowId, fbs, type, matchFn){
-    if(!fbs.length) return {btn:"", rows:""};
-    const uid="fb-"+rowId;
-    const btn='<button onclick="const d=document.getElementById(\''+uid+'\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.arr\').textContent=d.style.display===\'none\'?\'▼\':\'▲\'" style="font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px">💬 '+fbs.length+' <span class="arr">▼</span></button>';
-    const rows='<tr id="'+uid+'" style="display:none"><td colspan="10" style="padding:2px 12px 6px 12px;background:var(--bg3)">'+renderFbRows(fbs,type,matchFn)+'</td></tr>';
-    return {btn, rows};
-  }
-
-  // ── Header: vendor feedback dropdown ──────────────────────────
+  // ── Vendor feedback row ──
+  // Also include product-level feedbacks (from Product tab) in header
+  // Header shows ALL product feedback as a summary (client info only, not blocks)
+  const allHeaderFeedback = [...clients, ...vendorClients];
   function vendorFbHtml(){
-    // Show only product-level feedbacks (not vendor-level) in header
-    const allHeaderFeedback=[...clients];
     if(!allHeaderFeedback.length) return "";
-    const fbs=allHeaderFeedback;
-    const rows=fbs.map(f=>
+    const fbs = allHeaderFeedback;
+    const rows = fbs.map(f=>
       "<div style='background:var(--bg3);border-radius:6px;padding:8px 12px;margin:4px 0;font-size:11px'>"
       +"<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center'>"
       +"<strong style='color:var(--text)'>"+escH(f.client_name||"")+"</strong>"
@@ -1054,48 +1112,85 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       +(f.notes?"<div style='color:var(--muted);margin-top:3px;font-style:italic'>"+escH(f.notes)+"</div>":"")
       +"</div>"
     ).join("");
-    const collapsed=fbs.length>2;
-    const uid="hfb-"+productName.replace(/[^a-z0-9]/gi,"_");
-    if(collapsed){
+    // If more than 2, wrap in dropdown
+    if(fbs.length>2){
+      const uid="vfb-"+productName.replace(/[^a-z0-9]/gi,"_");
       return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
-        +"<div onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.arr').textContent=d.style.display==='none'?'▾':'▴'\" style='cursor:pointer;font-size:11px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:6px'>"
-        +"capSpire Feedback ("+fbs.length+") <span class='arr'>▾</span></div>"
+        +"<div onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('span.arr').textContent=d.style.display==='none'?'▾':'▴'\" style='cursor:pointer;font-size:11px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:6px'>"
+        +"💬 capSpire Feedback ("+fbs.length+") <span class='arr'>▾</span></div>"
         +"<div id='"+uid+"' style='display:none;margin-top:6px'>"+rows+"</div>"
         +"</div>";
     }
     return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
-      +"<div style='font-size:11px;color:var(--accent);font-weight:600;margin-bottom:5px'>capSpire Feedback ("+fbs.length+")</div>"
+      +"<div style='font-size:11px;color:var(--accent);font-weight:600;margin-bottom:5px'>💬 capSpire Vendor Feedback ("+vendorClients.length+")</div>"
       +rows+"</div>";
   }
 
-  el.innerHTML="";
-  const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
+  // ── Inline feedback row for a specific official row ──
+  function fbRowsForOfficial(type, matchFn){
+    return clients.filter(c=>c.source_table===type&&matchFn(c));
+  }
 
-  // ── Header card ───────────────────────────────────────────────
+  function renderFbRows(fbs, type, matchFn){
+    if(!fbs.length) return "";
+    return fbs.map(f=>{
+      let blocks=[];
+      try{ if(type==='pcc'&&f.pcc_blocks) blocks=JSON.parse(f.pcc_blocks); }catch(e){}
+      try{ if(type==='ctrm'&&f.ctrm_blocks) blocks=JSON.parse(f.ctrm_blocks); }catch(e){}
+      try{ if(type==='risk'&&f.risk_blocks) blocks=JSON.parse(f.risk_blocks); }catch(e){}
+      // Filter blocks to only show the one matching the current official row
+      if(matchFn && blocks.length) blocks = blocks.filter(matchFn);
+      const blockHtml = blocks.length ? blocks.map(b=>
+        "<span style='font-size:10px;padding:1px 6px;background:var(--bg2);border-radius:3px;margin:1px'>"
+        +(b.commodity||b.category?"<span style='color:var(--accent)'>"+escH(b.commodity||b.category||"")+"</span> ":"")
+        +(b.function_name?"<em>"+escH(b.function_name)+"</em> ":"")
+        +(b.coverage_level?"<span style='color:"+covColor(b.coverage_level)+"'>● "+escH(b.coverage_level)+"</span>":"")
+        +(b.notes?"<span style='color:var(--muted);font-style:italic'> "+escH(b.notes)+"</span>":"")
+        +"</span>"
+      ).join("") : (f.coverage_level?"<span style='color:"+covColor(f.coverage_level)+"'>● "+escH(f.coverage_level)+"</span> ":"")+
+        (f.notes?"<span style='color:var(--muted);font-style:italic'>"+escH(f.notes)+"</span>":"");
+      return "<div style='background:var(--bg3);border-left:3px solid var(--accent);padding:5px 10px;margin:2px 0 2px 16px;border-radius:0 4px 4px 0;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
+        +"<strong>"+escH(f.client_name||"")+"</strong>"
+        +(f.region?"<span style='color:var(--muted)'>📍"+escH(f.region)+"</span>":"")
+        +(f.since_year?"<span style='color:var(--muted)'>📅"+f.since_year+"</span>":"")
+        +blockHtml
+        +"</div>";
+    }).join("");
+  }
+
+  function fbToggleRow(rowId, fbs, type, matchFn){
+    if(!fbs.length) return {btn:"", rows:""};
+    const uid = "fb-"+rowId;
+    const btn = "<button onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.arr').textContent=d.style.display==='none'?'▼':'▲'\" style='font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px'>💬 "+fbs.length+" <span class='arr'>▼</span></button>";
+    const rows = "<tr id='"+uid+"' style='display:none'><td colspan='10' style='padding:2px 12px 6px 12px;background:var(--bg3)'>"+renderFbRows(fbs,type,matchFn)+"</td></tr>";
+    return {btn, rows};
+  }
+
+  // ── Header ──
   const hdr=document.createElement("div");
   hdr.innerHTML=
-    '<button onclick="state._intProd=null;state._intSection=null;state._intFPccCom=\'\';state._intFPccCov=\'\';state._intFCtrmFn=\'\';state._intFCtrmCom=\'\';state._intFRiskCat=\'\';state._intFRiskFn=\'\';renderReporting()" class="btn" style="margin-bottom:12px;display:inline-flex;align-items:center;gap:5px">&#8592; Back to Products</button>'
-    +'<div class="card" style="margin-bottom:14px">'
-      +'<div style="padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">'
-        +'<div style="flex:1">'
-          +'<div style="font-size:17px;font-weight:700;color:var(--text)">'
-            +'<a href="#" onclick="navToTab(\'products\',\'p_q\',\''+escAttr(productName)+'\');return false;" style="color:var(--accent)">'+escH(productName)+'</a>'
-          +'</div>'
-          +'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escH(prod.vendor||"")+(prod.product_type?' &nbsp;·&nbsp; '+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):"")+'</div>'
-          +(prod.deployment_model?'<div style="font-size:11px;color:var(--muted);margin-top:4px">Deployment: '+escH(prod.deployment_model)+'</div>':"")
-          +(prod.version_info?'<div style="font-size:11px;color:var(--yellow);margin-top:2px">Version: '+escH(prod.version_info)+'</div>':"")
+    "<button onclick=\"state._intProd=null;state._intSection=null;state._intFPccCom='';state._intFPccCov='';state._intFCtrmFn='';state._intFCtrmCom='';state._intFCtrmCov='';state._intFRiskCat='';state._intFRiskFn='';renderReporting()\" class=\"btn\" style=\"margin-bottom:12px;display:inline-flex;align-items:center;gap:5px\">&#8592; Back to Products</button>"
+    +"<div class=\"card\" style=\"margin-bottom:14px\">"
+      +"<div style=\"padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px\">"
+        +"<div style='flex:1'>"
+          +"<div style=\"font-size:17px;font-weight:700;color:var(--text)\">"
+            +"<a href=\"#\" onclick=\"navToTab('products','p_q','"+escAttr(productName)+"');return false;\" style=\"color:var(--accent)\">"+escH(productName)+"</a>"
+          +"</div>"
+          +"<div style=\"font-size:12px;color:var(--muted);margin-top:3px\">"+escH(prod.vendor||"")+(prod.product_type?" &nbsp;·&nbsp; "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):"")+"</div>"
+          +(prod.deployment_model?"<div style='font-size:11px;color:var(--muted);margin-top:4px'>Deployment: "+escH(prod.deployment_model)+"</div>":"")
+          +(prod.version_info?"<div style='font-size:11px;color:var(--yellow);margin-top:2px'>Version: "+escH(prod.version_info)+"</div>":"")
           +vendorFbHtml()
-        +'</div>'
-        +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">'
-          +(covPct!==null?'<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:'+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+'">'+covPct+'%</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Coverage</div></div>':"")
-          +'<div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">'+clients.length+'</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">Feedbacks</div></div>'
-          +'<button class="btn btn-success" style="font-size:11px;padding:5px 12px" onclick="exportProductIntelligenceExcel(\''+escAttr(productName)+'\')">&#8595; Export</button>'
-        +'</div>'
-      +'</div>'
-    +'</div>';
+        +"</div>"
+        +"<div style='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start'>"
+          +(covPct!==null?"<div style='text-align:center'><div style='font-size:22px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+"'>"+covPct+"%</div><div style='font-size:9px;color:var(--muted);text-transform:uppercase'>Coverage</div></div>":"")
+          +"<div style='text-align:center'><div style='font-size:22px;font-weight:700;color:var(--accent)'>"+clients.length+"</div><div style='font-size:9px;color:var(--muted);text-transform:uppercase'>Feedbacks</div></div>"
+          +"<button class='btn btn-success' style='font-size:11px;padding:5px 12px' onclick='exportProductIntelligenceExcel(\""+escAttr(productName)+"\")'>&#8595; Export</button>"
+        +"</div>"
+      +"</div>"
+    +"</div>";
   wrap.appendChild(hdr);
 
-  // ── Section tabs ──────────────────────────────────────────────
+  // ── Section tabs ──
   const tabsDiv=document.createElement("div"); tabsDiv.style.cssText="display:flex;gap:4px;margin-bottom:14px";
   [["pcc","🌾 Commodity"],["ctrm","⚡ CTRM"],["risk","🛡 Risk"]].forEach(([id,label])=>{
     const btn=document.createElement("button");
@@ -1106,26 +1201,29 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   });
   wrap.appendChild(tabsDiv);
 
-  const contentDiv=document.createElement("div");
+  const content=document.createElement("div");
 
-  // ── PCC SECTION ───────────────────────────────────────────────
+  // ── PCC SECTION ──
   if(activeSection==="pcc"){
     const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
     const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
     const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
     const fbPcc=clients.filter(c=>c.pcc_blocks||(c.commodities&&c.source_table==="products"));
     let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
+
     let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
       +'<select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>'+coms.map(c=>'<option value="'+escAttr(c)+'" '+(c===fPccCom?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
       +'<select onchange="state._intFPccCov=this.value;renderReporting()" style="font-size:12px"><option value="">All Coverage</option>'+covs.map(c=>'<option value="'+escAttr(c)+'" '+(c===fPccCov?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
       +'<button class="btn btn-reset" onclick="state._intFPccCom=\'\';state._intFPccCov=\'\';renderReporting()">&#8635; Reset</button>'
       +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
       +'</div>';
+
     html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
       +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">COMMODITY</th>'
       +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
       +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
       +'</tr></thead><tbody>';
+
     rows.forEach(r=>{
       const fbs=fbPcc.filter(c=>{
         let blocks=[];
@@ -1142,29 +1240,34 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         +'<td style="padding:8px 12px">'+btn+'</td>'
         +'</tr>'+fbRows;
     });
-    if(!rows.length&&fbPcc.length){
-      html+='<tr><td colspan="3" style="padding:12px;color:var(--muted);font-size:12px">No official data matching filters. capSpire feedback:</td></tr>';
+
+    // If no official data but has feedback
+    if(!rows.length && fbPcc.length){
+      html+='<tr><td colspan="3" style="padding:12px;color:var(--muted);font-size:12px">No official commodity data. capSpire feedback:</td></tr>';
       html+='<tr><td colspan="3" style="padding:8px 12px">'+renderFbRows(fbPcc,"pcc")+'</td></tr>';
     }
-    html+='</tbody></table></div>';
-    contentDiv.innerHTML=html;
 
-  // ── CTRM SECTION ──────────────────────────────────────────────
+    html+='</tbody></table></div>';
+    content.innerHTML=html;
+
+  // ── CTRM SECTION ──
   } else if(activeSection==="ctrm"){
     const fns=[...new Set(ctrm.map(r=>r.function_name).filter(Boolean))].sort();
     const coms=[...new Set(ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-    const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||"";
+    const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||""; const fCtrmCov=state._intFCtrmCov||"";
     const fbCtrm=clients.filter(c=>c.ctrm_blocks);
     let rows=ctrm.filter(r=>(!fCtrmFn||r.function_name===fCtrmFn)&&(!fCtrmCom||r.commodity===fCtrmCom));
+
     let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
       +'<select onchange="state._intFCtrmFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>'+fns.map(f=>'<option value="'+escAttr(f)+'" '+(f===fCtrmFn?"selected":"")+'>'+escH(f)+'</option>').join('')+'</select>'
       +'<select onchange="state._intFCtrmCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>'+coms.map(c=>'<option value="'+escAttr(c)+'" '+(c===fCtrmCom?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
       +'<button class="btn btn-reset" onclick="state._intFCtrmFn=\'\';state._intFCtrmCom=\'\';renderReporting()">&#8635; Reset</button>'
       +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
       +'</div>';
-    if(isRiskOnly&&!fbCtrm.length){
+
+    if(isRiskOnly && !fbCtrm.length){
       html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official CTRM data. No capSpire feedback yet.</div>';
-    } else if(isRiskOnly&&fbCtrm.length){
+    } else if(isRiskOnly && fbCtrm.length){
       html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official CTRM data. Showing capSpire feedback only.</div>';
       html+=renderFbRows(fbCtrm,"ctrm");
     } else {
@@ -1172,7 +1275,9 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">FUNCTION</th>'
         +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">COMMODITY</th>'
         +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
-        +'<th></th></tr></thead><tbody>';
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
+        +'</tr></thead><tbody>';
+
       rows.forEach(r=>{
         const code=getCode(r.coverage_level);
         const fbs=fbCtrm.filter(c=>{
@@ -1192,24 +1297,26 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       });
       html+='</tbody></table></div>';
     }
-    contentDiv.innerHTML=html;
+    content.innerHTML=html;
 
-  // ── RISK SECTION ──────────────────────────────────────────────
+  // ── RISK SECTION ──
   } else if(activeSection==="risk"){
     const cats=[...new Set(risk.map(r=>r.category).filter(Boolean))].sort();
     const fns=[...new Set(risk.map(r=>r.function_name).filter(Boolean))].sort();
     const fRiskCat=state._intFRiskCat||""; const fRiskFn=state._intFRiskFn||"";
     const fbRisk=clients.filter(c=>c.risk_blocks);
     let rows=risk.filter(r=>(!fRiskCat||r.category===fRiskCat)&&(!fRiskFn||r.function_name===fRiskFn));
+
     let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
       +'<select onchange="state._intFRiskCat=this.value;renderReporting()" style="font-size:12px"><option value="">All Categories</option>'+cats.map(c=>'<option value="'+escAttr(c)+'" '+(c===fRiskCat?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
       +'<select onchange="state._intFRiskFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>'+fns.map(f=>'<option value="'+escAttr(f)+'" '+(f===fRiskFn?"selected":"")+'>'+escH(f)+'</option>').join('')+'</select>'
       +'<button class="btn btn-reset" onclick="state._intFRiskCat=\'\';state._intFRiskFn=\'\';renderReporting()">&#8635; Reset</button>'
       +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
       +'</div>';
-    if(isCtrmOnly&&!fbRisk.length){
+
+    if(isCtrmOnly && !fbRisk.length){
       html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official Risk data. No capSpire feedback yet.</div>';
-    } else if(isCtrmOnly&&fbRisk.length){
+    } else if(isCtrmOnly && fbRisk.length){
       html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official Risk data. Showing capSpire feedback only.</div>';
       html+=renderFbRows(fbRisk,"risk");
     } else {
@@ -1217,7 +1324,9 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
         +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">CATEGORY</th>'
         +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">FUNCTION</th>'
         +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
-        +'<th></th></tr></thead><tbody>';
+        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
+        +'</tr></thead><tbody>';
+
       rows.forEach(r=>{
         const code=getCode(r.coverage_level);
         const fbs=fbRisk.filter(c=>{
@@ -1237,56 +1346,14 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       });
       html+='</tbody></table></div>';
     }
-    contentDiv.innerHTML=html;
+    content.innerHTML=html;
   }
 
-  wrap.appendChild(contentDiv);
+  wrap.appendChild(content);
   el.appendChild(wrap);
 }
 
 
-
-function exportProductIntelligenceExcel(productName){
-  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
-  const prod=(state.products||[]).find(p=>p.product_name===productName)||{};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
-  const risk=(state.risk||[]).filter(r=>r.product===productName);
-  const clients=(state.clients||[]).filter(c=>c.product===productName);
-  const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Field","Value"],["Product",productName],["Vendor",prod.vendor||""],["Type",prod.product_type||""],["Deployment",prod.deployment_model||""],["Version",prod.version_info||""]]),"Product Info");
-  if(vendorClients.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Client","Project","Region","Since Year","Notes","Created By"],...vendorClients.map(c=>[c.client_name,c.project_name||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])]),"Vendor Feedback");
-  if(pcc.length){
-    const rows=[["Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
-    pcc.forEach(r=>{
-      const fbs=clients.filter(c=>{let b=[];try{if(c.pcc_blocks)b=JSON.parse(c.pcc_blocks);}catch(e){}return b.some(x=>x.commodity===r.commodity)||(c.commodities||"").includes(r.commodity);});
-      if(!fbs.length) rows.push([r.commodity,r.coverage_level,"","",""]);
-      else fbs.forEach(f=>{let b=[];try{if(f.pcc_blocks)b=JSON.parse(f.pcc_blocks);}catch(e){}const x=b.find(x=>x.commodity===r.commodity)||{};rows.push([r.commodity,r.coverage_level,f.client_name,x.coverage_level||f.coverage_level||"",x.notes||f.notes||""]);});
-    });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Commodity Coverage");
-  }
-  if(ctrm.length){
-    const rows=[["Function","Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
-    ctrm.forEach(r=>{
-      const fbs=clients.filter(c=>{let b=[];try{if(c.ctrm_blocks)b=JSON.parse(c.ctrm_blocks);}catch(e){}return b.some(x=>x.function_name===r.function_name&&(!x.commodity||x.commodity===r.commodity));});
-      if(!fbs.length) rows.push([r.function_name,r.commodity||"",r.coverage_level,"","",""]);
-      else fbs.forEach(f=>{let b=[];try{if(f.ctrm_blocks)b=JSON.parse(f.ctrm_blocks);}catch(e){}const x=b.find(x=>x.function_name===r.function_name)||{};rows.push([r.function_name,r.commodity||"",r.coverage_level,f.client_name,x.coverage_level||f.coverage_level||"",x.notes||f.notes||""]);});
-    });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"CTRM Coverage");
-  }
-  if(risk.length){
-    const rows=[["Category","Function","Official Coverage","FB Client","FB Coverage","FB Notes"]];
-    risk.forEach(r=>{
-      const fbs=clients.filter(c=>{let b=[];try{if(c.risk_blocks)b=JSON.parse(c.risk_blocks);}catch(e){}return b.some(x=>x.function_name===r.function_name&&(!x.category||x.category===r.category));});
-      if(!fbs.length) rows.push([r.category||"",r.function_name,r.coverage_level,"","",""]);
-      else fbs.forEach(f=>{let b=[];try{if(f.risk_blocks)b=JSON.parse(f.risk_blocks);}catch(e){}const x=b.find(x=>x.function_name===r.function_name)||{};rows.push([r.category||"",r.function_name,r.coverage_level,f.client_name,x.coverage_level||f.coverage_level||"",x.notes||f.notes||""]);});
-    });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Risk Coverage");
-  }
-  if(clients.length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Client","Project","Type","Commodity/Category","Function","Coverage","Region","Since Year","Notes","Created By"],...clients.map(c=>[c.client_name,c.project_name||"",c.source_table||"",c.commodities||c.category||"",c.function_name||"",c.coverage_level||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])]),"All Feedback");
-  XLSX.writeFile(wb,"product_"+productName.replace(/[^a-z0-9]/gi,"_")+".xlsx");
-}
 
 function toggleIntRow(id){
   const el=document.getElementById(id);
@@ -1296,6 +1363,102 @@ function toggleIntRow(id){
   const btn=el.previousElementSibling?.querySelector("button");
   if(btn) btn.textContent=btn.textContent.includes("▼")?btn.textContent.replace("▼","▲"):btn.textContent.replace("▲","▼");
 }
+function exportProductIntelligenceExcel(productName){
+  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
+  const prod=(state.products||[]).find(p=>p.product_name===productName)||{};
+  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
+  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
+  const risk=(state.risk||[]).filter(r=>r.product===productName);
+  const clients=(state.clients||[]).filter(c=>c.product===productName);
+  const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
+  const wb=XLSX.utils.book_new();
+
+  // Sheet 1: Product Info
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+    ["Field","Value"],
+    ["Product",productName],["Vendor",prod.vendor||""],["Type",prod.product_type||""],
+    ["Deployment",prod.deployment_model||""],["Version",prod.version_info||""],["Notes",prod.notes||""]
+  ]),"Product Info");
+
+  // Sheet 2: Vendor Feedback
+  if(vendorClients.length){
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+      ["Client","Project","Region","Since Year","Notes","Created By"],
+      ...vendorClients.map(c=>[c.client_name,c.project_name||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])
+    ]),"Vendor Feedback");
+  }
+
+  // Sheet 3: Commodity
+  if(pcc.length){
+    const pccFb=clients.filter(c=>c.source_table==="pcc");
+    const rows=[["Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
+    pcc.forEach(r=>{
+      const fbs=pccFb.filter(c=>{
+        let blocks=[]; try{if(c.pcc_blocks)blocks=JSON.parse(c.pcc_blocks);}catch(e){}
+        if(blocks.length) return blocks.some(b=>b.commodity===r.commodity);
+        return (c.commodities||"").includes(r.commodity);
+      });
+      if(!fbs.length) rows.push([r.commodity,r.coverage_level,"","",""]);
+      else fbs.forEach(f=>{
+        let blocks=[]; try{if(f.pcc_blocks)blocks=JSON.parse(f.pcc_blocks);}catch(e){}
+        const blk=blocks.find(b=>b.commodity===r.commodity)||{};
+        rows.push([r.commodity,r.coverage_level,f.client_name,blk.coverage_level||f.coverage_level||"",blk.notes||f.notes||""]);
+      });
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Commodity Coverage");
+  }
+
+  // Sheet 4: CTRM
+  if(ctrm.length){
+    const ctrmFb=clients.filter(c=>c.source_table==="ctrm");
+    const rows=[["Function","Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
+    ctrm.forEach(r=>{
+      const fbs=ctrmFb.filter(c=>{
+        let blocks=[]; try{if(c.ctrm_blocks)blocks=JSON.parse(c.ctrm_blocks);}catch(e){}
+        if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity));
+        return c.function_name===r.function_name;
+      });
+      if(!fbs.length) rows.push([r.function_name,r.commodity||"",r.coverage_level,"","",""]);
+      else fbs.forEach(f=>{
+        let blocks=[]; try{if(f.ctrm_blocks)blocks=JSON.parse(f.ctrm_blocks);}catch(e){}
+        const blk=blocks.find(b=>b.function_name===r.function_name)||{};
+        rows.push([r.function_name,r.commodity||"",r.coverage_level,f.client_name,blk.coverage_level||f.coverage_level||"",blk.notes||f.notes||""]);
+      });
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"CTRM Coverage");
+  }
+
+  // Sheet 5: Risk
+  if(risk.length){
+    const riskFb=clients.filter(c=>c.source_table==="risk");
+    const rows=[["Category","Function","Official Coverage","FB Client","FB Coverage","FB Notes"]];
+    risk.forEach(r=>{
+      const fbs=riskFb.filter(c=>{
+        let blocks=[]; try{if(c.risk_blocks)blocks=JSON.parse(c.risk_blocks);}catch(e){}
+        if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.category||b.category===r.category));
+        return c.function_name===r.function_name;
+      });
+      if(!fbs.length) rows.push([r.category||"",r.function_name,r.coverage_level,"","",""]);
+      else fbs.forEach(f=>{
+        let blocks=[]; try{if(f.risk_blocks)blocks=JSON.parse(f.risk_blocks);}catch(e){}
+        const blk=blocks.find(b=>b.function_name===r.function_name)||{};
+        rows.push([r.category||"",r.function_name,r.coverage_level,f.client_name,blk.coverage_level||f.coverage_level||"",blk.notes||f.notes||""]);
+      });
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Risk Coverage");
+  }
+
+  // Sheet 6: All Feedback
+  if(clients.length){
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+      ["Client","Project","Type","Commodity/Category","Function","Coverage","Region","Since Year","Notes","Created By"],
+      ...clients.map(c=>[c.client_name,c.project_name||"",c.source_table||"",c.commodities||c.category||"",c.function_name||"",c.coverage_level||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])
+    ]),"All Feedback");
+  }
+
+  XLSX.writeFile(wb,"product_"+productName.replace(/[^a-z0-9]/gi,"_")+".xlsx");
+}
+
 
 function renderImport(){
   document.getElementById("section-import").innerHTML=`<div class="card">
@@ -1432,10 +1595,13 @@ function openProductDetail(productName, ctx){
   document.getElementById("product-detail-overlay")?.remove();
   document.getElementById("client-form-panel")?.remove();
 
+  const isVendorCtx = ctx?.source_table === 'vendor';
   const prod = state.products.find(p=>p.product_name===productName) || {product_name:productName,vendor:"",product_type:""};
   const pccEntries = state.pcc.filter(r=>r.product===productName);
   const covPct = pccEntries.length ? Math.round(pccEntries.filter(r=>r.coverage_level==="Covered").length/pccEntries.length*100) : null;
-  const clients = (state.clients||[]).filter(c=>c.product===productName);
+  const clients = isVendorCtx
+    ? (state.clients||[]).filter(c=>c.vendor_name===productName)
+    : (state.clients||[]).filter(c=>c.product===productName);
 
   const overlay = document.createElement("div");
   overlay.id = "product-detail-overlay";
@@ -1476,120 +1642,60 @@ function openProductDetail(productName, ctx){
 }
 
 function renderClientsList(productName, clients){
-  if(!clients||!clients.length) return `<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">No feedback added yet.<br><span style="font-size:11px">Click "+ Add Feedback" to add the first one.</span></div>`;
+  if(!clients||!clients.length) return '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">No feedback added yet.<br><span style="font-size:11px">Click &quot;+ Add Feedback&quot; to add the first one.</span></div>';
+  const covColor = lv => lv==="Covered"||lv==="Deployed" ? "var(--green)" : lv&&(lv.includes("Partial")||lv==="Capable") ? "var(--yellow)" : "var(--red)";
   return clients.map(c=>{
+    let pccBlocks=[], ctrmBlocks=[], riskBlocks=[];
+    try{ pccBlocks  = c.pcc_blocks  ? JSON.parse(c.pcc_blocks)  : []; }catch(e){}
+    try{ ctrmBlocks = c.ctrm_blocks ? JSON.parse(c.ctrm_blocks) : []; }catch(e){}
+    try{ riskBlocks = c.risk_blocks ? JSON.parse(c.risk_blocks) : []; }catch(e){}
     const coms = (c.commodities||"").split(",").map(s=>s.trim()).filter(Boolean);
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
-        <div style="font-weight:700;font-size:13px;color:var(--text)">${c.client_name}</div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button class="btn" style="font-size:10px;padding:2px 7px" onclick="openClientForm('${escAttr(productName)}',${c.id},null)">Edit</button>
-          <button class="btn" style="font-size:10px;padding:2px 7px;color:var(--red);border-color:var(--red)44" onclick="deleteClient(${c.id},'${escAttr(productName)}')">Delete</button>
-        </div>
-      </div>
-      ${coms.length?"<div style='display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px'>"+coms.map(com=>"<span style='padding:1px 7px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33'>"+com+"</span>").join("")+"</div>":""}
-      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
-        ${c.coverage_level?`<span style="font-weight:600;color:${c.coverage_level==="Covered"||c.coverage_level==="Deployed"?"var(--green)":c.coverage_level.includes("Partial")||c.coverage_level==="Capable"?"var(--yellow)":"var(--red)"}">● ${c.coverage_level}</span>`:""}
-        ${c.region?"<span>📍 "+c.region+"</span>":""}
-        ${c.since_year?"<span>📅 Since "+c.since_year+"</span>":""}
-        ${c.created_by?"<span>👤 "+c.created_by+"</span>":""}
-      </div>
-      ${c.notes?"<div style='margin-top:6px;font-size:11px;color:var(--muted);font-style:italic'>"+c.notes+"</div>":""}
-    </div>`;
-  }).join("");
+    let detailHtml = '';
+    // Commodities (product tab)
+    if(coms.length && !pccBlocks.length) detailHtml += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">' + coms.map(com=>'<span style="padding:1px 7px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33">'+escH(com)+'</span>').join('') + '</div>';
+    // PCC blocks
+    if(pccBlocks.length){
+      detailHtml += '<div style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:5px 0 3px">🌾 Commodity Coverage</div>';
+      detailHtml += pccBlocks.map(b=>'<div style="font-size:11px;padding:4px 8px;background:var(--bg);border-radius:4px;margin:2px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><strong>'+escH(b.commodity)+'</strong>'+(b.coverage_level?'<span style="color:'+covColor(b.coverage_level)+'">● '+escH(b.coverage_level)+'</span>':'')+(b.notes?'<span style="color:var(--muted);font-style:italic">'+escH(b.notes)+'</span>':'')+'</div>').join('');
+    }
+    // CTRM blocks
+    if(ctrmBlocks.length){
+      detailHtml += '<div style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:5px 0 3px">⚡ CTRM</div>';
+      detailHtml += ctrmBlocks.map(b=>'<div style="font-size:11px;padding:4px 8px;background:var(--bg);border-radius:4px;margin:2px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+(b.commodity?'<span style="color:var(--accent)">'+escH(b.commodity)+'</span>':'')+' <strong>'+escH(b.function_name||'')+'</strong>'+(b.coverage_level?'<span style="color:'+covColor(b.coverage_level)+'">● '+escH(b.coverage_level)+'</span>':'')+(b.notes?'<span style="color:var(--muted);font-style:italic">'+escH(b.notes)+'</span>':'')+'</div>').join('');
+    }
+    // Risk blocks
+    if(riskBlocks.length){
+      detailHtml += '<div style="font-size:10px;color:var(--purple);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:5px 0 3px">🛡 Risk</div>';
+      detailHtml += riskBlocks.map(b=>'<div style="font-size:11px;padding:4px 8px;background:var(--bg);border-radius:4px;margin:2px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+(b.category?'<span style="color:var(--purple)">'+escH(b.category)+'</span>':'')+' <strong>'+escH(b.function_name||'')+'</strong>'+(b.coverage_level?'<span style="color:'+covColor(b.coverage_level)+'">● '+escH(b.coverage_level)+'</span>':'')+(b.notes?'<span style="color:var(--muted);font-style:italic">'+escH(b.notes)+'</span>':'')+'</div>').join('');
+    }
+    const pn = escAttr(productName);
+    return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px" data-cid="'+c.id+'" data-pn="'+pn+'">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">'
+        + '<div><div style="font-weight:700;font-size:13px;color:var(--text)">'+escH(c.client_name)+'</div>'
+        + (c.project_name ? '<div style="font-size:11px;color:var(--muted)">📁 '+escH(c.project_name)+'</div>' : '')
+        + '</div>'
+        + '<div style="display:flex;gap:4px;flex-shrink:0">'
+          + '<button class="btn" style="font-size:10px;padding:2px 7px" onclick="cfEditFeedback(this)">Edit</button>'
+          + '<button class="btn" style="font-size:10px;padding:2px 7px;color:var(--red);border-color:var(--red)44" onclick="cfDeleteFeedback(this)">Delete</button>'
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-bottom:4px">'
+        + (c.region    ? '<span>📍 '+escH(c.region)+'</span>' : '')
+        + (c.since_year? '<span>📅 Since '+c.since_year+'</span>' : '')
+        + (c.created_by? '<span>👤 '+escH(c.created_by)+'</span>' : '')
+        + (c.sharepoint_link ? '<span><a href="'+escAttr(c.sharepoint_link)+'" target="_blank" style="color:var(--accent)">🔗 SharePoint</a></span>' : '')
+      + '</div>'
+      + (c.notes ? '<div style="margin-top:5px;font-size:11px;color:var(--muted);font-style:italic">'+escH(c.notes)+'</div>' : '')
+      + (detailHtml ? '<div style="margin-top:6px">'+detailHtml+'</div>' : '')
+      + '</div>';
+  }).join('');
 }
+
 
 function closeProductDetail(){
   document.getElementById("product-detail-panel")?.remove();
   document.getElementById("product-detail-overlay")?.remove();
   document.getElementById("client-form-panel")?.remove();
-}
-
-
-// ── cfSave ──────────────────────────────────────────────────────
-function cfSave(){
-  saveClient(window._cfProductName, window._cfClientId||null);
-}
-
-// ── saveCfBlockValues ────────────────────────────────────────────
-function saveCfBlockValues(){
-  const type = window._cfType;
-  if(type==='pcc' && window._cfPccBlocks){
-    window._cfPccBlocks.forEach((_,i)=>{
-      const com=document.getElementById('cf-pcc-com-'+i);
-      const cov=document.getElementById('cf-pcc-cov-'+i);
-      const nt=document.getElementById('cf-pcc-notes-'+i);
-      if(com) window._cfPccBlocks[i].commodity=com.value;
-      if(cov) window._cfPccBlocks[i].coverage_level=cov.value;
-      if(nt)  window._cfPccBlocks[i].notes=nt.value;
-    });
-  } else if(type==='ctrm' && window._cfCtrmBlocks){
-    window._cfCtrmBlocks.forEach((_,i)=>{
-      const com=document.getElementById('cf-ctrm-com-'+i);
-      const fn=document.getElementById('cf-ctrm-fn-'+i);
-      const cov=document.getElementById('cf-ctrm-cov-'+i);
-      const nt=document.getElementById('cf-ctrm-notes-'+i);
-      if(com) window._cfCtrmBlocks[i].commodity=com.value;
-      if(fn)  window._cfCtrmBlocks[i].function_name=fn.value;
-      if(cov) window._cfCtrmBlocks[i].coverage_level=cov.value;
-      if(nt)  window._cfCtrmBlocks[i].notes=nt.value;
-    });
-  } else if(type==='risk' && window._cfRiskBlocks){
-    window._cfRiskBlocks.forEach((_,i)=>{
-      const cat=document.getElementById('cf-risk-cat-'+i);
-      const fn=document.getElementById('cf-risk-fn-'+i);
-      const cov=document.getElementById('cf-risk-cov-'+i);
-      const nt=document.getElementById('cf-risk-notes-'+i);
-      if(cat) window._cfRiskBlocks[i].category=cat.value;
-      if(fn)  window._cfRiskBlocks[i].function_name=fn.value;
-      if(cov) window._cfRiskBlocks[i].coverage_level=cov.value;
-      if(nt)  window._cfRiskBlocks[i].notes=nt.value;
-    });
-  }
-  const client=document.getElementById('cf-client');
-  const region=document.getElementById('cf-region');
-  const year=document.getElementById('cf-year');
-  const notes=document.getElementById('cf-notes');
-  const proj=document.getElementById('cf-project');
-  const sp=document.getElementById('cf-sharepoint');
-  if(client) window._cfSavedClient=client.value;
-  if(region) window._cfSavedRegion=region.value;
-  if(year)   window._cfSavedYear=year.value;
-  if(notes)  window._cfSavedNotes=notes.value;
-  if(proj)   window._cfSavedProject=proj.value;
-  if(sp)     window._cfSavedSP=sp.value;
-}
-
-function restoreCfTopFields(){
-  const client=document.getElementById('cf-client');
-  const region=document.getElementById('cf-region');
-  const year=document.getElementById('cf-year');
-  const notes=document.getElementById('cf-notes');
-  const proj=document.getElementById('cf-project');
-  const sp=document.getElementById('cf-sharepoint');
-  if(client&&window._cfSavedClient!==undefined) client.value=window._cfSavedClient;
-  if(region&&window._cfSavedRegion!==undefined) region.value=window._cfSavedRegion;
-  if(year  &&window._cfSavedYear!==undefined)   year.value=window._cfSavedYear;
-  if(notes &&window._cfSavedNotes!==undefined)  notes.value=window._cfSavedNotes;
-  if(proj  &&window._cfSavedProject!==undefined)proj.value=window._cfSavedProject;
-  if(sp    &&window._cfSavedSP!==undefined)     sp.value=window._cfSavedSP;
-}
-
-// ── msApply ──────────────────────────────────────────────────────
-function msApply(id, key){
-  const list=document.getElementById('ms-list-'+id);
-  if(!list) return;
-  const selected=[...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
-  if(key.startsWith('_')){
-    state[key]=selected.length?selected:[];
-    renderReporting();
-  } else {
-    sf(key, selected.length?selected:[]);
-  }
-  document.getElementById('ms-drop-'+id).style.display='none';
-  const search=document.getElementById('ms-search-'+id);
-  if(search) search.value='';
-  msSearch(id);
 }
 
 function openClientForm(productName, clientId, ctx){
@@ -1599,89 +1705,82 @@ function openClientForm(productName, clientId, ctx){
   window._cfProductName = productName;
   window._cfClientId = clientId;
   window._cfExisting = existing;
-  const initType = ctx?.source_table || existing?.source_table || 'products';
+  // Reset blocks for new form session, but pre-load existing data if editing
+  window._cfSelectedComs = existing?.commodities
+    ? existing.commodities.split(',').map(s=>s.trim()).filter(Boolean)
+    : null;
+  try { window._cfPccBlocks  = existing?.pcc_blocks  ? JSON.parse(existing.pcc_blocks)  : null; } catch(e){ window._cfPccBlocks=null; }
+  try { window._cfCtrmBlocks = existing?.ctrm_blocks ? JSON.parse(existing.ctrm_blocks) : null; } catch(e){ window._cfCtrmBlocks=null; }
+  try { window._cfRiskBlocks = existing?.risk_blocks ? JSON.parse(existing.risk_blocks) : null; } catch(e){ window._cfRiskBlocks=null; }
+  window._cfSavedClient  = existing?.client_name    || undefined;
+  window._cfSavedRegion  = existing?.region         || undefined;
+  window._cfSavedYear    = existing?.since_year     ? String(existing.since_year) : undefined;
+  window._cfSavedNotes   = existing?.notes          || undefined;
+  window._cfSavedProject = existing?.project_name   || undefined;
+  window._cfSavedSP      = existing?.sharepoint_link|| undefined;
+  const isVendorCtx = (ctx?.source_table === 'vendor');
+  const initType = isVendorCtx ? 'vendor' : (ctx?.source_table || existing?.source_table || 'products');
 
   const form = document.createElement("div");
   form.id = "client-form-panel";
-  form.style.cssText = "position:fixed;top:0;right:480px;width:380px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3)";
-  form.innerHTML = `
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <div style="font-weight:700;font-size:14px">${clientId?"Edit Client Feedback":"New Client Feedback"}</div>
-      <button onclick="document.getElementById('client-form-panel').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
-      <div>
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Feedback Type</label>
-        <div style="display:flex;gap:4px;flex-wrap:wrap" id="cf-type-btns">
-          <button type="button" id="cftype-products" onclick="cfSetType('products')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">📦 Product</button>
-          <button type="button" id="cftype-pcc" onclick="cfSetType('pcc')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">🌾 Commodity</button>
-          <button type="button" id="cftype-ctrm" onclick="cfSetType('ctrm')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">⚡ CTRM</button>
-          <button type="button" id="cftype-risk" onclick="cfSetType('risk')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">🛡 Risk</button>
-        </div>
-      </div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Client Name *</label>
-        <input id="cf-client" value="${escAttr(existing?.client_name||"")}" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
-      <div id="cf-dynamic-fields"></div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Region</label>
-        <input id="cf-region" value="${escAttr(existing?.region||"")}" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Since Year</label>
-        <input id="cf-year" type="number" value="${existing?.since_year||""}" placeholder="e.g. 2020" min="1990" max="2099" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>
-      <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Notes</label>
-        <textarea id="cf-notes" placeholder="Additional notes..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box">${existing?.notes||""}</textarea></div>
-    </div>
-    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="document.getElementById('client-form-panel').remove()" class="btn" style="font-size:12px">Cancel</button>
-      <button onclick="saveClient('${escAttr(productName)}',${clientId||"null"})" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>
-    </div>`;
+  form.style.cssText = "position:fixed;top:0;right:480px;width:420px;max-width:90vw;height:100vh;background:var(--bg);border-left:1px solid var(--border);z-index:1002;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.3);overflow:hidden";
+
+  // Build form HTML
+  const typeTabsHtml = isVendorCtx ? '' :
+    '<div style="padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg3)">' +
+    '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">FEEDBACK TYPE</div>' +
+    '<div style="display:flex;gap:4px;flex-wrap:wrap" id="cf-type-btns">' +
+    '<button type="button" id="cftype-products" onclick="cfSetType(\'products\')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">📦 Product</button>' +
+    '<button type="button" id="cftype-pcc" onclick="cfSetType(\'pcc\')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">🌾 Commodity</button>' +
+    '<button type="button" id="cftype-ctrm" onclick="cfSetType(\'ctrm\')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">⚡ CTRM</button>' +
+    '<button type="button" id="cftype-risk" onclick="cfSetType(\'risk\')" style="padding:5px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--muted)">🛡 Risk</button>' +
+    '</div></div>';
+
+  form.innerHTML =
+    '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">' +
+      '<div style="font-weight:700;font-size:14px">' + (clientId ? "Edit Feedback" : "New Feedback") + '</div>' +
+      '<button onclick="document.getElementById(\'client-form-panel\').remove()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>' +
+    '</div>' +
+    typeTabsHtml +
+    '<div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px">' +
+      '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">CLIENT NAME *</label>' +
+        '<input id="cf-client" placeholder="Client name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>' +
+      '<div id="cf-project-wrap" style="display:none"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">PROJECT NAME</label>' +
+        '<input id="cf-project" placeholder="Project name" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>' +
+      '<div id="cf-dynamic-fields"></div>' +
+      '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">REGION</label>' +
+        '<input id="cf-region" placeholder="e.g. Europe, North America" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>' +
+      '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">SINCE YEAR</label>' +
+        '<input id="cf-year" type="number" placeholder="e.g. 2020" min="1990" max="2099" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>' +
+      '<div id="cf-notes-wrap"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">NOTES</label>' +
+        '<textarea id="cf-notes" placeholder="Additional notes..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box"></textarea></div>' +
+      '<div id="cf-sharepoint-wrap" style="display:none"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">SHAREPOINT FOLDER LINK</label>' +
+        '<input id="cf-sharepoint" placeholder="https://..." style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>' +
+    '</div>' +
+    '<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">' +
+      '<button onclick="document.getElementById(\'client-form-panel\').remove()" class="btn" style="font-size:12px">Cancel</button>' +
+      '<button onclick="cfSave()" class="btn btn-primary" style="font-size:12px;padding:6px 20px">Save</button>' +
+    '</div>';
+
   document.body.appendChild(form);
+
+  // Set existing values
+  if(existing?.client_name) document.getElementById("cf-client").value = existing.client_name;
+  if(existing?.region) document.getElementById("cf-region").value = existing.region;
+  if(existing?.since_year) document.getElementById("cf-year").value = existing.since_year;
+  if(existing?.notes) document.getElementById("cf-notes").value = existing.notes;
+  if(existing?.project_name) document.getElementById("cf-project").value = existing.project_name;
+  if(existing?.sharepoint_link) document.getElementById("cf-sharepoint").value = existing.sharepoint_link;
+
   window._cfType = initType;
-  cfSetType(initType);
-  setTimeout(()=>document.getElementById("cf-client")?.focus(),100);
-}
-
-function cfSetType(type){
-  window._cfType = type;
-  const productName = window._cfProductName;
-  const existing = window._cfExisting;
-  const ctx = window._cfCtx;
-  ['products','pcc','ctrm','risk'].forEach(t=>{
-    const b=document.getElementById('cftype-'+t);
-    if(b){b.style.background=t===type?'var(--accent)':'var(--bg3)';b.style.color=t===type?'#fff':'var(--muted)';}
-  });
-  const container=document.getElementById('cf-dynamic-fields');
-  if(!container)return;
-  const inpHtml=(id,lbl,val,ph,ro)=>`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${lbl}</label><input id="${id}" value="${escAttr(val||'')}" placeholder="${ph||''}" ${ro?'readonly style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-family:inherit;box-sizing:border-box"':'style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"'}></div>`;
-  const selHtml=(id,lbl,opts,val)=>`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${lbl}</label><select id="${id}" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>${opts.map(o=>`<option value="${escAttr(o)}" ${o===(val||'')?'selected':''}>${o}</option>`).join('')}</select></div>`;
-  if(type==='products'){
-    const pccComs=[...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
-    const allComs=pccComs.length?pccComs:[...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
-    const selComs=existing?(existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean):ctx?.commodity?[ctx.commodity]:[];
-    window._cfSelectedComs=[...selComs];window._cfAllComs=allComs;
-    container.innerHTML=`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label><div id="cf-coms-ms-wrap"></div></div>`;
-    buildCfComsMultiselect();
-  } else if(type==='pcc'){
-    const pccComs=[...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
-    const allComs=pccComs.length?pccComs:[...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
-    const selComs=existing?(existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean):ctx?.commodity?[ctx.commodity]:[];
-    window._cfSelectedComs=[...selComs];window._cfAllComs=allComs;
-    const covOpts=["Covered","Partially Covered","Not Covered","Can be covered"];
-    container.innerHTML=`<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Commodities</label><div id="cf-coms-ms-wrap"></div></div>`+selHtml('cf-coverage','Coverage Level',covOpts,existing?.coverage_level||ctx?.coverage_level||'');
-    buildCfComsMultiselect();
-  } else if(type==='ctrm'){
-    const fns=[...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.function_name).filter(Boolean))].sort();
-    const allFns=fns.length?fns:[...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
-    const coms=[...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.commodity).filter(Boolean))].sort();
-    const allComs=coms.length?coms:[...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-    const covOpts=["Deployed","Capable","Not Capable","N/A"];
-    container.innerHTML=selHtml('cf-function','Function',allFns,existing?.function_name||ctx?.function_name||'')+selHtml('cf-commodity-sel','Commodity',allComs,existing?.commodities||ctx?.commodity||'')+selHtml('cf-coverage','Coverage Level',covOpts,existing?.coverage_level||ctx?.coverage_level||'');
-  } else if(type==='risk'){
-    const allCats=[...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-    const allFns=[...new Set(state.risk.map(r=>r.function_name).filter(Boolean))].sort();
-    const covOpts=["Deployed","Capable","Not Capable","N/A"];
-    container.innerHTML=selHtml('cf-category','Category',allCats,existing?.category||ctx?.category||'')+selHtml('cf-function','Function',allFns,existing?.function_name||ctx?.function_name||'')+selHtml('cf-coverage','Coverage Level',covOpts,existing?.coverage_level||ctx?.coverage_level||'');
+  if(isVendorCtx){
+    document.getElementById("cf-project-wrap").style.display = "block";
+    document.getElementById("cf-notes-wrap").style.display = "block";
+  } else {
+    cfSetType(initType);
   }
+  setTimeout(()=>document.getElementById("cf-client")?.focus(), 100);
 }
-
 
 function buildCfComsMultiselect(){
   const wrap = document.getElementById("cf-coms-ms-wrap");
@@ -1762,47 +1861,419 @@ function openCfComsDropdown(btn, allComs){
   buildList(allComs); searchInput.focus();
 }
 
-async function saveClient(productName, clientId){
-  const clientName = document.getElementById("cf-client")?.value?.trim();
-  if(!clientName){alert("Client name is required.");return;}
-  const comSel = document.getElementById("cf-commodity-sel")?.value?.trim();
-  const commodities = comSel || (window._cfSelectedComs||[]).join(", ");
-  const region = document.getElementById("cf-region")?.value?.trim()||null;
-  const sinceYear = parseInt(document.getElementById("cf-year")?.value)||null;
-  const notes = document.getElementById("cf-notes")?.value?.trim()||null;
-  const functionName = document.getElementById("cf-function")?.value?.trim()||null;
-  const category = document.getElementById("cf-category")?.value?.trim()||null;
-  const coverageLevel = document.getElementById("cf-coverage")?.value||null;
-  const sourceTable = window._cfType || window._cfCtx?.source_table || null;
-  const pccRowId  = window._cfCtx?.pcc_row_id  || null;
-  const ctrmRowId = window._cfCtx?.ctrm_row_id || null;
-  const riskRowId = window._cfCtx?.risk_row_id  || null;
-  const userName = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
-  const body = {product:productName,client_name:clientName,commodities,region,since_year:sinceYear,notes,function_name:functionName,category,coverage_level:coverageLevel,source_table:sourceTable,pcc_row_id:pccRowId,ctrm_row_id:ctrmRowId,risk_row_id:riskRowId,created_by:userName};
-  try{
-    if(clientId&&clientId!=="null"){
-      await apiFetch("product_clients",{method:"PATCH",body,params:{id:"eq."+clientId}});
-      const idx=(state.clients||[]).findIndex(c=>c.id==clientId);
-      if(idx>-1)state.clients[idx]={...state.clients[idx],...body};
-    }else{
-      const res=await apiFetch("product_clients",{method:"POST",body});
-      if(!state.clients)state.clients=[];
-      if(res[0])state.clients.push(res[0]);
-    }
-    document.getElementById("client-form-panel")?.remove();
-    const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
-    if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-  }catch(e){alert("Error saving: "+e.message);}
+function getRiskFnsByCategory(cat){
+  return [...new Set((state.risk||[]).filter(r=>!cat||r.category===cat).map(r=>r.function_name).filter(Boolean))].sort();
 }
 
+function cfSetType(type){
+  saveCfBlockValues(); // Save current values before switching tab
+  window._cfType = type;
+  const productName = window._cfProductName;
+  const existing = window._cfExisting;
+  const ctx = window._cfCtx;
+
+  // Update tab buttons
+  ['products','pcc','ctrm','risk'].forEach(t=>{
+    const b = document.getElementById('cftype-'+t);
+    if(b){ b.style.background = t===type ? 'var(--accent)' : 'var(--bg3)'; b.style.color = t===type ? '#fff' : 'var(--muted)'; }
+  });
+
+  // Show/hide project, sharepoint, notes
+  const projWrap = document.getElementById('cf-project-wrap');
+  const spWrap   = document.getElementById('cf-sharepoint-wrap');
+  const notesWrap = document.getElementById('cf-notes-wrap');
+  if(projWrap)  projWrap.style.display  = (type==='products') ? 'block' : 'none';
+  if(spWrap)    spWrap.style.display    = (type==='products') ? 'block' : 'none';
+  if(notesWrap) notesWrap.style.display = (type==='products') ? 'block' : 'none';
+
+  const container = document.getElementById('cf-dynamic-fields');
+  if(!container) return;
+
+  if(type==='products'){
+    // Commodities multiselect
+    const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
+    const allComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
+    // Only reset selection if no previous selection exists in this session
+    if(!window._cfSelectedComs || window._cfSelectedComs.length === 0){
+      const selComs = existing ? (existing.commodities||"").split(",").map(s=>s.trim()).filter(Boolean) : (ctx?.commodity ? [ctx.commodity] : []);
+      window._cfSelectedComs = [...selComs];
+    }
+    window._cfAllComs = allComs;
+    container.innerHTML = '<div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">COMMODITIES</label><div id="cf-coms-ms-wrap"></div></div>';
+    buildCfComsMultiselect();
+
+  } else if(type==='pcc'){
+    // Commodities for dropdown: all commodities of this product
+    const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
+    const allComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
+
+    // If user already filled blocks in this session, keep them
+    if(!window._cfPccBlocks || window._cfPccBlocks.length === 0){
+      let existingBlocks = [];
+      try { existingBlocks = existing?.pcc_blocks ? JSON.parse(existing.pcc_blocks) : []; } catch(e){}
+      if(!existingBlocks.length){
+        if(ctx?.commodity){
+          existingBlocks = [{commodity:ctx.commodity, coverage_level:ctx.coverage_level||'', notes:''}];
+        } else {
+          const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
+          if(productTabComs.length){
+            existingBlocks = productTabComs.map(c=>({commodity:c, coverage_level:'', notes:''}));
+          } else {
+            existingBlocks = [{commodity:'', coverage_level:'', notes:''}];
+          }
+        }
+      }
+      window._cfPccBlocks = existingBlocks;
+    }
+    window._cfPccAllComs = allComs;
+    renderPccBlocks(container);
+
+  } else if(type==='ctrm'){
+    // Dropdowns: all commodities + functions of this product
+    const pccComs = [...new Set((state.pcc.filter(r=>r.product===productName)).map(r=>r.commodity))].filter(Boolean).sort();
+    const allComs = pccComs.length ? pccComs : [...new Set(state.pcc.map(r=>r.commodity).filter(Boolean))].sort();
+    const allFns = [...new Set((state.ctrm.filter(r=>r.product===productName)).map(r=>r.function_name).filter(Boolean))].sort();
+    const allFnsGlobal = allFns.length ? allFns : [...new Set(state.ctrm.map(r=>r.function_name).filter(Boolean))].sort();
+
+    // If user already filled blocks in this session, keep them
+    if(!window._cfCtrmBlocks || window._cfCtrmBlocks.length === 0){
+      let existingBlocks = [];
+      try { existingBlocks = existing?.ctrm_blocks ? JSON.parse(existing.ctrm_blocks) : []; } catch(e){}
+      if(!existingBlocks.length){
+        if(ctx?.commodity || ctx?.function_name){
+          existingBlocks = [{commodity:ctx.commodity||'', function_name:ctx.function_name||'', coverage_level:ctx.coverage_level||'', notes:''}];
+        } else {
+          const productTabComs = (window._cfSelectedComs||[]).filter(Boolean);
+          if(productTabComs.length){
+            existingBlocks = productTabComs.map(c=>({commodity:c, function_name:'', coverage_level:'', notes:''}));
+          } else {
+            existingBlocks = [{commodity:'', function_name:'', coverage_level:'', notes:''}];
+          }
+        }
+      }
+      window._cfCtrmBlocks = existingBlocks;
+    }
+    window._cfCtrmAllComs = allComs;
+    window._cfCtrmAllFns = allFnsGlobal;
+    renderCtrmBlocks(container);
+
+  } else if(type==='risk'){
+    // One block per entry with category + filtered function dropdowns
+    const allCats = [...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
+    // If user already filled blocks in this session, keep them
+    if(!window._cfRiskBlocks || window._cfRiskBlocks.length === 0){
+      let existingBlocks = [];
+      try { existingBlocks = existing?.risk_blocks ? JSON.parse(existing.risk_blocks) : []; } catch(e){}
+      if(!existingBlocks.length && (ctx?.category||ctx?.function_name)) existingBlocks = [{category:ctx.category||'', function_name:ctx.function_name||'', coverage_level:ctx.coverage_level||'', notes:''}];
+      if(!existingBlocks.length) existingBlocks = [{category:'', function_name:'', coverage_level:'', notes:''}];
+      window._cfRiskBlocks = existingBlocks;
+    }
+    window._cfRiskAllCats = allCats;
+    renderRiskBlocks(container);
+  }
+  // Restore top-level fields after tab switch
+  setTimeout(restoreCfTopFields, 0);
+}
+
+function renderPccBlocks(container){
+  const blocks = window._cfPccBlocks || [];
+  const allComs = window._cfPccAllComs || [];
+  const covOpts = ["Covered","Partially Covered","Not Covered","Can be covered"];
+  let html = '';
+  blocks.forEach((blk,i)=>{
+    html += '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--accent);font-weight:600;margin-bottom:8px;text-transform:uppercase;display:flex;justify-content:space-between">COMMODITY ' + (i+1)
+      + (blocks.length>1 ? '<button type="button" onclick="removeCfBlock(\'pcc\',' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0">✕</button>' : '')
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px">'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">COMMODITY</label>'
+      + '<select id="cf-pcc-com-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + allComs.map(c=>'<option value="'+escAttr(c)+'"'+(c===(blk.commodity||'')?'selected':'')+'>'+escH(c)+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">COVERAGE LEVEL</label>'
+      + '<select id="cf-pcc-cov-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + covOpts.map(c=>'<option value="'+c+'"'+(c===(blk.coverage_level||'')?'selected':'')+'>'+c+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">NOTES</label>'
+      + '<textarea id="cf-pcc-notes-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:50px;box-sizing:border-box">' + escH(blk.notes||'') + '</textarea></div>'
+      + '</div></div>';
+  });
+  html += '<button type="button" onclick="addCfBlock(\'pcc\')" style="width:100%;padding:7px;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-family:inherit;cursor:pointer;margin-top:4px">+ Add Commodity Block</button>';
+  container.innerHTML = html;
+}
+
+function renderCtrmBlocks(container){
+  const blocks = window._cfCtrmBlocks || [];
+  const allComs = window._cfCtrmAllComs || [];
+  const allFns  = window._cfCtrmAllFns  || [];
+  const covOpts = ["Deployed","Capable","Not Capable","N/A"];
+  let html = '';
+  blocks.forEach((blk,i)=>{
+    html += '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--accent);font-weight:600;margin-bottom:8px;text-transform:uppercase;display:flex;justify-content:space-between">ENTRY ' + (i+1)
+      + (blocks.length>1 ? '<button type="button" onclick="removeCfBlock(\'ctrm\',' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0">✕</button>' : '')
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px">'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">COMMODITY</label>'
+      + '<select id="cf-ctrm-com-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + allComs.map(c=>'<option value="'+escAttr(c)+'"'+(c===(blk.commodity||'')?'selected':'')+'>'+escH(c)+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">FUNCTION</label>'
+      + '<select id="cf-ctrm-fn-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + allFns.map(f=>'<option value="'+escAttr(f)+'"'+(f===(blk.function_name||'')?'selected':'')+'>'+escH(f)+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">COVERAGE LEVEL</label>'
+      + '<select id="cf-ctrm-cov-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + covOpts.map(c=>'<option value="'+c+'"'+(c===(blk.coverage_level||'')?'selected':'')+'>'+c+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">NOTES</label>'
+      + '<textarea id="cf-ctrm-notes-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:50px;box-sizing:border-box">' + escH(blk.notes||'') + '</textarea></div>'
+      + '</div></div>';
+  });
+  html += '<button type="button" onclick="addCfBlock(\'ctrm\')" style="width:100%;padding:7px;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-family:inherit;cursor:pointer;margin-top:4px">+ Add CTRM Entry</button>';
+  container.innerHTML = html;
+}
+
+function renderRiskBlocks(container){
+  const blocks  = window._cfRiskBlocks || [];
+  const allCats = window._cfRiskAllCats || [];
+  const covOpts = ["Deployed","Capable","Not Capable","N/A"];
+  let html = '';
+  blocks.forEach((blk,i)=>{
+    const fnsForCat = getRiskFnsByCategory(blk.category||'');
+    html += '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-size:10px;color:var(--accent);font-weight:600;margin-bottom:8px;text-transform:uppercase;display:flex;justify-content:space-between">ENTRY ' + (i+1)
+      + (blocks.length>1 ? '<button type="button" onclick="removeCfBlock(\'risk\',' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;padding:0">✕</button>' : '')
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px">'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">CATEGORY</label>'
+      + '<select id="cf-risk-cat-' + i + '" onchange="cfRiskCatChanged(' + i + ')" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + allCats.map(c=>'<option value="'+escAttr(c)+'"'+(c===(blk.category||'')?'selected':'')+'>'+escH(c)+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">FUNCTION</label>'
+      + '<select id="cf-risk-fn-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + fnsForCat.map(f=>'<option value="'+escAttr(f)+'"'+(f===(blk.function_name||'')?'selected':'')+'>'+escH(f)+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">COVERAGE LEVEL</label>'
+      + '<select id="cf-risk-cov-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit"><option value="">— Select —</option>'
+      + covOpts.map(c=>'<option value="'+c+'"'+(c===(blk.coverage_level||'')?'selected':'')+'>'+c+'</option>').join('')
+      + '</select></div>'
+      + '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;text-transform:uppercase">NOTES</label>'
+      + '<textarea id="cf-risk-notes-' + i + '" style="width:100%;padding:7px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:50px;box-sizing:border-box">' + escH(blk.notes||'') + '</textarea></div>'
+      + '</div></div>';
+  });
+  html += '<button type="button" onclick="addCfBlock(\'risk\')" style="width:100%;padding:7px;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--accent);font-size:12px;font-family:inherit;cursor:pointer;margin-top:4px">+ Add Risk Entry</button>';
+  container.innerHTML = html;
+}
+
+function cfRiskCatChanged(i){
+  const catEl = document.getElementById('cf-risk-cat-'+i);
+  const fnEl  = document.getElementById('cf-risk-fn-'+i);
+  if(!catEl||!fnEl) return;
+  const cat = catEl.value;
+  const fns = getRiskFnsByCategory(cat);
+  fnEl.innerHTML = '<option value="">— Select —</option>' + fns.map(f=>'<option value="'+escAttr(f)+'">'+escH(f)+'</option>').join('');
+  if(window._cfRiskBlocks && window._cfRiskBlocks[i]) window._cfRiskBlocks[i].category = cat;
+  if(window._cfRiskBlocks && window._cfRiskBlocks[i]) window._cfRiskBlocks[i].function_name = '';
+}
+
+
+function saveCfBlockValues(){
+  // Save current DOM values back to blocks arrays before re-rendering
+  const type = window._cfType;
+  if(type==='pcc' && window._cfPccBlocks){
+    window._cfPccBlocks.forEach((_,i)=>{
+      const com  = document.getElementById('cf-pcc-com-'+i);
+      const cov  = document.getElementById('cf-pcc-cov-'+i);
+      const note = document.getElementById('cf-pcc-notes-'+i);
+      if(com)  window._cfPccBlocks[i].commodity      = com.value;
+      if(cov)  window._cfPccBlocks[i].coverage_level = cov.value;
+      if(note) window._cfPccBlocks[i].notes          = note.value;
+    });
+  } else if(type==='ctrm' && window._cfCtrmBlocks){
+    window._cfCtrmBlocks.forEach((_,i)=>{
+      const com  = document.getElementById('cf-ctrm-com-'+i);
+      const fn   = document.getElementById('cf-ctrm-fn-'+i);
+      const cov  = document.getElementById('cf-ctrm-cov-'+i);
+      const note = document.getElementById('cf-ctrm-notes-'+i);
+      if(com)  window._cfCtrmBlocks[i].commodity      = com.value;
+      if(fn)   window._cfCtrmBlocks[i].function_name  = fn.value;
+      if(cov)  window._cfCtrmBlocks[i].coverage_level = cov.value;
+      if(note) window._cfCtrmBlocks[i].notes          = note.value;
+    });
+  } else if(type==='risk' && window._cfRiskBlocks){
+    window._cfRiskBlocks.forEach((_,i)=>{
+      const cat  = document.getElementById('cf-risk-cat-'+i);
+      const fn   = document.getElementById('cf-risk-fn-'+i);
+      const cov  = document.getElementById('cf-risk-cov-'+i);
+      const note = document.getElementById('cf-risk-notes-'+i);
+      if(cat)  window._cfRiskBlocks[i].category       = cat.value;
+      if(fn)   window._cfRiskBlocks[i].function_name  = fn.value;
+      if(cov)  window._cfRiskBlocks[i].coverage_level = cov.value;
+      if(note) window._cfRiskBlocks[i].notes          = note.value;
+    });
+  }
+  // Also save top-level fields
+  const client = document.getElementById('cf-client');
+  const region = document.getElementById('cf-region');
+  const year   = document.getElementById('cf-year');
+  const notes  = document.getElementById('cf-notes');
+  const proj   = document.getElementById('cf-project');
+  const sp     = document.getElementById('cf-sharepoint');
+  if(client) window._cfSavedClient  = client.value;
+  if(region) window._cfSavedRegion  = region.value;
+  if(year)   window._cfSavedYear    = year.value;
+  if(notes)  window._cfSavedNotes   = notes.value;
+  if(proj)   window._cfSavedProject = proj.value;
+  if(sp)     window._cfSavedSP      = sp.value;
+}
+
+function restoreCfTopFields(){
+  // Restore top-level fields after tab switch
+  const client = document.getElementById('cf-client');
+  const region = document.getElementById('cf-region');
+  const year   = document.getElementById('cf-year');
+  const notes  = document.getElementById('cf-notes');
+  const proj   = document.getElementById('cf-project');
+  const sp     = document.getElementById('cf-sharepoint');
+  if(client && window._cfSavedClient !== undefined) client.value = window._cfSavedClient;
+  if(region && window._cfSavedRegion !== undefined) region.value = window._cfSavedRegion;
+  if(year   && window._cfSavedYear   !== undefined) year.value   = window._cfSavedYear;
+  if(notes  && window._cfSavedNotes  !== undefined) notes.value  = window._cfSavedNotes;
+  if(proj   && window._cfSavedProject!== undefined) proj.value   = window._cfSavedProject;
+  if(sp     && window._cfSavedSP     !== undefined) sp.value     = window._cfSavedSP;
+}
+
+function addCfBlock(type){
+  saveCfBlockValues();
+  if(type==='pcc'){ window._cfPccBlocks = window._cfPccBlocks||[]; window._cfPccBlocks.push({commodity:'',coverage_level:'',notes:''}); renderPccBlocks(document.getElementById('cf-dynamic-fields')); }
+  else if(type==='ctrm'){ window._cfCtrmBlocks = window._cfCtrmBlocks||[]; window._cfCtrmBlocks.push({commodity:'',function_name:'',coverage_level:'',notes:''}); renderCtrmBlocks(document.getElementById('cf-dynamic-fields')); }
+  else if(type==='risk'){ window._cfRiskBlocks = window._cfRiskBlocks||[]; window._cfRiskBlocks.push({category:'',function_name:'',coverage_level:'',notes:''}); renderRiskBlocks(document.getElementById('cf-dynamic-fields')); }
+}
+
+function removeCfBlock(type,idx){
+  saveCfBlockValues();
+  if(type==='pcc'&&window._cfPccBlocks){ window._cfPccBlocks.splice(idx,1); renderPccBlocks(document.getElementById('cf-dynamic-fields')); }
+  else if(type==='ctrm'&&window._cfCtrmBlocks){ window._cfCtrmBlocks.splice(idx,1); renderCtrmBlocks(document.getElementById('cf-dynamic-fields')); }
+  else if(type==='risk'&&window._cfRiskBlocks){ window._cfRiskBlocks.splice(idx,1); renderRiskBlocks(document.getElementById('cf-dynamic-fields')); }
+}
+
+function collectCfBlocks(type){
+  if(type==='pcc'){ return (window._cfPccBlocks||[]).map((_,i)=>({commodity:document.getElementById('cf-pcc-com-'+i)?.value||'', coverage_level:document.getElementById('cf-pcc-cov-'+i)?.value||'', notes:document.getElementById('cf-pcc-notes-'+i)?.value||''})).filter(b=>b.commodity); }
+  if(type==='ctrm'){ return (window._cfCtrmBlocks||[]).map((_,i)=>({commodity:document.getElementById('cf-ctrm-com-'+i)?.value||'', function_name:document.getElementById('cf-ctrm-fn-'+i)?.value||'', coverage_level:document.getElementById('cf-ctrm-cov-'+i)?.value||'', notes:document.getElementById('cf-ctrm-notes-'+i)?.value||''})).filter(b=>b.commodity||b.function_name); }
+  if(type==='risk'){ return (window._cfRiskBlocks||[]).map((_,i)=>({category:document.getElementById('cf-risk-cat-'+i)?.value||'', function_name:document.getElementById('cf-risk-fn-'+i)?.value||'', coverage_level:document.getElementById('cf-risk-cov-'+i)?.value||'', notes:document.getElementById('cf-risk-notes-'+i)?.value||''})).filter(b=>b.category||b.function_name); }
+  return [];
+}
+
+
+function cfSave(){
+  saveClient(window._cfProductName, window._cfClientId||null);
+}
+
+async function saveClient(productName, clientId){
+  // Save current tab values before collecting
+  saveCfBlockValues();
+
+  const clientName = document.getElementById("cf-client")?.value?.trim();
+  if(!clientName){ alert("Client name is required."); return; }
+  const region      = document.getElementById("cf-region")?.value?.trim()||null;
+  const sinceYear   = parseInt(document.getElementById("cf-year")?.value)||null;
+  const notes       = document.getElementById("cf-notes")?.value?.trim()||null;
+  const projectName = document.getElementById("cf-project")?.value?.trim()||null;
+  const sharepointLink = document.getElementById("cf-sharepoint")?.value?.trim()||null;
+  const sourceTable = window._cfType || null;
+  const isVendorCtx = sourceTable === 'vendor';
+  const userName    = typeof currentUser==="object" ? (currentUser?.user_metadata?.full_name||currentUser?.email||"User") : (currentUser||"User");
+
+  // Collect ALL tabs data regardless of which tab is active
+  const commodities = (window._cfSelectedComs||[]).filter(Boolean).join(", ") || null;
+  let functionName=null, category=null, coverageLevel=null;
+
+  // PCC blocks - from memory (saved by saveCfBlockValues)
+  let pccBlocks = null;
+  if(window._cfPccBlocks && window._cfPccBlocks.length){
+    const valid = window._cfPccBlocks.filter(b=>b.commodity);
+    if(valid.length) pccBlocks = JSON.stringify(valid);
+  }
+
+  // CTRM blocks - from memory
+  let ctrmBlocks = null;
+  if(window._cfCtrmBlocks && window._cfCtrmBlocks.length){
+    const valid = window._cfCtrmBlocks.filter(b=>b.commodity||b.function_name);
+    if(valid.length) ctrmBlocks = JSON.stringify(valid);
+  }
+
+  // Risk blocks - from memory
+  let riskBlocks = null;
+  if(window._cfRiskBlocks && window._cfRiskBlocks.length){
+    const valid = window._cfRiskBlocks.filter(b=>b.category||b.function_name);
+    if(valid.length) riskBlocks = JSON.stringify(valid);
+  }
+
+  const body = {
+    source_table: sourceTable,
+    client_name:  clientName,
+    region, since_year: sinceYear, notes,
+    project_name: projectName,
+    sharepoint_link: sharepointLink,
+    commodities, function_name: functionName,
+    category, coverage_level: coverageLevel,
+    pcc_blocks: pccBlocks, ctrm_blocks: ctrmBlocks, risk_blocks: riskBlocks,
+    created_by: userName
+  };
+
+  if(isVendorCtx){
+    body.vendor_name = productName;
+  } else {
+    body.product = productName;
+  }
+
+  // Remove null/undefined keys
+  Object.keys(body).forEach(k=>{ if(body[k]===null||body[k]===undefined) delete body[k]; });
+
+  try{
+    if(clientId && clientId!=="null"){
+      await apiFetch("product_clients",{method:"PATCH",body,params:{id:"eq."+clientId}});
+      const idx=(state.clients||[]).findIndex(c=>c.id==clientId);
+      if(idx>-1) state.clients[idx]={...state.clients[idx],...body};
+    } else {
+      const res=await apiFetch("product_clients",{method:"POST",body});
+      if(!state.clients) state.clients=[];
+      if(res[0]) state.clients.push(res[0]);
+    }
+    document.getElementById("client-form-panel")?.remove();
+    // Reload clients from server to ensure state is fresh
+    const freshClients = await getAll("product_clients");
+    state.clients = freshClients;
+    const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
+    const filterFn = isVendorCtx ? (c=>c.vendor_name===productName) : (c=>c.product===productName);
+    if(listEl) listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(filterFn));
+  } catch(e){ alert("Error saving: "+e.message); }
+}
+
+
+function cfEditFeedback(btn){
+  const div=btn.closest('[data-cid]');
+  if(!div) return;
+  const clientId=parseInt(div.dataset.cid);
+  const productName=div.dataset.pn;
+  openClientForm(productName, clientId, null);
+}
+function cfDeleteFeedback(btn){
+  const div=btn.closest('[data-cid]');
+  if(!div) return;
+  const clientId=parseInt(div.dataset.cid);
+  const productName=div.dataset.pn;
+  deleteClient(clientId, productName);
+}
 async function deleteClient(clientId, productName){
-  if(!confirm("Delete this feedback record?"))return;
+  if(!confirm("Delete this feedback record?")) return;
   try{
     await apiFetch("product_clients",{method:"DELETE",params:{id:"eq."+clientId}});
     state.clients=(state.clients||[]).filter(c=>c.id!==clientId);
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
-    if(listEl)listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName));
-  }catch(e){alert("Error deleting: "+e.message);}
+    if(listEl) listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(c=>c.product===productName||c.vendor_name===productName));
+  } catch(e){ alert("Error deleting: "+e.message); }
 }
 
 function openVendorModal(id){
@@ -1812,8 +2283,24 @@ function openVendorModal(id){
   ],async()=>{
     const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
     if(!vals.id)delete vals.id;
-    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{
+      if(v){
+        await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});
+        // If vendor_name changed, update all product_clients records
+        if(vals.vendor_name && vals.vendor_name !== v.vendor_name){
+          const affected=(state.clients||[]).filter(c=>c.vendor_name===v.vendor_name);
+          for(const c of affected){
+            await apiFetch(`product_clients?id=eq.${c.id}`,{method:"PATCH",body:{vendor_name:vals.vendor_name}});
+          }
+          state.clients=(state.clients||[]).map(c=>c.vendor_name===v.vendor_name?{...c,vendor_name:vals.vendor_name}:c);
+        }
+        state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);
+      } else {
+        const res=await apiFetch("vendors",{method:"POST",body:vals});
+        state.vendors=[...state.vendors,res[0]];
+      }
+      closeModal();render();
+    }catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2034,83 +2521,106 @@ function createMultiSelect(id, options, selectedValues, placeholder, onChangeKey
   const label = selected.length === 0 ? placeholder :
     selected.length === 1 ? selected[0] :
     selected.length + ' selected';
+  const allSel = options.length > 0 && options.every(o=>selected.includes(o));
 
-  return `<div class="ms-wrap" id="ms-${id}" style="position:relative;display:inline-block">
-    <button class="ms-btn" onclick="toggleMultiSelect('${id}')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:120px;justify-content:space-between">
-      <span>${label}</span><span style="font-size:9px;color:var(--muted)">▼</span>
-    </button>
-    <div class="ms-dropdown" id="ms-drop-${id}" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:4px;max-height:260px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.4);min-width:160px">
-      <div style="display:flex;border-bottom:1px solid var(--border)">
-        <button onclick="msSelectAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;border-right:1px solid var(--border);cursor:pointer;color:var(--accent);font-family:inherit">(All)</button>
-        <button onclick="msClearAll('${id}','${onChangeKey}')" style="flex:1;padding:5px 8px;font-size:11px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:inherit">Clear</button>
-      </div>
-      ${options.map(opt => `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border);white-space:nowrap" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><input type="checkbox" value="${opt}" ${selected.includes(opt)?'checked':''} onchange="msChange('${id}','${onChangeKey}')" style="margin:0;cursor:pointer;accent-color:var(--accent)">${opt}</label>`).join('')}
-    </div>
-  </div>`;
+  let html = '<div class="ms-wrap" id="ms-'+id+'" style="position:relative;display:inline-block">';
+  html += '<button class="ms-btn" type="button" onclick="toggleMultiSelect(\''+id+'\')" style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;min-width:120px;justify-content:space-between"><span>'+escH(label)+'</span><span style="font-size:9px;color:var(--muted)">&#9660;</span></button>';
+  html += '<div class="ms-dropdown" id="ms-drop-'+id+'" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.5);width:220px">';
+  // Search
+  html += '<div style="padding:6px 8px;border-bottom:1px solid var(--border)"><input id="ms-search-'+id+'" type="text" placeholder="Search..." oninput="msSearch(\''+id+'\')" style="width:100%;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box"></div>';
+  // Select All
+  html += '<div style="padding:5px 8px;border-bottom:2px solid var(--border);background:var(--bg3)"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text);font-weight:600"><input type="checkbox" id="ms-all-'+id+'" '+(allSel?'checked':'')+' onchange="msToggleAll(\''+id+'\',\''+onChangeKey+'\')" style="margin:0;cursor:pointer;accent-color:var(--accent);width:14px;height:14px">(Select All)</label></div>';
+  // Options
+  html += '<div id="ms-list-'+id+'" style="max-height:200px;overflow-y:auto">';
+  options.forEach(opt => {
+    const chk = selected.includes(opt) ? 'checked' : '';
+    html += '<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;font-size:12px;color:var(--text);border-bottom:1px solid var(--row-border)" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'"><input type="checkbox" value="'+escAttr(opt)+'" '+chk+' onchange="msChange(\''+id+'\',\''+onChangeKey+'\')" style="margin:0;cursor:pointer;accent-color:var(--accent);width:14px;height:14px">'+escH(opt)+'</label>';
+  });
+  html += '</div>';
+  // OK / Cancel
+  html += '<div style="display:flex;gap:6px;padding:8px;border-top:1px solid var(--border);justify-content:flex-end"><button type="button" onclick="msCancel(\''+id+'\')" style="padding:4px 14px;font-size:12px;font-family:inherit;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer">Cancel</button><button type="button" onclick="msApply(\''+id+'\',\''+onChangeKey+'\')" style="padding:4px 14px;font-size:12px;font-family:inherit;background:var(--accent);border:none;border-radius:4px;color:#fff;cursor:pointer;font-weight:600">OK</button></div>';
+  html += '</div></div>';
+  return html;
 }
 
-
-function toggleMultiSelect(id) {
+function toggleMultiSelect(id){
+  const drop = document.getElementById('ms-drop-'+id);
+  if(!drop) return;
   // Close all other dropdowns first
-  document.querySelectorAll('.ms-dropdown').forEach(d => {
-    if (d.id !== 'ms-drop-' + id) d.style.display = 'none';
+  document.querySelectorAll('.ms-dropdown').forEach(d=>{ if(d.id!=='ms-drop-'+id) d.style.display='none'; });
+  const isOpen = drop.style.display !== 'none';
+  drop.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen) setTimeout(()=>document.getElementById('ms-search-'+id)?.focus(), 50);
+}
+
+function msSearch(id){
+  const q = (document.getElementById('ms-search-'+id)?.value||'').toLowerCase();
+  const list = document.getElementById('ms-list-'+id);
+  if(!list) return;
+  list.querySelectorAll('label').forEach(lbl=>{
+    const txt = lbl.textContent.toLowerCase();
+    lbl.style.display = txt.includes(q) ? '' : 'none';
   });
-  const drop = document.getElementById('ms-drop-' + id);
-  if (drop) drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+}
+
+function msToggleAll(id, key){
+  const allCb = document.getElementById('ms-all-'+id);
+  const list = document.getElementById('ms-list-'+id);
+  if(!allCb||!list) return;
+  list.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=allCb.checked);
+}
+
+function msChange(id, key){
+  // Update Select All checkbox state
+  const list = document.getElementById('ms-list-'+id);
+  const allCb = document.getElementById('ms-all-'+id);
+  if(!list||!allCb) return;
+  const all = list.querySelectorAll('input[type=checkbox]');
+  const checked = list.querySelectorAll('input[type=checkbox]:checked');
+  allCb.checked = all.length > 0 && all.length === checked.length;
+  allCb.indeterminate = checked.length > 0 && checked.length < all.length;
+}
+
+function msApply(id, key){
+  const list = document.getElementById('ms-list-'+id);
+  if(!list) return;
+  const selected = [...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
+  sf(key, selected.length ? selected : []);
+  document.getElementById('ms-drop-'+id).style.display = 'none';
+  // Reset search
+  const search = document.getElementById('ms-search-'+id);
+  if(search) search.value = '';
+  msSearch(id);
+}
+
+function msCancel(id){
+  document.getElementById('ms-drop-'+id).style.display = 'none';
+  const search = document.getElementById('ms-search-'+id);
+  if(search) search.value = '';
+  msSearch(id);
+}
+
+function msSelectAll(id, key){
+  const list = document.getElementById('ms-list-'+id);
+  if(list) list.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=true);
+  const allCb = document.getElementById('ms-all-'+id);
+  if(allCb) allCb.checked = true;
+}
+
+function msClearAll(id, key){
+  const list = document.getElementById('ms-list-'+id);
+  if(list) list.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);
+  const allCb = document.getElementById('ms-all-'+id);
+  if(allCb) allCb.checked = false;
 }
 
 // Close dropdowns when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.ms-wrap')) {
-    document.querySelectorAll('.ms-dropdown').forEach(d => d.style.display = 'none');
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.ms-wrap')){
+    document.querySelectorAll('.ms-dropdown').forEach(d=>d.style.display='none');
   }
 });
 
-function msGetSelected(id) {
-  const drop = document.getElementById('ms-drop-' + id);
-  if (!drop) return [];
-  return [...drop.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
-}
-
-function msChange(id, filterKey) {
-  const selected = msGetSelected(id);
-  state.filters[filterKey] = selected;
-  state.pages = {};
-  // Update button label
-  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
-  if (btn) {
-    const label = selected.length === 0 ? getPlaceholder(filterKey) :
-      selected.length === 1 ? selected[0] :
-      selected.length + ' selected';
-    btn.childNodes[0].textContent = label + ' ';
-  }
-  render();
-}
-
-function msSelectAll(id, filterKey) {
-  const drop = document.getElementById('ms-drop-' + id);
-  if (!drop) return;
-  drop.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
-  state.filters[filterKey] = [];
-  state.pages = {};
-  const btn = document.querySelector('#ms-' + id + ' .ms-btn');
-  if (btn) btn.childNodes[0].textContent = getPlaceholder(filterKey) + ' ';
-  render();
-}
-
-function msClearAll(id, filterKey) {
-  msSelectAll(id, filterKey);
-}
-
-function getPlaceholder(key) {
-  const map = {
-    'pcc_prod':'All Products','pcc_com':'All Commodities','pcc_cov':'All Coverage',
-    'ctrm_prod':'All Products','ctrm_com':'All Commodities','ctrm_cov':'All Coverage',
-    'risk_prod':'All Products','risk_cov':'All Coverage',
-    'geo_prod':'All Products','ct_prod':'All Products','con_prod':'All Products'
-  };
-  return map[key] || 'All';
-}
 
 function msFilter(data, field, filterKey) {
   const selected = state.filters[filterKey];
@@ -2176,7 +2686,7 @@ async function doLogin() {
   if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
   try {
     const data = await authFetch("/token?grant_type=password", {body: {email, password}});
-    localStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, user: data.user}));
+    localStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, refresh_token: data.refresh_token, user: data.user}));
     onLogin(data.user);
   } catch(e) {
     errEl.textContent = e.message;
@@ -2259,474 +2769,6 @@ window.addEventListener("load", function() {
   checkAuth();
 });
 
-// ── CHATBOX ──
-let chatOpen = false;
-let chatState = {}; // tracks current conversation state
-
-function toggleChat() {
-  chatOpen = !chatOpen;
-  document.getElementById("chat-panel").style.display = chatOpen ? "flex" : "none";
-  document.getElementById("chat-fab").textContent = chatOpen ? "✕" : "💬";
-  if (chatOpen && !document.getElementById("chat-messages").hasChildNodes()) {
-    showMainMenu();
-  }
-}
-
-function clearChat() {
-  document.getElementById("chat-messages").innerHTML = "";
-  chatState = {};
-  showMainMenu();
-}
-
-function addMsg(role, text) {
-  const el = document.getElementById("chat-messages"); if (!el) return;
-  const d = document.createElement("div");
-  d.style.cssText = "margin-bottom:10px;display:flex;flex-direction:column;align-items:" + (role==="user"?"flex-end":"flex-start");
-  const b = document.createElement("div");
-  b.style.cssText = "max-width:90%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;" + (role==="user"?"background:var(--accent);color:#fff;border-bottom-right-radius:3px":"background:var(--bg3);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:3px");
-  b.textContent = text; d.appendChild(b); el.appendChild(d); el.scrollTop = el.scrollHeight;
-}
-
-function addButtons(buttons) {
-  const el = document.getElementById("chat-messages"); if (!el) return;
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start";
-  buttons.forEach(btn => {
-    const b = document.createElement("button");
-    b.style.cssText = "padding:6px 12px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:16px;cursor:pointer;background:var(--bg2);color:var(--accent);font-family:inherit;transition:all .15s";
-    b.textContent = btn.label;
-    b.onmouseover = () => b.style.background = "var(--accent)22";
-    b.onmouseout = () => b.style.background = "var(--bg2)";
-    b.onclick = () => { btn.action(); };
-    wrap.appendChild(b);
-  });
-  el.appendChild(wrap);
-  el.scrollTop = el.scrollHeight;
-}
-
-function addSearchInput(placeholder, onSubmit) {
-  const el = document.getElementById("chat-messages"); if (!el) return;
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "margin-bottom:10px;display:flex;gap:6px";
-  const inp = document.createElement("input");
-  inp.placeholder = placeholder;
-  inp.style.cssText = "flex:1;padding:7px 12px;border-radius:16px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none";
-  const btn = document.createElement("button");
-  btn.textContent = "Search";
-  btn.style.cssText = "padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:16px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit";
-  const submit = () => {
-    const val = inp.value.trim();
-    if (!val) return;
-    addMsg("user", val);
-    onSubmit(val);
-  };
-  btn.onclick = submit;
-  inp.onkeydown = e => { if(e.key==="Enter") submit(); };
-  wrap.appendChild(inp); wrap.appendChild(btn);
-  el.appendChild(wrap);
-  el.scrollTop = el.scrollHeight;
-  setTimeout(() => inp.focus(), 100);
-}
-
-function addResults(results, columns) {
-  if (!results || results.length === 0) {
-    addMsg("assistant", "No results found.");
-    showMainMenu();
-    return;
-  }
-  const el = document.getElementById("chat-messages"); if (!el) return;
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "margin-bottom:10px;max-width:100%;overflow-x:auto";
-  const tbl = document.createElement("table");
-  tbl.style.cssText = "width:100%;border-collapse:collapse;font-size:11px;background:var(--bg3);border-radius:6px;overflow:hidden";
-  const thead = document.createElement("thead");
-  const hr = document.createElement("tr");
-  columns.forEach(c => {
-    const th = document.createElement("th");
-    th.style.cssText = "padding:5px 9px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;white-space:nowrap";
-    th.textContent = c.label || c.key;
-    hr.appendChild(th);
-  });
-  thead.appendChild(hr); tbl.appendChild(thead);
-  const tbody = document.createElement("tbody");
-  results.forEach(row => {
-    const tr = document.createElement("tr");
-    columns.forEach(c => {
-      const td = document.createElement("td");
-      td.style.cssText = "padding:5px 9px;border-bottom:1px solid var(--row-border);font-size:11px";
-      let val = row[c.key] ?? "";
-      if (typeof val === "number") val = Math.round(val * 100) + "%";
-      td.textContent = val;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody); wrap.appendChild(tbl);
-  const meta = document.createElement("div");
-  meta.style.cssText = "font-size:10px;color:var(--muted);margin-top:3px;padding-left:3px";
-  meta.textContent = results.length + " result" + (results.length !== 1 ? "s" : "");
-  wrap.appendChild(meta); el.appendChild(wrap); el.scrollTop = el.scrollHeight;
-  // Add a back to menu button
-  addButtons([
-    {label: "🔍 New Search", action: () => { addMsg("user","New Search"); showMainMenu(); }},
-  ]);
-}
-
-function showMainMenu() {
-  addMsg("assistant", "What would you like to explore?");
-  addButtons([
-    {label: "🌾 Commodity Coverage", action: showCommodityMenu},
-    {label: "📦 Products", action: showProductMenu},
-    {label: "🏢 Vendors", action: showVendorMenu},
-    {label: "⚡ CTRM Functions", action: showCtrmMenu},
-    {label: "🛡 Risk Functions", action: showRiskMenu},
-    {label: "🌍 Geographic Coverage", action: showGeoMenu},
-    {label: "👥 Customer Types", action: showCustomerMenu},
-    {label: "👤 Contacts", action: showContactMenu},
-    {label: "➕ Add Data", action: showAddMenu},
-  ]);
-}
-
-// ── COMMODITY COVERAGE ──
-function showCommodityMenu() {
-  addMsg("user", "Commodity Coverage");
-  addMsg("assistant", "What do you want to know about commodity coverage?");
-  addButtons([
-    {label: "Which products cover a commodity?", action: () => askCommoditySearch("Covered")},
-    {label: "Partially covered products", action: () => askCommoditySearch("Partial")},
-    {label: "All coverage for a product", action: askProductCoverage},
-    {label: "Count products covering a commodity", action: askCommodityCount},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function askCommoditySearch(coverageFilter) {
-  const label = coverageFilter === "Covered" ? "fully covered" : "partially covered";
-  addMsg("assistant", `Which commodity? (e.g. Power, Gas, FX, Bulk, LNG)`);
-  const commodities = [...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  addButtons(commodities.slice(0,15).map(c => ({
-    label: c,
-    action: () => {
-      addMsg("user", c);
-      const results = state.pcc.filter(r =>
-        r.commodity === c &&
-        (coverageFilter === "Partial" ? (r.coverage_level||"").includes("Partial") : (r.coverage_level||"").includes("Covered") && !(r.coverage_level||"").includes("Not"))
-      );
-      addMsg("assistant", `Products with ${label} coverage for ${c}:`);
-      addResults(results, [{key:"product",label:"Product"},{key:"product_type",label:"Type"},{key:"coverage_level",label:"Coverage"}]);
-    }
-  })));
-  addSearchInput("Or type a commodity name...", val => {
-    const results = state.pcc.filter(r =>
-      (r.commodity||"").toLowerCase().includes(val.toLowerCase()) &&
-      (coverageFilter === "Partial" ? (r.coverage_level||"").includes("Partial") : (r.coverage_level||"").includes("Covered") && !(r.coverage_level||"").includes("Not"))
-    );
-    addMsg("assistant", `Products with ${label} coverage for "${val}":`);
-    addResults(results, [{key:"product",label:"Product"},{key:"commodity",label:"Commodity"},{key:"coverage_level",label:"Coverage"}]);
-  });
-}
-
-function askProductCoverage() {
-  addMsg("assistant", "Which product?");
-  const products = [...new Set(state.pcc.map(p=>p.product).filter(Boolean))].sort();
-  addButtons(products.slice(0,20).map(p => ({
-    label: p,
-    action: () => {
-      addMsg("user", p);
-      const results = state.pcc.filter(r => r.product === p);
-      addMsg("assistant", `Commodity coverage for ${p}:`);
-      addResults(results, [{key:"commodity",label:"Commodity"},{key:"coverage_level",label:"Coverage"}]);
-    }
-  })));
-  addSearchInput("Or type a product name...", val => {
-    const results = state.pcc.filter(r => (r.product||"").toLowerCase().includes(val.toLowerCase()));
-    addResults(results, [{key:"product",label:"Product"},{key:"commodity",label:"Commodity"},{key:"coverage_level",label:"Coverage"}]);
-  });
-}
-
-function askCommodityCount() {
-  addMsg("assistant", "Which commodity?");
-  const commodities = [...new Set(state.pcc.map(p=>p.commodity).filter(Boolean))].sort();
-  addButtons(commodities.slice(0,15).map(c => ({
-    label: c,
-    action: () => {
-      addMsg("user", c);
-      const covered = state.pcc.filter(r => r.commodity === c && (r.coverage_level||"").includes("Covered") && !(r.coverage_level||"").includes("Not")).length;
-      const partial = state.pcc.filter(r => r.commodity === c && (r.coverage_level||"").includes("Partial")).length;
-      const not = state.pcc.filter(r => r.commodity === c && (r.coverage_level||"").includes("Not")).length;
-      addMsg("assistant", `${c} coverage summary:
-• Covered: ${covered} products
-• Partially Covered: ${partial} products
-• Not Covered: ${not} products`);
-      showMainMenu();
-    }
-  })));
-}
-
-// ── PRODUCTS ──
-function showProductMenu() {
-  addMsg("user", "Products");
-  addMsg("assistant", "How would you like to filter products?");
-  addButtons([
-    {label: "By vendor", action: askProductsByVendor},
-    {label: "CTRM products only", action: () => { addMsg("user","CTRM products"); const r=state.products.filter(p=>p.product_type==="CTRM Solutions"); addMsg("assistant",`${r.length} CTRM products:`); addResults(r,[{key:"product_name",label:"Product"},{key:"vendor",label:"Vendor"},{key:"version_info",label:"Version"}]); }},
-    {label: "Risk products only", action: () => { addMsg("user","Risk products"); const r=state.products.filter(p=>p.product_type&&p.product_type.includes("Risk")); addMsg("assistant",`${r.length} Risk Management products:`); addResults(r,[{key:"product_name",label:"Product"},{key:"vendor",label:"Vendor"},{key:"version_info",label:"Version"}]); }},
-    {label: "Search by name", action: () => { addMsg("assistant","Type a product name:"); addSearchInput("Product name...", val => { const r=state.products.filter(p=>(p.product_name||"").toLowerCase().includes(val.toLowerCase())); addResults(r,[{key:"product_name",label:"Product"},{key:"vendor",label:"Vendor"},{key:"product_type",label:"Type"}]); }); }},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function askProductsByVendor() {
-  addMsg("assistant", "Which vendor?");
-  const vendors = [...new Set(state.products.map(p=>p.vendor).filter(Boolean))].sort();
-  addButtons(vendors.map(v => ({
-    label: v,
-    action: () => {
-      addMsg("user", v);
-      const results = state.products.filter(p => p.vendor === v);
-      addMsg("assistant", `${results.length} products from ${v}:`);
-      addResults(results, [{key:"product_name",label:"Product"},{key:"product_type",label:"Type"},{key:"version_info",label:"Version"}]);
-    }
-  })));
-}
-
-// ── VENDORS ──
-function showVendorMenu() {
-  addMsg("user", "Vendors");
-  addMsg("assistant", "What would you like to know about vendors?");
-  addButtons([
-    {label: "All vendors", action: () => { addMsg("user","All vendors"); addResults(state.vendors,[{key:"vendor_name",label:"Vendor"},{key:"headquarters",label:"HQ"},{key:"industries_served",label:"Industry"}]); }},
-    {label: "By country/region", action: askVendorsByRegion},
-    {label: "Risk Management vendors", action: () => { addMsg("user","Risk vendors"); const r=state.vendors.filter(v=>(v.industries_served||"").includes("Risk")); addResults(r,[{key:"vendor_name",label:"Vendor"},{key:"headquarters",label:"HQ"}]); }},
-    {label: "Count by region", action: showVendorCount},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function askVendorsByRegion() {
-  addMsg("assistant", "Which region or country?");
-  addSearchInput("e.g. UK, USA, Singapore...", val => {
-    const results = state.vendors.filter(v => (v.headquarters||"").toLowerCase().includes(val.toLowerCase()));
-    addMsg("assistant", `Vendors in ${val}:`);
-    addResults(results, [{key:"vendor_name",label:"Vendor"},{key:"headquarters",label:"HQ"},{key:"website",label:"Website"}]);
-  });
-}
-
-function showVendorCount() {
-  addMsg("user", "Vendor count by region");
-  const regions = {};
-  state.vendors.forEach(v => {
-    const h = (v.headquarters||"").toLowerCase();
-    let r = "Other";
-    if (h.includes("uk")||h.includes("london")||h.includes("united kingdom")) r="United Kingdom";
-    else if (h.includes("usa")||h.includes("united states")||h.includes("houston")||h.includes("new york")||h.includes("florida")||h.includes("texas")) r="USA";
-    else if (h.includes("singapore")) r="Singapore";
-    else if (h.includes("dubai")||h.includes("uae")) r="UAE";
-    else if (h.includes("netherlands")) r="Netherlands";
-    else if (h.includes("germany")||h.includes("france")||h.includes("switzerland")) r="Europe (Other)";
-    else if (h.includes("india")) r="India";
-    else if (h.includes("australia")) r="Australia";
-    regions[r] = (regions[r]||0)+1;
-  });
-  const msg = Object.entries(regions).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`• ${r}: ${c}`).join("\n");
-  addMsg("assistant", "Vendors by region:\n" + msg);
-  showMainMenu();
-}
-
-// ── CTRM FUNCTIONS ──
-function showCtrmMenu() {
-  addMsg("user", "CTRM Functions");
-  addMsg("assistant", "What would you like to know about CTRM functions?");
-  addButtons([
-    {label: "Deployed functions for a product", action: askCtrmByProduct},
-    {label: "Products with deployed function", action: askCtrmByFunction},
-    {label: "By commodity", action: askCtrmByCommodity},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function askCtrmByProduct() {
-  addMsg("assistant", "Which product?");
-  const products = [...new Set(state.ctrm.map(r=>r.product).filter(Boolean))].sort();
-  addButtons(products.slice(0,20).map(p => ({
-    label: p,
-    action: () => {
-      addMsg("user", p);
-      const results = state.ctrm.filter(r => r.product === p && (r.coverage_level||"").toLowerCase().includes("deployed"));
-      addMsg("assistant", `Deployed CTRM functions for ${p} (${results.length}):`);
-      addResults(results, [{key:"function_name",label:"Function"},{key:"commodity",label:"Commodity"}]);
-    }
-  })));
-  addSearchInput("Or type product name...", val => {
-    const results = state.ctrm.filter(r => (r.product||"").toLowerCase().includes(val.toLowerCase()) && (r.coverage_level||"").toLowerCase().includes("deployed"));
-    addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"},{key:"commodity",label:"Commodity"}]);
-  });
-}
-
-function askCtrmByFunction() {
-  addMsg("assistant", "Which function? (type to search)");
-  addSearchInput("Function name...", val => {
-    const results = state.ctrm.filter(r =>
-      (r.function_name||"").toLowerCase().includes(val.toLowerCase()) &&
-      (r.coverage_level||"").toLowerCase().includes("deployed")
-    );
-    addMsg("assistant", `Products with deployed "${val}" function:`);
-    addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"},{key:"commodity",label:"Commodity"}]);
-  });
-}
-
-function askCtrmByCommodity() {
-  addMsg("assistant", "Which commodity?");
-  const commodities = [...new Set(state.ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-  addButtons(commodities.slice(0,15).map(c => ({
-    label: c,
-    action: () => {
-      addMsg("user", c);
-      const results = state.ctrm.filter(r => r.commodity === c && (r.coverage_level||"").toLowerCase().includes("deployed"));
-      addMsg("assistant", `Deployed CTRM functions for ${c} (${results.length}):`);
-      addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"}]);
-    }
-  })));
-}
-
-// ── RISK FUNCTIONS ──
-function showRiskMenu() {
-  addMsg("user", "Risk Functions");
-  addMsg("assistant", "What would you like to know about Risk functions?");
-  addButtons([
-    {label: "Deployed functions for a product", action: askRiskByProduct},
-    {label: "By category", action: askRiskByCategory},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function askRiskByProduct() {
-  addMsg("assistant", "Which product?");
-  const products = [...new Set(state.risk.map(r=>r.product).filter(Boolean))].sort();
-  addButtons(products.slice(0,20).map(p => ({
-    label: p,
-    action: () => {
-      addMsg("user", p);
-      const results = state.risk.filter(r => r.product === p && (r.coverage_level||"").toLowerCase().includes("deployed"));
-      addMsg("assistant", `Deployed Risk functions for ${p} (${results.length}):`);
-      addResults(results, [{key:"category",label:"Category"},{key:"function_name",label:"Function"}]);
-    }
-  })));
-}
-
-function askRiskByCategory() {
-  addMsg("assistant", "Which category?");
-  const cats = [...new Set(state.risk.map(r=>r.category).filter(Boolean))].sort();
-  addButtons(cats.map(c => ({
-    label: c,
-    action: () => {
-      addMsg("user", c);
-      const results = state.risk.filter(r => r.category === c && (r.coverage_level||"").toLowerCase().includes("deployed"));
-      addMsg("assistant", `Products with deployed ${c} functions (${results.length}):`);
-      addResults(results, [{key:"product",label:"Product"},{key:"function_name",label:"Function"}]);
-    }
-  })));
-}
-
-// ── GEOGRAPHIC ──
-function showGeoMenu() {
-  addMsg("user", "Geographic Coverage");
-  addMsg("assistant", "What would you like to know about geographic coverage?");
-  addButtons([
-    {label: "Coverage for a product", action: askGeoByProduct},
-    {label: "Strong North America coverage (>50%)", action: () => showGeoFilter("north_america", 0.5, "North America")},
-    {label: "Strong Europe coverage (>50%)", action: () => showGeoFilter("europe_russia", 0.5, "Europe")},
-    {label: "Strong Asia coverage (>50%)", action: () => showGeoFilter("asia_australia", 0.5, "Asia")},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function askGeoByProduct() {
-  addMsg("assistant", "Which product?");
-  addSearchInput("Product name...", val => {
-    const results = state.geo.filter(g => (g.product||"").toLowerCase().includes(val.toLowerCase()));
-    addResults(results, [{key:"product",label:"Product"},{key:"north_america",label:"N.America"},{key:"europe_russia",label:"Europe"},{key:"south_america",label:"S.America"},{key:"middle_east_africa",label:"MEA"},{key:"asia_australia",label:"Asia"}]);
-  });
-}
-
-function showGeoFilter(field, threshold, label) {
-  addMsg("user", `Strong ${label} coverage`);
-  const results = state.geo.filter(g => (g[field]||0) >= threshold).sort((a,b)=>(b[field]||0)-(a[field]||0));
-  addMsg("assistant", `Products with >50% ${label} coverage (${results.length}):`);
-  addResults(results, [{key:"product",label:"Product"},{key:field,label:label+"%"}]);
-}
-
-// ── CUSTOMER TYPES ──
-function showCustomerMenu() {
-  addMsg("user", "Customer Types");
-  addMsg("assistant", "Which customer type?");
-  const ctFields = [
-    {key:"utility",label:"Utility"},
-    {key:"energy_retailer",label:"Energy Retailer"},
-    {key:"trader_broker",label:"Trader/Broker"},
-    {key:"hedge_fund_cta",label:"Hedge Fund/CTA"},
-    {key:"bank_financial_institution",label:"Bank/Financial"},
-    {key:"generator_non_renewables",label:"Generator (Non-Renewables)"},
-    {key:"renewables_generator",label:"Renewables Generator"},
-    {key:"agricultural_producer",label:"Agricultural Producer"},
-  ];
-  addButtons([
-    ...ctFields.map(f => ({
-      label: f.label,
-      action: () => {
-        addMsg("user", f.label);
-        const results = state.ct.filter(g => (g[f.key]||0) > 0).sort((a,b)=>(b[f.key]||0)-(a[f.key]||0));
-        addMsg("assistant", `Products serving ${f.label} (${results.length}):`);
-        addResults(results, [{key:"product",label:"Product"},{key:f.key,label:"Coverage %"}]);
-      }
-    })),
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-// ── CONTACTS ──
-function showContactMenu() {
-  addMsg("user", "Contacts");
-  addMsg("assistant", "How would you like to search contacts?");
-  addButtons([
-    {label: "All contacts", action: () => { addMsg("user","All contacts"); addResults(state.contacts,[{key:"contact_name",label:"Name"},{key:"role_title",label:"Role"},{key:"vendor",label:"Vendor"},{key:"product",label:"Product"},{key:"email",label:"Email"}]); }},
-    {label: "By product", action: () => { addMsg("assistant","Which product?"); addSearchInput("Product name...", val => { const r=state.contacts.filter(c=>(c.product||"").toLowerCase().includes(val.toLowerCase())); addResults(r,[{key:"contact_name",label:"Name"},{key:"role_title",label:"Role"},{key:"email",label:"Email"},{key:"region",label:"Region"}]); }); }},
-    {label: "By vendor", action: () => { addMsg("assistant","Which vendor?"); addSearchInput("Vendor name...", val => { const r=state.contacts.filter(c=>(c.vendor||"").toLowerCase().includes(val.toLowerCase())); addResults(r,[{key:"contact_name",label:"Name"},{key:"role_title",label:"Role"},{key:"product",label:"Product"},{key:"email",label:"Email"}]); }); }},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-// ── ADD DATA ──
-function showAddMenu() {
-  addMsg("user", "Add Data");
-  addMsg("assistant", "What would you like to add?");
-  addButtons([
-    {label: "➕ Add Vendor", action: () => { closeChat(); openVendorModal(null); }},
-    {label: "➕ Add Product", action: () => { closeChat(); openProductModal(null); }},
-    {label: "➕ Add Contact", action: () => { closeChat(); openContactModal(null); }},
-    {label: "← Back", action: () => { addMsg("user","Back"); showMainMenu(); }},
-  ]);
-}
-
-function closeChat() {
-  chatOpen = false;
-  document.getElementById("chat-panel").style.display = "none";
-  document.getElementById("chat-fab").textContent = "💬";
-}
-
-
-document.body.insertAdjacentHTML("beforeend",`
-  <button id="chat-fab" onclick="toggleChat()" style="position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:900">💬</button>
-  <div id="chat-panel" style="display:none;position:fixed;bottom:80px;right:20px;width:420px;height:560px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:900;overflow:hidden">
-    <div style="padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-      <span style="font-size:16px">🔍</span>
-      <div><div style="font-weight:700;font-size:12px">Product Advisor Search</div><div style="font-size:10px;color:var(--muted)">Explore the database interactively</div></div>
-      <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px">↺ Menu</button>
-      <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-left:4px">✕</button>
-    </div>
-    <div id="chat-messages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column"></div>
-  </div>
-`);
 </script>
 </body>
 </html>
