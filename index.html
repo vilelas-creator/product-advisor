@@ -237,9 +237,11 @@ function navToProduct(name, type) {
 }
 
 function navToIntelligence(productName){
+  const isProduct = (state.products||[]).some(p=>p.product_name===productName||normName(p.product_name)===normName(productName));
+  if(!isProduct){ console.warn('navToIntelligence: not a valid product:', productName); return; }
   state.activeReport = 'intelligence';
   state._intProd = productName;
-  state._intSection = 'pcc';
+  state._intSection = null;
   state._intFPccCom=''; state._intFPccCov='';
   state._intFCtrmFn=''; state._intFCtrmCom=''; state._intFCtrmCov='';
   state._intFRiskCat=''; state._intFRiskFn=''; state._intFRiskCov='';
