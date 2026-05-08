@@ -239,7 +239,7 @@ function navToProduct(name, type) {
 function navToIntelligence(productName){
   state.activeReport = 'intelligence';
   state._intProd = productName;
-  state._intSection = null;  // auto-select based on product data
+  state._intSection = 'pcc';
   state._intFPccCom=''; state._intFPccCov='';
   state._intFCtrmFn=''; state._intFCtrmCom=''; state._intFCtrmCov='';
   state._intFRiskCat=''; state._intFRiskFn=''; state._intFRiskCov='';
@@ -1056,7 +1056,7 @@ function renderReportIntelligence(el, backBtn, report){
   const hdr=document.createElement("div");
   hdr.innerHTML=`${backBtn}<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${prods.length} products</span></div>
     <div class="filters" style="margin-bottom:16px;border-radius:8px">
-      <input id="int-q" value="${fQ}" oninput="intSearch(this.value)" placeholder="Search product..." style="width:180px">
+      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;clearTimeout(window._intQTimer);window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var el=document.getElementById('int-q');if(el){var v=el.value;el.focus();el.value='';el.value=v;}},0);},300)" placeholder="Search product..." style="width:180px">
       <select onchange="state._intFVendor=this.value;renderReporting()" style="font-size:12px"><option value="">All Vendors</option>${vendors.map(v=>`<option value="${v}" ${v===fVendor?"selected":""}>${v}</option>`).join("")}</select>
       <select onchange="state._intFType=this.value;renderReporting()" style="font-size:12px"><option value="">All Types</option>${types.map(t=>`<option value="${t}" ${t===fType?"selected":""}>${t}</option>`).join("")}</select>
       <button class="btn btn-reset" onclick="state._intFVendor='';state._intFType='';state._intFQ='';renderReporting()">↺ Reset</button>
@@ -1071,7 +1071,7 @@ function renderReportIntelligence(el, backBtn, report){
     card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;position:relative";
     card.onmouseover=()=>{card.style.borderColor="var(--accent)";card.style.transform="translateY(-2px)";};
     card.onmouseout=()=>{card.style.borderColor="var(--border)";card.style.transform="";};
-    card.onclick=()=>{state._intProd=p.product_name;state._intSection=null;state._intFPccCom="";state._intFPccCov="";state._intFCtrmFn="";state._intFCtrmCom="";state._intFRiskCat="";state._intFRiskFn="";renderReporting();};
+    card.onclick=()=>{state._intProd=p.product_name;renderReporting();};
     card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <div style="font-weight:700;font-size:13px;color:var(--text);flex:1;padding-right:8px">${p.product_name}</div>
       ${covPct!==null?"<div style='font-size:18px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+"'>"+covPct+"%</div>":""}
@@ -1090,22 +1090,15 @@ function renderReportIntelligence(el, backBtn, report){
 
 function renderIntelligenceDetail(el, backBtn, report, productName){
   const prod=(state.products||[]).find(p=>p.product_name===productName)||{product_name:productName};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
-  const risk=(state.risk||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
+  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
+  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
+  const risk=(state.risk||[]).filter(r=>r.product===productName);
   const clients=(state.clients||[]).filter(c=>c.product===productName);
   const vendorName = (prod.vendor||"").toLowerCase().trim();
   const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
+  const activeSection=state._intSection||"pcc";
   const isCtrmOnly = ctrm.length>0 && risk.length===0;
   const isRiskOnly = risk.length>0 && ctrm.length===0;
-  // Auto-select correct tab based on product data
-  let activeSection = state._intSection;
-  if(!activeSection){
-    if(pcc.length>0) activeSection="pcc";
-    else if(ctrm.length>0) activeSection="ctrm";
-    else if(risk.length>0) activeSection="risk";
-    else activeSection="pcc";
-  }
   const covPct=pcc.length?Math.round(pcc.filter(r=>r.coverage_level==="Covered").length/pcc.length*100):null;
   const covColor=lv=>lv==="Covered"||lv==="Deployed"?"var(--green)":lv&&(lv.includes("Partial")||lv==="Capable")?"var(--yellow)":"var(--red)";
 
@@ -1284,9 +1277,10 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
       +'</div>';
 
-    if(isRiskOnly && !fbCtrm.length){
+    const noOfficialCtrm = ctrm.length===0;
+    if(noOfficialCtrm && !fbCtrm.length){
       html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official CTRM data. No capSpire feedback yet.</div>';
-    } else if(isRiskOnly && fbCtrm.length){
+    } else if(noOfficialCtrm && fbCtrm.length){
       html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official CTRM data. Showing capSpire feedback only.</div>';
       html+=renderFbRows(fbCtrm,"ctrm");
     } else {
@@ -1333,9 +1327,10 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
       +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
       +'</div>';
 
-    if(isCtrmOnly && !fbRisk.length){
+    const noOfficialRisk = risk.length===0;
+    if(noOfficialRisk && !fbRisk.length){
       html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official Risk data. No capSpire feedback yet.</div>';
-    } else if(isCtrmOnly && fbRisk.length){
+    } else if(noOfficialRisk && fbRisk.length){
       html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official Risk data. Showing capSpire feedback only.</div>';
       html+=renderFbRows(fbRisk,"risk");
     } else {
@@ -1385,9 +1380,9 @@ function toggleIntRow(id){
 function exportProductIntelligenceExcel(productName){
   if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
   const prod=(state.products||[]).find(p=>p.product_name===productName)||{};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
-  const risk=(state.risk||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
+  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
+  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
+  const risk=(state.risk||[]).filter(r=>r.product===productName);
   const clients=(state.clients||[]).filter(c=>c.product===productName);
   const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
   const wb=XLSX.utils.book_new();
@@ -1721,21 +1716,13 @@ function closeProductDetail(){
 function intSearch(val){
   state._intFQ=val;
   clearTimeout(window._intQTimer);
-  window._intQTimer=setTimeout(function(){
-    renderReporting();
-    setTimeout(function(){var e=document.getElementById('int-q');if(e)e.focus();},0);
-  },300);
+  window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var e=document.getElementById('int-q');if(e)e.focus();},0);},300);
 }
-
 function vLandSearch(val){
   state._vLandQ=val;
   clearTimeout(window._vLandTimer);
-  window._vLandTimer=setTimeout(function(){
-    renderReporting();
-    setTimeout(function(){var e=document.getElementById('vland-q');if(e)e.focus();},0);
-  },300);
+  window._vLandTimer=setTimeout(function(){renderReporting();setTimeout(function(){var e=document.getElementById('vland-q');if(e)e.focus();},0);},300);
 }
-
 function openClientForm(productName, clientId, ctx){
   document.getElementById("client-form-panel")?.remove();
   const existing = clientId ? (state.clients||[]).find(c=>c.id===clientId) : null;
