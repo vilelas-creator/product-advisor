@@ -1056,7 +1056,7 @@ function renderReportIntelligence(el, backBtn, report){
   const hdr=document.createElement("div");
   hdr.innerHTML=`${backBtn}<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${prods.length} products</span></div>
     <div class="filters" style="margin-bottom:16px;border-radius:8px">
-      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;clearTimeout(window._intQTimer);window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var el=document.getElementById('int-q');if(el){var v=el.value;el.focus();el.value='';el.value=v;}},0);},300)" placeholder="Search product..." style="width:180px">
+      <input id="int-q" value="${fQ}" oninput="intSearch(this.value)" placeholder="Search product..." style="width:180px">
       <select onchange="state._intFVendor=this.value;renderReporting()" style="font-size:12px"><option value="">All Vendors</option>${vendors.map(v=>`<option value="${v}" ${v===fVendor?"selected":""}>${v}</option>`).join("")}</select>
       <select onchange="state._intFType=this.value;renderReporting()" style="font-size:12px"><option value="">All Types</option>${types.map(t=>`<option value="${t}" ${t===fType?"selected":""}>${t}</option>`).join("")}</select>
       <button class="btn btn-reset" onclick="state._intFVendor='';state._intFType='';state._intFQ='';renderReporting()">↺ Reset</button>
@@ -1708,6 +1708,25 @@ function closeProductDetail(){
   document.getElementById("product-detail-panel")?.remove();
   document.getElementById("product-detail-overlay")?.remove();
   document.getElementById("client-form-panel")?.remove();
+}
+
+
+function intSearch(val){
+  state._intFQ=val;
+  clearTimeout(window._intQTimer);
+  window._intQTimer=setTimeout(function(){
+    renderReporting();
+    setTimeout(function(){var e=document.getElementById('int-q');if(e)e.focus();},0);
+  },300);
+}
+
+function vLandSearch(val){
+  state._vLandQ=val;
+  clearTimeout(window._vLandTimer);
+  window._vLandTimer=setTimeout(function(){
+    renderReporting();
+    setTimeout(function(){var e=document.getElementById('vland-q');if(e)e.focus();},0);
+  },300);
 }
 
 function openClientForm(productName, clientId, ctx){
