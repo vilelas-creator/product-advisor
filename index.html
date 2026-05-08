@@ -2280,8 +2280,24 @@ function openVendorModal(id){
   ],async()=>{
     const vals=getVals(["id","vendor_name","headquarters","website","industries_served"]);
     if(!vals.id)delete vals.id;
-    try{if(v){await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("vendors",{method:"POST",body:vals});state.vendors=[...state.vendors,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    try{
+      if(v){
+        await apiFetch(`vendors?id=eq.${v.id}`,{method:"PATCH",body:vals});
+        // If vendor_name changed, update all product_clients records
+        if(vals.vendor_name && vals.vendor_name !== v.vendor_name){
+          const affected=(state.clients||[]).filter(c=>c.vendor_name===v.vendor_name);
+          for(const c of affected){
+            await apiFetch(`product_clients?id=eq.${c.id}`,{method:"PATCH",body:{vendor_name:vals.vendor_name}});
+          }
+          state.clients=(state.clients||[]).map(c=>c.vendor_name===v.vendor_name?{...c,vendor_name:vals.vendor_name}:c);
+        }
+        state.vendors=state.vendors.map(x=>x.id===v.id?{...x,...vals}:x);
+      } else {
+        const res=await apiFetch("vendors",{method:"POST",body:vals});
+        state.vendors=[...state.vendors,res[0]];
+      }
+      closeModal();render();
+    }catch(e){alert("Error: "+e.message);}
   });
 }
 
