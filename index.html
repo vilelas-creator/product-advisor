@@ -2242,6 +2242,9 @@ async function saveClient(productName, clientId){
       if(res[0]) state.clients.push(res[0]);
     }
     document.getElementById("client-form-panel")?.remove();
+    // Reload clients from server to ensure state is fresh
+    const freshClients = await getAll("product_clients");
+    state.clients = freshClients;
     const listEl=document.getElementById("clients-list-"+productName.replace(/[^a-z0-9]/gi,'_'));
     const filterFn = isVendorCtx ? (c=>c.vendor_name===productName) : (c=>c.product===productName);
     if(listEl) listEl.innerHTML=renderClientsList(productName,(state.clients||[]).filter(filterFn));
