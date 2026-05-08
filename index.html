@@ -1090,9 +1090,9 @@ function renderReportIntelligence(el, backBtn, report){
 
 function renderIntelligenceDetail(el, backBtn, report, productName){
   const prod=(state.products||[]).find(p=>p.product_name===productName)||{product_name:productName};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
-  const risk=(state.risk||[]).filter(r=>r.product===productName);
+  const pcc=(state.pcc||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
+  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
+  const risk=(state.risk||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
   const clients=(state.clients||[]).filter(c=>c.product===productName);
   const vendorName = (prod.vendor||"").toLowerCase().trim();
   const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
@@ -1385,9 +1385,9 @@ function toggleIntRow(id){
 function exportProductIntelligenceExcel(productName){
   if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
   const prod=(state.products||[]).find(p=>p.product_name===productName)||{};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
-  const risk=(state.risk||[]).filter(r=>r.product===productName);
+  const pcc=(state.pcc||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
+  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
+  const risk=(state.risk||[]).filter(r=>r.product===productName||(r.product&&productName&&normName(r.product)===normName(productName)));
   const clients=(state.clients||[]).filter(c=>c.product===productName);
   const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
   const wb=XLSX.utils.book_new();
