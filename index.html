@@ -776,8 +776,16 @@ function vLandSearch(val){
   }, 300);
 }
 
+
+// ── Helper functions for reports ────────────────────────────────
+function normName(s){ return (s||"").toLowerCase().trim().replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim(); }
+function findExact(arr,field,val){ const r=(arr||[]).find(r=>(r[field]||"")===val); return r?.[field]||val; }
+
 function renderReportVendor(el,backBtn,report){
   const vendors=state.vendors||[]; const products=state.products||[]; const pcc=state.pcc||[]; const geo=state.geo||[]; const contacts=state.contacts||[];
+  const fVQ  =state._vLandQ||"";
+  const fVend=state._vLandV||[];
+  const fCom =state._vLandC||[];
   const data=vendors.map(v=>{
     const vn=normName(v.vendor_name);
     const vProds=products.filter(p=>normName(p.vendor)===vn||normName(p.vendor).includes(vn.slice(0,12))||vn.includes(normName(p.vendor).slice(0,12)));
@@ -795,6 +803,10 @@ function renderReportVendor(el,backBtn,report){
     const vContacts=contacts.filter(c=>normName(c.vendor)===vn||normName(c.vendor).includes(vn.slice(0,12)));
     return{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts};
   }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
+  let filtered=data;
+  if(fVQ) filtered=filtered.filter(d=>normName(d.v.vendor_name).includes(normName(fVQ)));
+  if(fVend&&fVend.length) filtered=filtered.filter(d=>fVend.includes(d.v.vendor_name));
+  if(fCom&&fCom.length) filtered=filtered.filter(d=>d.coms.some(c=>fCom.includes(c)));
   el.innerHTML=""; const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
   const allVendorNames = data.map(d=>d.v.vendor_name).sort();
   const allComs = [...new Set(data.flatMap(d=>d.coms))].sort();
