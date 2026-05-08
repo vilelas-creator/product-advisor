@@ -1071,7 +1071,7 @@ function renderReportIntelligence(el, backBtn, report){
     card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;position:relative";
     card.onmouseover=()=>{card.style.borderColor="var(--accent)";card.style.transform="translateY(-2px)";};
     card.onmouseout=()=>{card.style.borderColor="var(--border)";card.style.transform="";};
-    card.onclick=()=>{state._intProd=p.product_name;renderReporting();};
+    card.onclick=()=>{state._intProd=p.product_name;state._intSection=null;state._intFPccCom="";state._intFPccCov="";state._intFCtrmFn="";state._intFCtrmCom="";state._intFRiskCat="";state._intFRiskFn="";renderReporting();};
     card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <div style="font-weight:700;font-size:13px;color:var(--text);flex:1;padding-right:8px">${p.product_name}</div>
       ${covPct!==null?"<div style='font-size:18px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+"'>"+covPct+"%</div>":""}
@@ -1096,9 +1096,16 @@ function renderIntelligenceDetail(el, backBtn, report, productName){
   const clients=(state.clients||[]).filter(c=>c.product===productName);
   const vendorName = (prod.vendor||"").toLowerCase().trim();
   const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
-  const activeSection=state._intSection||"pcc";
   const isCtrmOnly = ctrm.length>0 && risk.length===0;
   const isRiskOnly = risk.length>0 && ctrm.length===0;
+  // Auto-select correct tab based on product data
+  let activeSection = state._intSection;
+  if(!activeSection){
+    if(pcc.length>0) activeSection="pcc";
+    else if(ctrm.length>0) activeSection="ctrm";
+    else if(risk.length>0) activeSection="risk";
+    else activeSection="pcc";
+  }
   const covPct=pcc.length?Math.round(pcc.filter(r=>r.coverage_level==="Covered").length/pcc.length*100):null;
   const covColor=lv=>lv==="Covered"||lv==="Deployed"?"var(--green)":lv&&(lv.includes("Partial")||lv==="Capable")?"var(--yellow)":"var(--red)";
 
