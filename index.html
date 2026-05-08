@@ -239,7 +239,7 @@ function navToProduct(name, type) {
 function navToIntelligence(productName){
   state.activeReport = 'intelligence';
   state._intProd = productName;
-  state._intSection = 'pcc';
+  state._intSection = null;  // auto-select based on product data
   state._intFPccCom=''; state._intFPccCov='';
   state._intFCtrmFn=''; state._intFCtrmCom=''; state._intFCtrmCov='';
   state._intFRiskCat=''; state._intFRiskFn=''; state._intFRiskCov='';
