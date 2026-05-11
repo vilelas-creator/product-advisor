@@ -1078,12 +1078,12 @@ function nav(id, section){
 function goBack(){
   if(!navHist.length){ showScreen('home'); setNavActive(''); return; }
   const prev = navHist.pop();
-  showScreen(prev.replace('s-',''));
-  const s = prev.includes('cs')||prev.includes('addintel')||prev.includes('form') ? 'cs'
-           : prev.includes('sb') ? 'sb' : '';
-  setNavActive(s);
+  const id = typeof prev === 'string' && prev.startsWith('s-') ? prev.slice(2) : (prev||'home');
+  showScreen(id);
+  const sec = id.includes('cs')||id.includes('addintel')||id.includes('form') ? 'cs'
+           : id.includes('sb') ? 'sb' : '';
+  setNavActive(sec);
   // Re-render if needed
-  const id = prev.replace('s-','');
   if(id==='cs-products') renderCsProducts();
   else if(id==='cs-contacts') renderContacts();
   else if(id.startsWith('sb-') && id!=='sb-home'){
@@ -2517,7 +2517,7 @@ function msFilter(data, field, filterKey) {
 
 
 async function init(){
-  // New navigation - no initNav needed
+  // New navigation
   try{
     const[v,p,ct_data,g,pcc,risk,ct,com,clients]=await Promise.all([
       getAll("vendors"),getAll("products"),getAll("product_contacts"),
@@ -2528,12 +2528,12 @@ async function init(){
     state.vendors=v;state.products=p;state.contacts=ct_data;
     state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
     state.ctrmLoading=true;
-    render();
     const ctrm=await getAll("product_function_ctrm");
     state.ctrm=ctrm;state.ctrmLoading=false;
-    if(activeTab==="ctrm"||activeTab==="overview")render();
+    showScreen('home');
   }catch(e){
-    document.getElementById("section-overview").innerHTML=`<div class="loading" style="color:var(--red)">Connection error: ${e.message}</div>`;
+    console.error('Init error:', e.message);
+    showScreen('home');
   }
 }
 // ── AUTH (using Supabase REST directly) ──
@@ -2616,11 +2616,6 @@ function onLogin(user) {
   document.getElementById("topnav").style.display = "flex";
   const navUserEl = document.getElementById("nav-user");
   if(navUserEl) navUserEl.textContent = name;
-  document.querySelector("main").style.display = "block";
-  const userInfo = document.createElement("div");
-  userInfo.style.cssText = "display:flex;align-items:center;gap:8px;margin-left:8px;padding-left:8px;border-left:1px solid var(--border);white-space:nowrap";
-  userInfo.innerHTML = `<span style="font-size:11px;color:var(--muted)">👤 ${name}</span><button onclick="doLogout()" style="padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Sign Out</button>`;
-  document.querySelector("header").appendChild(userInfo);
   init();
 }
 
