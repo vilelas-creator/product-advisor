@@ -1154,18 +1154,35 @@ function onCsvProductChange(){
 }
 
 function buildCsvCommodities(){
-  const coms = (state.commodities||[]).map(c=>c.commodity||c.name||c).filter(Boolean).sort();
+  const coms = (state.commodities||[]).map(c=>c.commodity_name||c.commodity||c.name||'').filter(Boolean).sort();
   const container = document.getElementById('csv-coms');
   if(!container) return;
-  container.innerHTML = coms.map(c=>`<span class="pill" onclick="this.classList.toggle('on')">${escH(c)}</span>`).join('')
-    + `<input id="csv-com-new" placeholder="+ Add commodity" style="border:none;outline:none;font-size:11px;color:var(--muted);min-width:120px;padding:2px 4px;" onkeydown="if(event.key==='Enter'&&this.value.trim()){const p=document.createElement('span');p.className='pill on';p.textContent=this.value.trim();p.onclick=()=>p.classList.toggle('on');this.parentElement.insertBefore(p,this);this.value='';event.preventDefault();}">`;
+  // Use multiselect + free text add
+  container.innerHTML = createMultiSelect('csv-coms-ms', coms, [], 'Select commodities', 'csv_coms_sel')
+    + '<button onclick="addCustomCom()" style="font-size:11px;padding:3px 9px;border:1px dashed #d1d5db;border-radius:20px;background:#fff;color:var(--muted);cursor:pointer;margin-top:4px">+ Add other</button>'
+    + '<div id="csv-custom-coms" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px"></div>';
+}
+
+function addCustomCom(){
+  const v = prompt('Add commodity:');
+  if(!v||!v.trim()) return;
+  const container = document.getElementById('csv-custom-coms');
+  if(container){
+    const span = document.createElement('span');
+    span.className = 'pill on';
+    span.textContent = v.trim();
+    span.onclick = () => span.classList.toggle('on');
+    container.appendChild(span);
+  }
 }
 
 async function saveCsView(){
   const product = document.getElementById('csv-product')?.value;
   if(!product){ alert('Please select a product'); return; }
   const prod = (state.products||[]).find(p=>p.product_name===product);
-  const coms = [...document.querySelectorAll('#csv-coms .pill.on')].map(p=>p.textContent).join(',');
+  const selComs = [...(document.getElementById('csv-coms')||{}).querySelectorAll?.('input[type=checkbox]:checked')||[]].map(cb=>cb.value);
+  const customComs = [...(document.getElementById('csv-custom-coms')||{}).querySelectorAll?.('.pill.on')||[]].map(p=>p.textContent);
+  const coms = [...selComs,...customComs].filter(Boolean).join(',');
   const body = {
     product_name: product,
     vendor: prod?.vendor||'',
@@ -1182,7 +1199,13 @@ async function saveCsView(){
     await apiFetch('cs_product_views',{method:'POST',body});
     alert('Saved successfully');
     goBack();
-  }catch(e){ alert('Error: '+e.message); }
+  }catch(e){
+    if(e.message&&e.message.includes('cs_product_views')){
+      alert('Table cs_product_views not found in Supabase.\n\nPlease run the SQL setup script to create the new tables:\n\nCREATE TABLE cs_product_views (\n  id BIGSERIAL PRIMARY KEY,\n  product_name TEXT,\n  vendor TEXT,\n  assessed_by TEXT,\n  assessment_date DATE,\n  source_context TEXT,\n  rating INT,\n  strengths TEXT,\n  gaps TEXT,\n  commodities TEXT,\n  notes TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);');
+    } else {
+      alert('Error: '+e.message);
+    }
+  }
 }
 
 // ── FORM: Market Intel ───────────────────────────────────────────
