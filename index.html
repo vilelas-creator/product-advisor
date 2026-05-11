@@ -1317,14 +1317,14 @@ async function saveCsView(){
     assessed_by: document.getElementById('csv-by')?.value||'',
     assessment_date: new Date().toISOString().split('T')[0],
     source_context: document.getElementById('csv-context')?.value||'',
-    rating: getStars('csv-stars'),
+    rating: getStars('csv-stars')||null,
     strengths: document.getElementById('csv-strengths')?.value||'',
     gaps: document.getElementById('csv-gaps')?.value||'',
     commodities: coms,
     notes: document.getElementById('csv-notes')?.value||''
   };
   // Remove null/empty fields
-  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined)delete body[k];});
+  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined||body[k]===0)delete body[k];});
   try{
     await apiFetch('cs_product_views',{method:'POST',body});
     alert('Saved successfully');
@@ -1363,12 +1363,12 @@ async function saveMarketIntel(){
     country: document.getElementById('mi-country')?.value||'',
     intel_date: document.getElementById('mi-date')?.value||null,
     source_context: document.getElementById('mi-context')?.value||'',
-    rating: getStars('mi-stars'),
+    rating: getStars('mi-stars')||null,
     products_mentioned: selectedProds,
     comments: document.getElementById('mi-comments')?.value||'',
     link_ref: document.getElementById('mi-link')?.value||''
   };
-  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined)delete body[k];});
+  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined||body[k]===0)delete body[k];});
   try{
     await apiFetch('cs_market_intel',{method:'POST',body});
     alert('Saved successfully');
