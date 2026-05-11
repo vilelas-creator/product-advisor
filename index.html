@@ -800,7 +800,7 @@ function renderVendors(){
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn btn-primary\" style=\"font-size:11px;padding:3px 8px;margin-right:4px\" onclick=\"openProductDetail('${escAttr(v.vendor_name)}',{source_table:'vendor',vendor_name:'${escAttr(v.vendor_name)}'})\">capSpire Feedback</button><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
@@ -823,7 +823,7 @@ function renderProducts(){
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product_name)}',{source_table:'products'})">capSpire Feedback</button><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
@@ -949,7 +949,7 @@ function renderCustomerType(){
   let rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','ct_prod');
   const CT_COLS=[{k:"utility",l:"Utility"},{k:"energy_retailer",l:"Energy Retailer"},{k:"generator_non_renewables",l:"Generator - Non-Renewables"},{k:"renewables_generator",l:"Renewables Generator"},{k:"trader_broker",l:"Trader/Broker"},{k:"hedge_fund_cta",l:"Hedge Fund/CTA"},{k:"bank_financial_institution",l:"Bank/Financial Institution"},{k:"consultant_analyst",l:"Consultant/Analyst"},{k:"agricultural_producer",l:"Agricultural Producer"},{k:"biofuels",l:"Biofuels"},{k:"producer_marketer",l:"Producer/Producer Marketer"},{k:"refining_petrochemical",l:"Refining/Petrochemical"},{k:"merchant_energy_firm",l:"Merchant Energy Firm"},{k:"industrial_consumer",l:"Industrial Consumer"},{k:"other",l:"Other"}];
   const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(parseFloat(v)*100);if(isNaN(p))return'<span style="color:var(--muted)">—</span>';const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600">${p}%</div>${bar(p,col)}</div>`;};
-  document.getElementById("section-customertype").innerHTML=`<div class="card">
+  document.getElementById("section-ct").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCt(),'customer_type_coverage','Customer Types')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-ct_q" value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
@@ -987,7 +987,7 @@ function renderContacts(){
       <td><a href="mailto:${c.email}">${c.email||""}</a></td>
       <td style="color:var(--muted)">${c.phone_number||""}</td>
       <td style="color:var(--muted)">${c.region||""}</td>
-      <td><button class="btn" onclick="openContactModal(${c.id})">Edit</button></td>
+      <td><button class="btn" onclick="openContactModal(${c.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border-color:var(--red)" onclick="deleteContact(${c.id})">Delete</button></td>
     </tr>`).join("")}
     </tbody></table></div>`}
   </div>`;
@@ -1048,6 +1048,118 @@ function buildCountrySelect(selId){
   });
   sel.innerHTML = html;
 }
+
+function renderImport(){
+  document.getElementById("section-import").innerHTML=`<div class="card">
+    <div class="card-head"><span class="card-title">📥 Import Data</span></div>
+    <div style="padding:16px">
+      <div style="background:var(--bg3);border:1px solid var(--yellow)44;border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-weight:700;color:var(--yellow);margin-bottom:8px">⚠ Important — Read before importing</div>
+        <ul style="color:var(--muted);font-size:12px;line-height:2.2;padding-left:18px">
+          <li>Files must be in <strong style="color:var(--text)">CSV format (.csv)</strong> — NOT Excel (.xlsx or .xls)</li>
+          <li>To save as CSV from Excel: <strong style="color:var(--text)">File → Save As → CSV (Comma delimited)</strong></li>
+          <li>The first row must be the column headers — do not change them</li>
+          <li>Leave the ID column empty for new records (it will be assigned automatically)</li>
+          <li>Records with an existing ID will be updated; new IDs will be inserted</li>
+          <li>Numeric percentage fields must be between 0 and 1 (e.g. 50% = 0.5)</li>
+        </ul>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${ALL_TABLES.map(t=>`
+        <div class="card" style="margin:0">
+          <div class="card-head" style="padding:8px 12px"><span style="font-weight:600;font-size:12px">${t.label}</span></div>
+          <div style="padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-success" onclick="downloadTemplate('${t.id}','${t.label}',[${t.cols.map(c=>`'${c}'`).join(",")}])">⬇ Template</button>
+            <label class="btn btn-primary" style="cursor:pointer">
+              ⬆ Upload CSV
+              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(event,'${t.id}')">
+            </label>
+            <span id="import-status-${t.id}" style="font-size:11px;color:var(--muted);width:100%"></span>
+          </div>
+        </div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+function downloadTemplate(tableId,label,cols){
+  if(typeof XLSX==="undefined"){alert("Loading Excel library, please try again.");return;}
+  const ws=XLSX.utils.aoa_to_sheet([cols]);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Template");
+  XLSX.writeFile(wb,"template_"+tableId+".xlsx");
+}
+
+async function parseFileToRows(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const raw=XLSX.utils.sheet_to_json(ws,{defval:null,raw:false});
+        const rows=raw.map(r=>{
+          const obj={};
+          Object.entries(r).forEach(([k,v])=>{
+            const key=String(k).trim();
+            const val=(v===null||v==="")?null:(!isNaN(v)&&v!=="")?Number(v):String(v).trim();
+            if(val!==null&&val!=="")obj[key]=val;
+          });
+          return obj;
+        }).filter(r=>Object.keys(r).length>0);
+        resolve(rows);
+      }catch(e){reject(e);}
+    };
+    reader.onerror=()=>reject(new Error("Could not read file"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function importFile(event,table){
+  const file=event.target.files[0];if(!file)return;
+  const statusEl=document.getElementById("import-status-"+table);
+  const ext=file.name.split(".").pop().toLowerCase();if(!["xlsx","xls","csv"].includes(ext)){statusEl.textContent="Please upload Excel or CSV";statusEl.style.color="var(--red)";return;}
+  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
+  try{
+    const text=await file.text();
+    const lines=text.split("\n").filter(l=>l.trim());
+    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
+    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
+    rows=lines.slice(1).map(line=>{
+      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
+      const obj={};
+      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
+      return obj;
+    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
+    statusEl.textContent="Importing "+rows.length+" records...";
+    let ok=0,err=0;
+    for(const row of rows){
+      try{
+        if(row.id){
+          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
+          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
+          else await apiFetch(table,{method:"POST",body:row});
+        }else{
+          const{id,...r}=row;
+          await apiFetch(table,{method:"POST",body:r});
+        }
+        ok++;
+      }catch(e){err++;}
+    }
+    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
+    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
+    // Reload affected data
+    if(table==="vendors")state.vendors=await getAll("vendors");
+    else if(table==="products")state.products=await getAll("products");
+    else if(table==="commodities")state.commodities=await getAll("commodities");
+    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
+    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
+    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
+    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
+    render();
+  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
+}
+
 
 // ── NAVIGATION ───────────────────────────────────────────────────
 const navHist = [];
@@ -2312,6 +2424,16 @@ function openRiskModal(id){
   });
 }
 
+
+async function deleteContact(id){
+  if(!confirm('Delete this contact?')) return;
+  try{
+    await apiFetch(`product_contacts?id=eq.${id}`,{method:'DELETE'});
+    state.contacts = state.contacts.filter(c=>c.id!==id);
+    renderContacts();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
 function openContactModal(id){
   const ct=id?state.contacts.find(x=>x.id===id):null;
   const prods=state.products.map(p=>p.product_name).filter(Boolean).sort();
@@ -2495,7 +2617,11 @@ function msApply(id, key){
   const list = document.getElementById('ms-list-'+id);
   if(!list) return;
   const selected = [...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
-  sf(key, selected.length ? selected : []);
+  if(key && key.startsWith('_')){
+    state[key] = selected.length ? selected : [];
+  } else {
+    sf(key, selected.length ? selected : []);
+  }
   document.getElementById('ms-drop-'+id).style.display = 'none';
   // Reset search
   const search = document.getElementById('ms-search-'+id);
@@ -2542,14 +2668,13 @@ function msFilter(data, field, filterKey) {
 async function init(){
   // New navigation
   try{
-    const[v,p,ct_data,g,pcc,risk,ct,com,clients]=await Promise.all([
+    const[v,p,ct_data,g,pcc,risk,ct,com]=await Promise.all([
       getAll("vendors"),getAll("products"),getAll("product_contacts"),
       getAll("geographic_coverage"),getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities"),
-      getAll("product_clients")
+      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities")
     ]);
     state.vendors=v;state.products=p;state.contacts=ct_data;
-    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=clients;
+    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=[];
     state.ctrmLoading=true;
     const ctrm=await getAll("product_function_ctrm");
     state.ctrm=ctrm;state.ctrmLoading=false;
