@@ -157,6 +157,11 @@ tr:hover td{background:var(--bg2);}
 .modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;}
 .modal-field textarea{min-height:80px;resize:vertical;}
 .modal-btns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
+
+.fg{margin-bottom:12px;}
+.fg label,.lbl{font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;}
+.fg textarea{min-height:80px;resize:vertical;}
 </style>
 </head>
 <body>
@@ -2822,5 +2827,17 @@ window.addEventListener("load", function() {
 
 
 </script>
+
+<!-- MODAL (for Contacts, Vendors, Products edit) -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center;">
+  <div id="modal-box" style="background:#fff;border-radius:12px;padding:1.5rem;width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15);">
+    <h3 id="modal-title" style="font-size:15px;font-weight:600;margin-bottom:1rem;color:#111"></h3>
+    <div id="modal-fields"></div>
+    <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;">
+      <button class="btn bs" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
