@@ -568,8 +568,24 @@ function sf(key,val){
   const aid=document.activeElement?.id;
   const ss=document.activeElement?.selectionStart;
   const se=document.activeElement?.selectionEnd;
-  render();
+  renderCurrentScreen();
   if(aid){const el=document.getElementById(aid);if(el){el.focus();try{el.setSelectionRange(ss,se);}catch(e){}}}
+}
+
+function renderCurrentScreen(){
+  const active = document.querySelector('.screen.active');
+  if(!active) return;
+  const id = active.id.replace('s-','');
+  if(id==='sb-vendors') renderVendors();
+  else if(id==='sb-products') renderProducts();
+  else if(id==='sb-commodities') renderCommodities();
+  else if(id==='sb-ctrm') renderCTRM();
+  else if(id==='sb-risk') renderRisk();
+  else if(id==='sb-geo') renderGeo();
+  else if(id==='sb-ct') renderCustomerType();
+  else if(id==='sb-import') renderImport();
+  else if(id==='cs-contacts') renderContacts();
+  else if(id==='cs-products') renderCsProducts();
 }
 function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};render();}
 function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
@@ -1246,7 +1262,7 @@ function initCsViewForm(){
   const session = JSON.parse(localStorage.getItem('pa_session')||'{}');
   const el_date = document.getElementById('csv-date');
   const el_by = document.getElementById('csv-by');
-  if(el_date) el_date.value = new Date().toLocaleDateString('en-GB');
+  if(el_date) el_date.value = new Date().toISOString().split('T')[0];
   if(el_by) el_by.value = session?.user?.email||'';
   // Reset fields
   setStars('csv-stars',0);
@@ -1307,6 +1323,8 @@ async function saveCsView(){
     commodities: coms,
     notes: document.getElementById('csv-notes')?.value||''
   };
+  // Remove null/empty fields
+  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined)delete body[k];});
   try{
     await apiFetch('cs_product_views',{method:'POST',body});
     alert('Saved successfully');
@@ -1343,13 +1361,14 @@ async function saveMarketIntel(){
     client_company: client,
     sector: document.getElementById('mi-sector')?.value||'',
     country: document.getElementById('mi-country')?.value||'',
-    intel_date: document.getElementById('mi-date')?.value||'',
+    intel_date: document.getElementById('mi-date')?.value||null,
     source_context: document.getElementById('mi-context')?.value||'',
     rating: getStars('mi-stars'),
     products_mentioned: selectedProds,
     comments: document.getElementById('mi-comments')?.value||'',
     link_ref: document.getElementById('mi-link')?.value||''
   };
+  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined)delete body[k];});
   try{
     await apiFetch('cs_market_intel',{method:'POST',body});
     alert('Saved successfully');
@@ -1422,6 +1441,7 @@ async function saveSystemSelection(){
     notes: document.getElementById('ss-notes')?.value||'',
     link_ref: document.getElementById('ss-link')?.value||''
   };
+  Object.keys(selBody).forEach(k=>{if(selBody[k]===null||selBody[k]===''||selBody[k]===undefined)delete selBody[k];});
   try{
     const res = await apiFetch('cs_system_selections',{method:'POST',body:selBody});
     const selId = res[0]?.id;
