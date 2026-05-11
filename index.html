@@ -1330,6 +1330,7 @@ async function saveCsView(){
   };
   // Remove null/empty fields
   Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined||body[k]===0)delete body[k];});
+  console.log('Saving cs_product_views:', JSON.stringify(body));
   try{
     await apiFetch('cs_product_views',{method:'POST',body});
     alert('Saved successfully');
@@ -1374,6 +1375,7 @@ async function saveMarketIntel(){
     link_ref: document.getElementById('mi-link')?.value||''
   };
   Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined||body[k]===0)delete body[k];});
+  console.log('Saving cs_market_intel:', JSON.stringify(body));
   try{
     await apiFetch('cs_market_intel',{method:'POST',body});
     alert('Saved successfully');
