@@ -2,153 +2,446 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Product Advisor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#0a0e1a;--bg2:#0d1424;--bg3:#0a1020;--border:#1e2d40;--text:#e2e8f0;--muted:#64748b;
-  --accent:#60a5fa;--green:#22c55e;--yellow:#f59e0b;--purple:#a78bfa;--red:#ef4444;
-  --input-bg:#111827;--row-border:#111827;
+  --bg:#ffffff;--bg2:#f9fafb;--bg3:#f3f4f6;--border:#e5e7eb;--text:#111827;--muted:#6b7280;
+  --accent:#2563eb;--green:#16a34a;--yellow:#d97706;--red:#dc2626;--purple:#7c3aed;
+  --input-bg:#ffffff;--row-border:#f3f4f6;
 }
-.light{
-  --bg:#f8fafc;--bg2:#ffffff;--bg3:#f1f5f9;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;
-  --accent:#1d4ed8;--green:#16a34a;--yellow:#d97706;--purple:#7c3aed;--red:#dc2626;
-  --input-bg:#ffffff;--row-border:#f1f5f9;
-}
-body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;transition:background .2s,color .2s;}
-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:8px;min-height:48px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
-.logo{font-weight:700;font-size:14px;color:var(--accent);white-space:nowrap;}
-.sub{font-size:10px;color:var(--muted);margin-left:4px;}
-nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;padding:3px 0;max-width:calc(100% - 280px);}
-.tab{padding:4px 10px;font-size:11px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s;white-space:nowrap;}
-.tab.active{background:var(--accent);color:#fff;font-weight:600;}
-.tab:hover:not(.active){background:var(--bg3);}
-.theme-btn{padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit;white-space:nowrap;}
-main{padding:12px;max-width:1600px;margin:0 auto;}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;}
-.card-head{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg3);}
-.card-title{font-weight:600;font-size:13px;}
-.card-meta{font-size:11px;color:var(--muted);margin-left:auto;}
-.filters{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--bg3);}
-input,select{background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 9px;font-size:12px;font-family:inherit;outline:none;}
-input{width:180px;}
-.btn{padding:4px 10px;font-size:11px;font-weight:600;border:none;border-radius:5px;cursor:pointer;font-family:inherit;background:var(--bg3);color:var(--muted);}
-.btn-primary{background:var(--accent);color:#fff;}
-.btn-success{background:#14532d;color:#86efac;border:1px solid #22c55e44;}
-.btn-reset{background:#1e3a1e;color:var(--green);border:1px solid var(--green);}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;min-height:100vh;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:#f9fafb;display:flex;align-items:center;justify-content:center;z-index:1000;}
+.login-box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:2rem;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.login-box h2{font-size:16px;font-weight:600;margin-bottom:4px;}
+.login-box p{font-size:12px;color:var(--muted);margin-bottom:1.5rem;}
+.login-box input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;margin-bottom:10px;}
+.login-box button{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;}
+
+/* TOP NAV */
+#topnav{height:46px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:2px;background:#fff;position:sticky;top:0;z-index:200;}
+.logo{font-size:13px;font-weight:700;margin-right:1.5rem;color:var(--text);}
+.dd{position:relative;}
+.dd-btn{height:46px;padding:0 13px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2.5px solid transparent;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;}
+.dd-btn:hover{color:var(--text);}
+.dd-btn.cs{color:var(--accent);border-bottom-color:var(--accent);}
+.dd-btn.sb{color:#0d9488;border-bottom-color:#0d9488;}
+.dd-btn .arr{font-size:9px;transition:transform .15s;}
+.dd:hover .arr{transform:rotate(180deg);}
+.dd-menu{display:none;position:absolute;top:45px;left:0;background:#fff;border:1px solid var(--border);border-radius:10px;padding:5px;min-width:195px;box-shadow:0 4px 18px rgba(0,0,0,.1);z-index:300;}
+.dd:hover .dd-menu{display:block;}
+.dd-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;color:#374151;white-space:nowrap;}
+.dd-item:hover{background:var(--bg3);}
+.dd-sep{height:1px;background:var(--bg3);margin:3px 0;}
+.nav-r{margin-left:auto;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:8px;}
+.nav-r button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;}
+.nav-r button:hover{color:var(--text);}
+
+/* BREADCRUMB */
+.bc{padding:8px 1.25rem;font-size:11px;color:var(--muted);border-bottom:1px solid var(--bg3);display:flex;align-items:center;gap:4px;}
+.bc .bcs{color:var(--text);font-weight:500;}
+.bc .sep{color:#d1d5db;}
+
+/* SCREENS */
+.screen{display:none;}
+.screen.active{display:block;}
+.content{padding:1.25rem;}
+.back-btn{background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:1rem;padding:0;font-family:inherit;}
+.back-btn:hover{color:var(--text);}
+.pg-title{font-size:17px;font-weight:600;margin-bottom:3px;}
+.pg-sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem;}
+
+/* HOME CARDS */
+.home-two{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.big-card{border:1.5px solid var(--border);border-radius:13px;padding:1.4rem;cursor:pointer;transition:all .15s;}
+.big-card:hover{border-color:#93c5fd;box-shadow:0 0 0 4px #eff6ff;}
+.big-card.sb:hover{border-color:#5eead4;box-shadow:0 0 0 4px #f0fdfa;}
+.big-card .bci{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:11px;}
+.big-card h2{font-size:15px;font-weight:600;margin-bottom:5px;}
+.big-card p{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+.big-card ul{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.big-card ul li{font-size:12px;color:#374151;display:flex;align-items:center;gap:6px;}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:var(--accent);}
+.dot.tl{background:#0d9488;}
+
+/* 3-COL & 4-COL GRIDS */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.opt-card{border:1px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer;transition:all .15s;}
+.opt-card:hover{border-color:#93c5fd;background:#f9fbff;}
+.opt-card .oi{font-size:22px;margin-bottom:8px;}
+.opt-card h4{font-size:13px;font-weight:600;margin-bottom:3px;}
+.opt-card p{font-size:11px;color:var(--muted);line-height:1.4;}
+.sb-item{border:1px solid var(--border);border-radius:9px;padding:.9rem;cursor:pointer;transition:all .15s;}
+.sb-item:hover{border-color:#5eead4;background:#f0fdfa;}
+.sb-item .si{font-size:18px;margin-bottom:5px;}
+.sb-item span{font-size:12px;font-weight:500;color:#374151;}
+
+/* FORMS */
+.fw{max-width:520px;}
+.field{margin-bottom:12px;}
+.field label{font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;}
+.req{color:var(--red);}
+.field input,.field select,.field textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;}
+.field input[readonly]{background:var(--bg2);color:var(--muted);}
+.field textarea{resize:vertical;min-height:64px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pill-g{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+.pill{font-size:11px;padding:2px 8px;border-radius:20px;cursor:pointer;border:1px solid var(--border);color:#374151;background:#fff;transition:all .12s;}
+.pill.on{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;}
+.pill-add{font-size:11px;padding:2px 9px;border-radius:20px;border:1px dashed #d1d5db;color:var(--muted);cursor:pointer;background:#fff;}
+.pill-add:hover{border-color:#93c5fd;color:var(--accent);}
+.stars{display:flex;gap:3px;margin-top:4px;}
+.star{font-size:22px;cursor:pointer;color:#d1d5db;transition:color .1s;user-select:none;}
+.star.on{color:#f59e0b;}
+.btn-row{display:flex;gap:8px;margin-top:1.1rem;}
+
+/* PRODUCTS TABLE (capSpire Intel) */
+.prod-entry{border:1px solid var(--border);border-radius:8px;padding:.75rem;margin-bottom:8px;background:var(--bg2);}
+.prod-entry-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;font-size:12px;}
+.rm-btn{font-size:11px;color:var(--red);cursor:pointer;background:none;border:none;padding:0;font-family:inherit;}
+.add-prod-btn{font-size:12px;color:var(--accent);cursor:pointer;background:none;border:1px dashed #93c5fd;border-radius:7px;padding:6px 12px;width:100%;text-align:center;font-family:inherit;}
+.add-prod-btn:hover{background:#eff6ff;}
+
+/* SOURCEBOOK shared styles */
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.card-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.card-title{font-size:14px;font-weight:600;}
+.card-meta{font-size:11px;color:var(--muted);}
+.filters{display:flex;align-items:center;gap:7px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;}
+.filters input,.filters select{padding:5px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
-td{padding:6px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:middle;}
-.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;}
-.pager{display:flex;gap:8px;padding:7px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);align-items:center;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
-.stat{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center;}
-.stat-n{font-size:26px;font-weight:700;color:var(--accent);}
-.stat-l{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:1px;}
-.bar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
-.bar-inner{height:100%;border-radius:2px;}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-a{color:var(--accent);text-decoration:none;cursor:pointer;}
-a:hover{text-decoration:underline;}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;padding:20px;}
-.modal-bg.open{display:flex;}
-.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:22px;}
-.fg{margin-bottom:11px;}
-.lbl{display:block;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:3px;text-transform:uppercase;}
-.fg input,.fg select,.fg textarea{width:100%;}
-.fg textarea{min-height:55px;resize:vertical;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 9px;font-size:12px;font-family:inherit;}
-.section{display:none;}
-.section.active{display:block;}
-.loading{padding:28px;text-align:center;color:var(--muted);}
-.row-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--row-border);}
-.pct-cell{min-width:90px;}
-.comment-block{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:11px;}
-.comment-meta{color:var(--muted);font-size:10px;margin-bottom:3px;}
-.comment-text{color:var(--text);line-height:1.5;}
-@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}nav{gap:1px;}.tab{padding:3px 6px;font-size:10px;}}
+thead tr{background:var(--bg2);}
+th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);}
+td{padding:8px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:top;}
+tr:hover td{background:var(--bg2);}
+.tbl-link{color:var(--accent);cursor:pointer;text-decoration:none;}
+.tbl-link:hover{text-decoration:underline;}
+.pager{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);}
+.pager button{padding:3px 10px;background:#fff;border:1px solid var(--border);border-radius:5px;font-size:12px;cursor:pointer;font-family:inherit;}
+.pager button:hover{background:var(--bg2);}
+
+/* BUTTONS */
+.btn{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#1d4ed8;}
+.btn-success{background:#16a34a;color:#fff;}
+.btn-reset{background:var(--bg2);color:var(--muted);border:1px solid var(--border);}
+.btn-reset:hover{color:var(--text);}
+.bs{background:var(--bg3);color:#374151;border:1px solid var(--border);}
+
+/* SPLIT PANEL */
+.split-layout{display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start;}
+.side-panel{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.sp-head{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.sp-head h3{font-size:14px;font-weight:600;}
+.sp-head p{font-size:11px;color:var(--muted);}
+.sp-body{padding:12px 14px;}
+.sp-section{margin-bottom:12px;}
+.sp-section h5{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.sp-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bg3);font-size:12px;}
+.sp-row .sk{color:var(--muted);}
+.sp-row .sv{color:var(--text);font-weight:500;}
+
+/* MODAL */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:400;align-items:center;justify-content:center;}
+#modal-overlay.open{display:flex;}
+#modal-box{background:#fff;border-radius:12px;padding:1.5rem;width:500px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15);}
+#modal-box h3{font-size:15px;font-weight:600;margin-bottom:1rem;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{font-size:12px;font-weight:500;display:block;margin-bottom:4px;color:#374151;}
+.modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;}
+.modal-field textarea{min-height:80px;resize:vertical;}
+.modal-btns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-<div id="auth-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="font-size:32px;margin-bottom:8px">📊</div>
-      <div style="font-weight:700;font-size:20px;color:var(--accent)">Product Advisor</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">CTRM & Risk Management Intelligence</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Product Advisor</h2>
+    <p>Sign in to continue</p>
+    <input id="login-email" type="email" placeholder="Email">
+    <input id="login-pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Sign In</button>
+    <p id="login-err" style="color:#ef4444;font-size:12px;margin-top:8px;text-align:center;"></p>
+  </div>
+</div>
+
+<!-- TOP NAV -->
+<div id="topnav" style="display:none">
+  <span class="logo">Product Advisor</span>
+  <div class="dd">
+    <button class="dd-btn" id="nb-cs">capSpire Intel <span class="arr">▾</span></button>
+    <div class="dd-menu">
+      <div class="dd-item" onclick="nav('addintel','cs')">➕ Add Intel</div>
+      <div class="dd-item" onclick="nav('cs-products','cs')">📦 Products</div>
+      <div class="dd-item" onclick="nav('cs-contacts','cs')">👥 Contacts</div>
     </div>
-    <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
-      <button id="tab-login" onclick="showAuthTab('login')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">Sign In</button>
-      <button id="tab-register" onclick="showAuthTab('register')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Register</button>
+  </div>
+  <div class="dd">
+    <button class="dd-btn" id="nb-sb">Sourcebook Intel <span class="arr">▾</span></button>
+    <div class="dd-menu">
+      <div class="dd-item" onclick="nav('sb-vendors','sb')">🏢 Vendors</div>
+      <div class="dd-item" onclick="nav('sb-products','sb')">📦 Products</div>
+      <div class="dd-item" onclick="nav('sb-commodities','sb')">🌾 Commodities</div>
+      <div class="dd-item" onclick="nav('sb-ctrm','sb')">⚡ CTRM Coverage</div>
+      <div class="dd-item" onclick="nav('sb-risk','sb')">🛡 Risk Coverage</div>
+      <div class="dd-item" onclick="nav('sb-geo','sb')">🌍 Geographic Coverage</div>
+      <div class="dd-item" onclick="nav('sb-ct','sb')">👤 Customer Types</div>
+      <div class="dd-item" onclick="nav('sb-import','sb')">📥 Import Data</div>
     </div>
-    <div id="auth-login">
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
-        <input id="login-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+  </div>
+  <div class="nav-r">
+    <span id="nav-user"></span>
+    <button onclick="signOut()">Sign Out</button>
+  </div>
+</div>
+
+<!-- ═══ SCREENS ═══ -->
+
+<!-- HOME -->
+<div class="screen" id="s-home">
+  <div class="content">
+    <div class="home-two">
+      <div class="big-card" onclick="nav('cs-home','cs')">
+        <div class="bci" style="background:#eff6ff">🏢</div>
+        <h2>capSpire Intel</h2>
+        <p>Internal intelligence gathered by capSpire — product views, market signals and system selections.</p>
+        <ul>
+          <li><span class="dot"></span>Add Intel</li>
+          <li><span class="dot"></span>Products with capSpire intel</li>
+          <li><span class="dot"></span>Contacts</li>
+        </ul>
       </div>
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
-        <input id="login-password" type="password" placeholder="••••••••" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      <div class="big-card sb" onclick="nav('sb-home','sb')">
+        <div class="bci" style="background:#f0fdfa">📚</div>
+        <h2>Sourcebook Intel</h2>
+        <p>Official Sourcebook data — vendors, products and coverage across commodities, CTRM and risk.</p>
+        <ul>
+          <li><span class="dot tl"></span>Vendors, Products, Commodities</li>
+          <li><span class="dot tl"></span>CTRM, Risk & Geographic Coverage</li>
+          <li><span class="dot tl"></span>Customer Types, Import Data</li>
+        </ul>
       </div>
-      <button onclick="doLogin()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Sign In</button>
-      <div id="login-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
-      <div style="text-align:center;margin-top:16px">
-        <a onclick="showForgotPassword()" href="#" style="font-size:12px;color:var(--accent)">Forgot password?</a>
-      </div>
-    </div>
-    <div id="auth-register" style="display:none">
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Full Name</label>
-        <input id="register-name" type="text" placeholder="Your full name" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
-        <input id="register-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
-        <input id="register-password" type="password" placeholder="Min. 6 characters" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <button onclick="doRegister()" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Create Account</button>
-      <div id="register-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
-      <div id="register-success" style="margin-top:12px;color:var(--green);font-size:12px;text-align:center;display:none"></div>
     </div>
   </div>
 </div>
-<header style="display:none">
-  <div><span class="logo">Product Advisor</span><span class="sub">CTRM &amp; Risk Management Intelligence</span></div>
-  <nav id="nav"></nav>
-  <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
-</header>
-<main style="display:none">
-  <div id="section-overview" class="section active"></div>
-  <div id="section-vendors" class="section"></div>
-  <div id="section-products" class="section"></div>
-  <div id="section-commodities" class="section"></div>
-  <div id="section-ctrm" class="section"></div>
-  <div id="section-risk" class="section"></div>
-  <div id="section-geo" class="section"></div>
-  <div id="section-customertype" class="section"></div>
-  <div id="section-contacts" class="section"></div>
-  <div id="section-reporting" class="section"></div>
-  <div id="section-import" class="section"></div>
-  <div id="section-logs" class="section"></div>
-</main>
-<div class="modal-bg" id="modal">
-  <div class="modal-box">
-    <div style="display:flex;align-items:center;margin-bottom:16px">
-      <strong id="modal-title" style="font-size:14px"></strong>
-      <button class="btn" style="margin-left:auto" onclick="closeModal()">✕ Close</button>
+
+<!-- CS HOME -->
+<div class="screen" id="s-cs-home">
+  <div class="bc">capSpire Intel</div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="pg-title">capSpire Intel</div>
+    <div class="pg-sub">Internal intelligence gathered by capSpire consultants</div>
+    <div class="g3">
+      <div class="opt-card" onclick="nav('addintel','cs')"><div class="oi">➕</div><h4>Add Intel</h4><p>Record a new product view, market signal or system selection</p></div>
+      <div class="opt-card" onclick="nav('cs-products','cs')"><div class="oi">📦</div><h4>Products</h4><p>Products with capSpire intel entries</p></div>
+      <div class="opt-card" onclick="nav('cs-contacts','cs')"><div class="oi">👥</div><h4>Contacts</h4><p>Market contacts and references</p></div>
     </div>
+  </div>
+</div>
+
+<!-- ADD INTEL -->
+<div class="screen" id="s-addintel">
+  <div class="bc">capSpire Intel <span class="sep">›</span> <span class="bcs">Add Intel</span></div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="pg-title">Add Intel</div>
+    <div class="pg-sub">Select the type of intel to record</div>
+    <div class="g3">
+      <div class="opt-card" onclick="nav('form-csview','cs')"><div class="oi">🔍</div><h4>capSpire View of the Product</h4><p>Internal assessment of a specific product</p></div>
+      <div class="opt-card" onclick="nav('form-market','cs')"><div class="oi">📊</div><h4>Market Intel</h4><p>Market information from clients or events</p></div>
+      <div class="opt-card" onclick="nav('form-selection','cs')"><div class="oi">⚖️</div><h4>System Selection Intel</h4><p>Intel from system selection processes</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM 1: capSpire View -->
+<div class="screen" id="s-form-csview">
+  <div class="bc">capSpire Intel <span class="sep">›</span> Add Intel <span class="sep">›</span> <span class="bcs">capSpire View of the Product</span></div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="fw">
+      <div class="pg-title">capSpire View of the Product</div>
+      <div class="pg-sub">Internal capSpire assessment — strengths, gaps and commodity coverage</div>
+      <div class="field"><label>Product <span class="req">*</span></label><select id="csv-product" onchange="onCsvProductChange()"><option value="">— Select product —</option></select></div>
+      <div class="frow">
+        <div class="field"><label>Vendor</label><input id="csv-vendor" readonly></div>
+        <div class="field"><label>Assessed by</label><input id="csv-by" readonly></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Date</label><input id="csv-date" readonly></div>
+        <div class="field"><label>Source / context</label><select id="csv-context"><option value="">— Select —</option><option>Client meeting</option><option>Conference</option><option>RFP / Tender</option><option>Demo</option><option>Internal research</option><option>Other</option></select></div>
+      </div>
+      <div class="field">
+        <label>Overall rating</label>
+        <div class="stars" id="csv-stars">
+          <span class="star" onclick="setStars('csv-stars',1)">★</span>
+          <span class="star" onclick="setStars('csv-stars',2)">★</span>
+          <span class="star" onclick="setStars('csv-stars',3)">★</span>
+          <span class="star" onclick="setStars('csv-stars',4)">★</span>
+          <span class="star" onclick="setStars('csv-stars',5)">★</span>
+        </div>
+      </div>
+      <div class="field"><label>Strengths</label><textarea id="csv-strengths" placeholder="Describe the product's main strengths..."></textarea></div>
+      <div class="field"><label>Gaps / weaknesses</label><textarea id="csv-gaps" placeholder="Describe identified gaps or limitations..."></textarea></div>
+      <div class="field">
+        <label>Relevant commodities</label>
+        <div class="pill-g" id="csv-coms"></div>
+      </div>
+      <div class="field"><label>Additional notes</label><textarea id="csv-notes" placeholder="Any other relevant information..."></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveCsView()">Save</button>
+        <button class="btn bs" onclick="goBack()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM 2: Market Intel -->
+<div class="screen" id="s-form-market">
+  <div class="bc">capSpire Intel <span class="sep">›</span> Add Intel <span class="sep">›</span> <span class="bcs">Market Intel</span></div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="fw">
+      <div class="pg-title">Market Intel</div>
+      <div class="pg-sub">Market intelligence gathered from clients, events or public sources</div>
+      <div class="frow">
+        <div class="field"><label>Client / Company <span class="req">*</span></label><input id="mi-client" placeholder="Company name"></div>
+        <div class="field"><label>Sector</label><select id="mi-sector"><option value="">— Select —</option><option>Energy Trading</option><option>Utilities</option><option>Oil & Gas</option><option>Commodities</option><option>Finance</option><option>Other</option></select></div>
+      </div>
+      <div class="field"><label>Country</label><select id="mi-country"><option value="">— Select country —</option></select></div>
+      <div class="frow">
+        <div class="field"><label>Date</label><input id="mi-date" type="date"></div>
+        <div class="field"><label>Source / context</label><select id="mi-context"><option value="">— Select —</option><option>Client meeting</option><option>Conference</option><option>RFP / Tender</option><option>LinkedIn / News</option><option>Other</option></select></div>
+      </div>
+      <div class="field">
+        <label>Overall rating</label>
+        <div class="stars" id="mi-stars">
+          <span class="star" onclick="setStars('mi-stars',1)">★</span>
+          <span class="star" onclick="setStars('mi-stars',2)">★</span>
+          <span class="star" onclick="setStars('mi-stars',3)">★</span>
+          <span class="star" onclick="setStars('mi-stars',4)">★</span>
+          <span class="star" onclick="setStars('mi-stars',5)">★</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Products mentioned</label>
+        <div id="mi-products-ms"></div>
+      </div>
+      <div class="field"><label>Comments</label><textarea id="mi-comments" rows="4" placeholder="Describe the information gathered..."></textarea></div>
+      <div class="field"><label>Link / Reference</label><input id="mi-link" type="url" placeholder="https://..."></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveMarketIntel()">Save</button>
+        <button class="btn bs" onclick="goBack()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM 3: System Selection -->
+<div class="screen" id="s-form-selection">
+  <div class="bc">capSpire Intel <span class="sep">›</span> Add Intel <span class="sep">›</span> <span class="bcs">System Selection Intel</span></div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="fw">
+      <div class="pg-title">System Selection Intel</div>
+      <div class="pg-sub">Intel from system selection processes</div>
+      <div class="frow">
+        <div class="field"><label>Client <span class="req">*</span></label><input id="ss-client" placeholder="Company name"></div>
+        <div class="field"><label>Year</label><input id="ss-year" type="number" placeholder="2025"></div>
+      </div>
+      <div class="field"><label>Country</label><select id="ss-country"><option value="">— Select country —</option></select></div>
+      <div class="field"><label>Products evaluated</label></div>
+      <div id="ss-prod-entries">
+        <div class="prod-entry" data-idx="0">
+          <div class="prod-entry-head"><span>Product 1</span><button class="rm-btn" onclick="removeSsProd(this)">✕ Remove</button></div>
+          <div class="frow">
+            <div class="field"><label>Product</label><select class="ss-prod-sel"><option value="">— Select —</option></select></div>
+            <div class="field"><label>Outcome</label><select class="ss-outcome-sel"><option value="Selected">Selected</option><option value="Shortlisted">Shortlisted</option><option value="Rejected">Rejected</option></select></div>
+          </div>
+        </div>
+      </div>
+      <button class="add-prod-btn" onclick="addSsProd()">+ Add another product</button>
+      <div class="field" style="margin-top:12px"><label>Notes</label><textarea id="ss-notes" placeholder="Additional information about the selection process..."></textarea></div>
+      <div class="field"><label>Link / Reference</label><input id="ss-link" type="url" placeholder="https://..."></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveSystemSelection()">Save</button>
+        <button class="btn bs" onclick="goBack()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CS PRODUCTS -->
+<div class="screen" id="s-cs-products">
+  <div class="bc">capSpire Intel <span class="sep">›</span> <span class="bcs">Products</span></div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div id="cs-prod-main"></div>
+  </div>
+</div>
+
+<!-- CS CONTACTS -->
+<div class="screen" id="s-cs-contacts">
+  <div class="bc">capSpire Intel <span class="sep">›</span> <span class="bcs">Contacts</span></div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div id="section-contacts"></div>
+  </div>
+</div>
+
+<!-- SB HOME -->
+<div class="screen" id="s-sb-home">
+  <div class="bc">Sourcebook Intel</div>
+  <div class="content">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="pg-title">Sourcebook Intel</div>
+    <div class="pg-sub">Official Sourcebook data — vendors, products and coverage</div>
+    <div class="g4">
+      <div class="sb-item" onclick="nav('sb-vendors','sb')"><div class="si">🏢</div><span>Vendors</span></div>
+      <div class="sb-item" onclick="nav('sb-products','sb')"><div class="si">📦</div><span>Products</span></div>
+      <div class="sb-item" onclick="nav('sb-commodities','sb')"><div class="si">🌾</div><span>Commodities</span></div>
+      <div class="sb-item" onclick="nav('sb-ctrm','sb')"><div class="si">⚡</div><span>CTRM Coverage</span></div>
+      <div class="sb-item" onclick="nav('sb-risk','sb')"><div class="si">🛡</div><span>Risk Coverage</span></div>
+      <div class="sb-item" onclick="nav('sb-geo','sb')"><div class="si">🌍</div><span>Geographic Coverage</span></div>
+      <div class="sb-item" onclick="nav('sb-ct','sb')"><div class="si">👤</div><span>Customer Types</span></div>
+      <div class="sb-item" onclick="nav('sb-import','sb')"><div class="si">📥</div><span>Import Data</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SB SECTIONS (rendered by existing functions) -->
+<div class="screen" id="s-sb-vendors"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Vendors</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-vendors"></div></div></div>
+<div class="screen" id="s-sb-products"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Products</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-products"></div></div></div>
+<div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Commodities</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
+<div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">CTRM Coverage</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
+<div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Risk Coverage</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
+<div class="screen" id="s-sb-geo"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Geographic Coverage</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-geo"></div></div></div>
+<div class="screen" id="s-sb-ct"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Customer Types</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ct"></div></div></div>
+<div class="screen" id="s-sb-import"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Import Data</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-import"></div></div></div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <h3 id="modal-title"></h3>
     <div id="modal-fields"></div>
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn btn-primary" onclick="saveModal()">💾 Save</button>
-      <button class="btn" onclick="closeModal()">Cancel</button>
+    <div class="modal-btns">
+      <button class="btn bs" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn">Save</button>
     </div>
   </div>
 </div>
+
 <script>
+
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
 const GROQ_MODEL="llama-3.3-70b-versatile";
@@ -237,11 +530,9 @@ function navToProduct(name, type) {
 }
 
 function navToIntelligence(productName){
-  const isProduct = (state.products||[]).some(p=>p.product_name===productName||normName(p.product_name)===normName(productName));
-  if(!isProduct){ console.warn('navToIntelligence: not a valid product:', productName); return; }
   state.activeReport = 'intelligence';
   state._intProd = productName;
-  state._intSection = null;
+  state._intSection = 'pcc';
   state._intFPccCom=''; state._intFPccCov='';
   state._intFCtrmFn=''; state._intFCtrmCom=''; state._intFCtrmCov='';
   state._intFRiskCat=''; state._intFRiskFn=''; state._intFRiskCov='';
@@ -474,6 +765,7 @@ function renderOverview(){
     </div>`;
 }
 
+
 // ── VENDORS ──
 function renderVendors(){
   const q=(state.filters.v_q||"").toLowerCase();
@@ -688,904 +980,476 @@ const ALL_TABLES=[
   {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
-// ── REPORTING ──
-function renderReporting(){
-  const activeReport = state.activeReport || null;
-  const el = document.getElementById("section-reporting");
-  const REPORTS = [
-    {id:"heatmap",     icon:"🔥", title:"Coverage Heatmap",            desc:"Product × Commodity matrix with coverage levels"},
-    {id:"vendor",      icon:"🏢", title:"Vendor Landscape",             desc:"Side-by-side vendor comparison with key metrics"},
-    {id:"market",      icon:"🌾", title:"Market Coverage by Commodity", desc:"How many products cover each commodity and which vendors"},
-    {id:"intelligence",icon:"🧠", title:"Product Intelligence",         desc:"Official data + capSpire field feedback drill-down by product"},
-  ];
-  if(!activeReport){
-    el.innerHTML="";
-    const wrap=document.createElement("div"); wrap.style.cssText="padding:20px";
-    wrap.innerHTML=`<div style="margin-bottom:20px"><h2 style="font-size:18px;font-weight:700;color:var(--text)">📈 Reporting</h2><p style="color:var(--muted);font-size:12px;margin-top:4px">Select a report to view</p></div>`;
-    const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px";
-    REPORTS.forEach(r=>{
-      const card=document.createElement("div");
-      card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 22px;cursor:pointer;transition:all .15s";
-      card.innerHTML=`<div style="font-size:28px;margin-bottom:10px">${r.icon}</div><div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--text)">${r.title}</div><div style="font-size:12px;color:var(--muted);line-height:1.5">${r.desc}</div><div style="margin-top:14px;display:inline-block;padding:4px 12px;background:var(--accent);color:#fff;border-radius:5px;font-size:11px;font-weight:600">View Report →</div>`;
-      card.onmouseover=()=>{card.style.borderColor="var(--accent)";card.style.transform="translateY(-2px)";};
-      card.onmouseout=()=>{card.style.borderColor="var(--border)";card.style.transform="";};
-      card.onclick=()=>{state.activeReport=r.id;renderReporting();};
-      grid.appendChild(card);
-    });
-    wrap.appendChild(grid); el.appendChild(wrap); return;
-  }
-  const report=REPORTS.find(r=>r.id===activeReport);
-  const backBtn=`<button onclick="state.activeReport=null;renderReporting()" class="btn" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:5px">← Back</button>`;
-  if(activeReport==="heatmap") renderReportHeatmap(el,backBtn,report);
-  else if(activeReport==="vendor") renderReportVendor(el,backBtn,report);
-  else if(activeReport==="market") renderReportMarket(el,backBtn,report);
-  else if(activeReport==="intelligence") renderReportIntelligence(el,backBtn,report);
-}
 
+// ── COUNTRIES ────────────────────────────────────────────────────
+const COUNTRIES = [
+  {name:"Afghanistan",continent:"Asia"},{name:"Albania",continent:"Europe"},{name:"Algeria",continent:"Africa"},
+  {name:"Argentina",continent:"South America"},{name:"Australia",continent:"APAC"},{name:"Austria",continent:"Europe"},
+  {name:"Belgium",continent:"Europe"},{name:"Brazil",continent:"South America"},{name:"Canada",continent:"North America"},
+  {name:"Chile",continent:"South America"},{name:"China",continent:"Asia"},{name:"Colombia",continent:"South America"},
+  {name:"Croatia",continent:"Europe"},{name:"Czech Republic",continent:"Europe"},{name:"Denmark",continent:"Europe"},
+  {name:"Egypt",continent:"Africa"},{name:"Finland",continent:"Europe"},{name:"France",continent:"Europe"},
+  {name:"Germany",continent:"Europe"},{name:"Greece",continent:"Europe"},{name:"Hong Kong",continent:"Asia"},
+  {name:"Hungary",continent:"Europe"},{name:"India",continent:"Asia"},{name:"Indonesia",continent:"Asia"},
+  {name:"Ireland",continent:"Europe"},{name:"Israel",continent:"Middle East"},{name:"Italy",continent:"Europe"},
+  {name:"Japan",continent:"Asia"},{name:"Jordan",continent:"Middle East"},{name:"Kuwait",continent:"Middle East"},
+  {name:"Malaysia",continent:"Asia"},{name:"Mexico",continent:"North America"},{name:"Netherlands",continent:"Europe"},
+  {name:"New Zealand",continent:"APAC"},{name:"Nigeria",continent:"Africa"},{name:"Norway",continent:"Europe"},
+  {name:"Oman",continent:"Middle East"},{name:"Pakistan",continent:"Asia"},{name:"Peru",continent:"South America"},
+  {name:"Philippines",continent:"Asia"},{name:"Poland",continent:"Europe"},{name:"Portugal",continent:"Europe"},
+  {name:"Qatar",continent:"Middle East"},{name:"Romania",continent:"Europe"},{name:"Russia",continent:"Europe"},
+  {name:"Saudi Arabia",continent:"Middle East"},{name:"Singapore",continent:"Asia"},{name:"South Africa",continent:"Africa"},
+  {name:"South Korea",continent:"Asia"},{name:"Spain",continent:"Europe"},{name:"Sweden",continent:"Europe"},
+  {name:"Switzerland",continent:"Europe"},{name:"Taiwan",continent:"Asia"},{name:"Thailand",continent:"Asia"},
+  {name:"Turkey",continent:"Europe"},{name:"UAE",continent:"Middle East"},{name:"Ukraine",continent:"Europe"},
+  {name:"United Kingdom",continent:"Europe"},{name:"United States",continent:"North America"},
+  {name:"Venezuela",continent:"South America"},{name:"Vietnam",continent:"Asia"}
+];
 
-// ── HELPER FUNCTIONS FOR REPORTS ──
-function normName(s){ return (s||"").toLowerCase().trim().replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim(); }
-function findExact(arr,field,val){ const r=(arr||[]).find(r=>(r[field]||"")===val); return r?.[field]||val; }
-
-function renderReportHeatmap(el,backBtn,report){
-  const pcc=state.pcc||[];
-  const products=[...new Set(pcc.map(r=>r.product))].filter(Boolean).sort();
-  const COL_ORDER=["Power","Natural Gas","HC Liquids","PetroChem / Chemicals","Coal","LNG","Bulk","Break Bulk","Container","Base Metals","Ferrous","Concentrates","Precious Metals","North America CO2 & Emissions","Europe CO2 & Emissions","FX"];
-  const allComs=[...new Set(pcc.map(r=>r.commodity))].filter(Boolean);
-  const normCom=s=>(s||"").trim().toLowerCase();
-  const orderedComs=[]; const usedNorm=new Set();
-  COL_ORDER.forEach(col=>{const match=allComs.find(c=>normCom(c)===normCom(col));if(match&&!usedNorm.has(normCom(match))){orderedComs.push(match);usedNorm.add(normCom(match));}});
-  allComs.sort().forEach(c=>{if(!usedNorm.has(normCom(c))){orderedComs.push(c);usedNorm.add(normCom(c));}});
-
-  // Official coverage map: product||commodity -> coverage_level
-  const map={};
-  pcc.forEach(r=>{map[r.product+"||"+r.commodity]=r.coverage_level;});
-
-  // capSpire feedback map: product -> [ {client, comMap:{commodity->coverage}} ]
-  // Each entry = one feedback record with its commodity coverages
-  const fbByProduct={};
-  (state.clients||[]).forEach(c=>{
-    if(!c.product) return;
-    const comMap={};
-    // From pcc_blocks
-    try{ if(c.pcc_blocks) JSON.parse(c.pcc_blocks).forEach(b=>{ if(b.commodity) comMap[b.commodity]=b.coverage_level||""; }); }catch(e){}
-    // From commodities field (product tab - no coverage per commodity)
-    if(!Object.keys(comMap).length && c.commodities){
-      c.commodities.split(",").map(s=>s.trim()).filter(Boolean).forEach(com=>{
-        comMap[com]=c.coverage_level||"";
-      });
-    }
-    if(!Object.keys(comMap).length) return;
-    if(!fbByProduct[c.product]) fbByProduct[c.product]=[];
-    fbByProduct[c.product].push({client:c.client_name||"?", comMap});
+function buildCountrySelect(selId){
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  const byContinent = {};
+  COUNTRIES.forEach(c=>{
+    if(!byContinent[c.continent]) byContinent[c.continent]=[];
+    byContinent[c.continent].push(c.name);
   });
-
-  const covColor=v=>v==="Covered"?"#22c55e":v&&v.includes("Partial")?"#f59e0b":v==="Not Covered"?"#ef4444":"transparent";
-  const covLetter=v=>v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
-  const fbColor=v=>v==="Covered"||v==="Deployed"?"#22c55e":v&&(v.includes("Partial")||v==="Capable")?"#f59e0b":v&&v.includes("Not")?"#ef4444":"#475569";
-
-  // Build table rows
-  let tbodyHtml="";
-  products.forEach(p=>{
-    const fbEntries=fbByProduct[p]||[];
-    const hasFb=fbEntries.length>0;
-    const pid="hm-"+p.replace(/[^a-z0-9]/gi,"_");
-
-    // Official row
-    tbodyHtml+=`<tr>
-      <td style="position:sticky;left:0;z-index:1;background:var(--bg2);padding:5px 10px;border-bottom:1px solid var(--row-border);border-right:1px solid var(--border);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis">
-        <a href="#" onclick="navToPccFromHeatmap('${escAttr(p)}');return false;" style="font-weight:600;color:var(--accent);text-decoration:none">${p}</a>
-        ${hasFb?`<button onclick="const rows=document.querySelectorAll('.hm-fb-${pid}');rows.forEach(r=>r.style.display=r.style.display==='none'?'table-row':'none');this.textContent=this.textContent.trim()==='▼'?'▲':'▼'" style="margin-left:6px;background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:0">▼</button>`:""}
-      </td>
-      ${orderedComs.map(c=>{
-        const v=map[p+"||"+c];
-        const col=covColor(v);
-        return`<td style="text-align:center;padding:3px;border-bottom:1px solid var(--row-border)">
-          <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${p} · ${c}: ${v||'–'}" style="display:inline-block;width:22px;height:22px;border-radius:4px;background:${col};color:#fff;font-size:9px;font-weight:700;line-height:22px;opacity:${v?"1":".18"};cursor:${v?"pointer":"default"}">${covLetter(v)}</span>
-        </td>`;
-      }).join("")}
-    </tr>`;
-
-    // One feedback row per client
-    fbEntries.forEach(fb=>{
-      tbodyHtml+=`<tr class="hm-fb-${pid}" style="display:none;background:var(--bg)">
-        <td style="position:sticky;left:0;z-index:1;background:var(--bg);padding:3px 10px 3px 28px;border-bottom:1px solid var(--row-border);border-right:2px solid var(--accent);white-space:nowrap;font-size:11px;color:var(--accent);font-style:italic">
-          💬 ${escH(fb.client)}
-        </td>
-        ${orderedComs.map(c=>{
-          const cv=fb.comMap[c];
-          if(!cv) return`<td style="background:var(--bg);border-bottom:1px solid var(--row-border)"></td>`;
-          const col=fbColor(cv);
-          const letter=cv==="Covered"||cv==="Deployed"?"C":cv&&(cv.includes("Partial")||cv==="Capable")?"P":cv&&cv.includes("Not")?"✗":"?";
-          return`<td style="text-align:center;padding:3px;background:var(--bg);border-bottom:1px solid var(--row-border)">
-            <span onclick="navToCtrmFromHeatmap('${escAttr(p)}','${escAttr(c)}')" title="${fb.client} feedback: ${cv}" style="display:inline-block;width:22px;height:22px;border-radius:4px;border:2px solid ${col};background:transparent;color:${col};font-size:9px;font-weight:700;line-height:18px;cursor:pointer">${letter}</span>
-          </td>`;
-        }).join("")}
-      </tr>`;
-    });
+  const continentOrder = ["Europe","North America","Middle East","Asia","APAC","South America","Africa"];
+  let html = '<option value="">— Select country —</option>';
+  continentOrder.forEach(cont=>{
+    if(!byContinent[cont]) return;
+    html += `<optgroup label="${cont}">`;
+    byContinent[cont].sort().forEach(name=>{ html += `<option>${name}</option>`; });
+    html += '</optgroup>';
   });
-
-  el.innerHTML=`<div style="padding:16px">${backBtn}<div class="card">
-    <div class="card-head">
-      <span class="card-title">${report.icon} ${report.title}</span>
-      <span style="font-size:10px;color:var(--muted);margin-left:8px">🟢 Covered &nbsp;🟡 Partial &nbsp;🔴 Not Covered &nbsp;· &nbsp;▼ = capSpire feedback</span>
-      <button onclick="exportHeatmapExcel()" class="btn btn-success" style="margin-left:auto;font-size:11px;padding:4px 10px">⬇ Excel</button>
-    </div>
-    <div style="overflow:auto;max-height:74vh">
-    <table style="font-size:11px;border-collapse:collapse;min-width:100%">
-    <thead><tr>
-      <th style="position:sticky;left:0;z-index:3;background:var(--bg3);padding:6px 10px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;min-width:190px">PRODUCT</th>
-      ${orderedComs.map(c=>`<th style="padding:4px 5px;font-size:9px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center;background:var(--bg3)" title="${c}">${c}</th>`).join("")}
-    </tr></thead>
-    <tbody>${tbodyHtml}</tbody>
-    </table></div></div></div>`;
-  window._heatmapData={products,commodities:orderedComs,map,fbByProduct};
+  sel.innerHTML = html;
 }
 
-function navToPccFromHeatmap(product){
-  // Link to Product Intelligence report for this product
-  state.activeReport='intelligence';
-  state._intProd=product;
-  state._intSection='pcc';
-  state._intFPccCom='';state._intFPccCov='';
-  state._intFCtrmFn='';state._intFCtrmCom='';
-  state._intFRiskCat='';state._intFRiskFn='';
-  setTab('reporting');
+// ── NAVIGATION ───────────────────────────────────────────────────
+const navHist = [];
+let currentSection = '';
+
+function nav(id, section){
+  const cur = document.querySelector('.screen.active');
+  if(cur) navHist.push(cur.id);
+  showScreen(id);
+  setNavActive(section);
+  currentSection = section;
+  // Render content on navigate
+  if(id==='cs-products') renderCsProducts();
+  else if(id==='cs-contacts') renderContacts();
+  else if(id==='sb-vendors') renderVendors();
+  else if(id==='sb-products') renderProducts();
+  else if(id==='sb-commodities') renderCommodities();
+  else if(id==='sb-ctrm') renderCTRM();
+  else if(id==='sb-risk') renderRisk();
+  else if(id==='sb-geo') renderGeo();
+  else if(id==='sb-ct') renderCustomerType();
+  else if(id==='sb-import') renderImport();
+  else if(id==='form-csview') initCsViewForm();
+  else if(id==='form-market') initMarketForm();
+  else if(id==='form-selection') initSelectionForm();
 }
 
-function navToCtrmFromHeatmap(product, commodity){
-  // Link to CTRM coverage page filtered by product + commodity
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('ctrm_'))delete state.filters[k];});
-  state.filters['ctrm_prod']=[product];
-  state.filters['ctrm_com']=[commodity];
-  state.pages={};
-  setTab('ctrm');
-}
-
-function exportHeatmapExcel(){
-  const{products,commodities,map,fbByProduct}=window._heatmapData||{};
-  if(!products||!commodities){alert("No data to export.");return;}
-
-  const covBg=v=>v==="Covered"?"#16a34a":v&&v.includes("Partial")?"#d97706":v==="Not Covered"?"#dc2626":"#ffffff";
-  const covLetter=v=>v==="Covered"?"C":v&&v.includes("Partial")?"P":v==="Not Covered"?"✗":"–";
-  const fbBg=v=>v==="Covered"||v==="Deployed"?"#16a34a":v&&(v.includes("Partial")||v==="Capable")?"#d97706":v&&v.includes("Not")?"#dc2626":"#f1f5f9";
-  const fbLetter=v=>v==="Covered"||v==="Deployed"?"C":v&&(v.includes("Partial")||v==="Capable")?"P":v&&v.includes("Not")?"✗":"?";
-
-  function td(text,bg,color,bold,italic,leftBorder){
-    let s="padding:4px 8px;font-size:11px;white-space:nowrap;background:"+(bg||"#ffffff")+";color:"+(color||"#000000")+";";
-    if(bold) s+="font-weight:bold;";
-    if(italic) s+="font-style:italic;";
-    if(leftBorder) s+="border-left:3px solid #2563eb;";
-    return "<td style='"+s+"'>"+text+"</td>";
+function goBack(){
+  if(!navHist.length){ showScreen('home'); setNavActive(''); return; }
+  const prev = navHist.pop();
+  showScreen(prev.replace('s-',''));
+  const s = prev.includes('cs')||prev.includes('addintel')||prev.includes('form') ? 'cs'
+           : prev.includes('sb') ? 'sb' : '';
+  setNavActive(s);
+  // Re-render if needed
+  const id = prev.replace('s-','');
+  if(id==='cs-products') renderCsProducts();
+  else if(id==='cs-contacts') renderContacts();
+  else if(id.startsWith('sb-') && id!=='sb-home'){
+    const page = id.replace('sb-','');
+    if(page==='vendors') renderVendors();
+    else if(page==='products') renderProducts();
+    else if(page==='commodities') renderCommodities();
+    else if(page==='ctrm') renderCTRM();
+    else if(page==='risk') renderRisk();
+    else if(page==='geo') renderGeo();
+    else if(page==='ct') renderCustomerType();
+    else if(page==='import') renderImport();
   }
-
-  let html="<html><head><meta charset='utf-8'></head><body>";
-  html+="<table border='1' cellspacing='0' cellpadding='0' style='border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px'>";
-  html+="<tr>"+td("PRODUCT","#e2e8f0","#000000",true)+commodities.map(c=>td(c,"#e2e8f0","#000000",true)).join("")+"</tr>";
-
-  products.forEach(p=>{
-    html+="<tr>"+td(p,"#ffffff","#1d4ed8",true);
-    commodities.forEach(c=>{
-      const v=map[p+"||"+c];
-      html+=td(v?covLetter(v):"","#ffffff"===covBg(v)?covBg(v):covBg(v),v?"#ffffff":"#94a3b8",!!v);
-    });
-    html+="</tr>";
-    (fbByProduct[p]||[]).forEach(fb=>{
-      html+="<tr>"+td("    💬 "+fb.client,"#eff6ff","#1d4ed8",false,true,true);
-      commodities.forEach(c=>{
-        const cv=fb.comMap[c];
-        html+=cv?td(fbLetter(cv),fbBg(cv),"#ffffff",true):td("","#ffffff","");
-      });
-      html+="</tr>";
-    });
-  });
-
-  html+="</table></body></html>";
-  const blob=new Blob([html],{type:"application/vnd.ms-excel;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download="coverage_heatmap.xls"; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-
-function renderReportVendor(el,backBtn,report){
-  const vendors=state.vendors||[]; const products=state.products||[]; const pcc=state.pcc||[]; const geo=state.geo||[]; const contacts=state.contacts||[];
-  const data=vendors.map(v=>{
-    const vn=normName(v.vendor_name);
-    const vProds=products.filter(p=>normName(p.vendor)===vn||normName(p.vendor).includes(vn.slice(0,12))||vn.includes(normName(p.vendor).slice(0,12)));
-    const ctrmProds=vProds.filter(p=>(p.product_type||"").toLowerCase().includes("ctrm"));
-    const riskProds=vProds.filter(p=>(p.product_type||"").toLowerCase().includes("risk"));
-    const vPcc=pcc.filter(p=>vProds.some(vp=>normName(vp.product_name)===normName(p.product)));
-    const covTotal=vPcc.length; const covCovered=vPcc.filter(p=>p.coverage_level==="Covered").length;
-    const covPartial=vPcc.filter(p=>p.coverage_level&&p.coverage_level.includes("Partial")).length;
-    const covNot=vPcc.filter(p=>p.coverage_level==="Not Covered").length;
-    const covPct=covTotal?Math.round(covCovered/covTotal*100):0;
-    const coms=[...new Set(vPcc.map(p=>p.commodity))].filter(Boolean);
-    const vGeo=geo.filter(g=>vProds.some(vp=>normName(vp.product_name)===normName(g.product)));
-    const regionCols=Object.keys(vGeo[0]||{}).filter(k=>!["id","product","product_type","vendor"].includes(k));
-    const covRegions=regionCols.filter(c=>vGeo.some(r=>r[c]==="Yes"||r[c]===true||r[c]==="TRUE"));
-    const vContacts=contacts.filter(c=>normName(c.vendor)===vn||normName(c.vendor).includes(vn.slice(0,12)));
-    const vFeedback=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(v.vendor_name||""));
-    return{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts,vFeedback};
-  }).filter(d=>d.vProds.length>0).sort((a,b)=>b.vProds.length-a.vProds.length);
-  el.innerHTML=""; const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
-  const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
-  hdr.innerHTML=`${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} vendors</span>`;
-  wrap.appendChild(hdr);
-  const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px";
-  data.forEach(d=>{
-    const{v,vProds,ctrmProds,riskProds,covPct,covCovered,covPartial,covNot,covTotal,coms,covRegions,vContacts,vFeedback}=d;
-    const card=document.createElement("div"); card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
-    card.onmouseover=()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)"; card.onmouseout=()=>card.style.boxShadow="";
-    const barCov=covTotal?Math.round(covCovered/covTotal*100):0; const barPartial=covTotal?Math.round(covPartial/covTotal*100):0; const barNot=covTotal?100-barCov-barPartial:0;
-    const vid="vcard-"+v.vendor_name.replace(/[^a-z0-9]/gi,"_");
-    const ctrmBadge=ctrmProds.length?`<a href="#" onclick="navToProductsByVendorType('${escAttr(v.vendor_name)}','CTRM');return false;" style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)44;text-decoration:none">⚡ CTRM (${ctrmProds.length})</a>`:"";
-    const riskBadge=riskProds.length?`<a href="#" onclick="navToProductsByVendorType('${escAttr(v.vendor_name)}','Risk');return false;" style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--purple)22;color:var(--purple);border:1px solid var(--purple)44;text-decoration:none">🛡 Risk (${riskProds.length})</a>`:"";
-    const comsVisible=coms.slice(0,4).map(c=>`<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--green)22;color:var(--green);border:1px solid var(--green)33">${c}</span>`).join(" ");
-    const comsHidden=coms.slice(4);
-    const comsMore=comsHidden.length?`<span id="${vid}-more" onclick="document.getElementById('${vid}-hidden').style.display=document.getElementById('${vid}-hidden').style.display==='none'?'flex':'none';this.style.display='none'" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent)44;cursor:pointer"> +${comsHidden.length} more</span>`:"";
-    const comsHiddenHtml=comsHidden.length?`<div id="${vid}-hidden" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">${comsHidden.map(c=>`<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--green)22;color:var(--green);border:1px solid var(--green)33">${c}</span>`).join(" ")}</div>`:"";
-    const regDisplay=covRegions.slice(0,3).map(r=>`<span style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">${r.replace(/_/g," ")}</span>`).join(" ")+(covRegions.length>3?`<span style="font-size:10px;color:var(--muted)"> +${covRegions.length-3}</span>`:"");
-    card.innerHTML=`<div style="padding:14px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px"><div><div style="font-weight:700;font-size:14px;color:var(--text)">${v.vendor_name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${v.headquarters||"–"}${v.website?" · <a href='"+(v.website.startsWith("http")?v.website:"https://"+v.website)+"' target='_blank' style='color:var(--accent);text-decoration:none'>🌐 Website</a>":""}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Coverage</div></div></div><div style="display:flex;gap:4px;flex-wrap:wrap">${[ctrmBadge,riskBadge].filter(Boolean).join(" ")}</div></div>
-    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-      <div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Commodity Coverage</span><span style="font-size:10px;color:var(--muted)">${covTotal} combinations</span></div>
-        <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}${!covTotal?`<div style="flex:1;background:var(--border)"></div>`:""}</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap"><span style="font-size:10px;color:var(--green)">● Covered: ${covCovered}</span><span style="font-size:10px;color:var(--yellow)">● Partial: ${covPartial}</span><span style="font-size:10px;color:var(--red)">● Not Covered: ${covNot}</span></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">Product × Commodity combinations</div></div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
-        <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--accent)">${vProds.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div></div>
-        <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--green)">${coms.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Commodities</div></div>
-        <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--purple)">${covRegions.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Regions</div></div>
-        <div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--yellow)">${vFeedback.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Feedbacks</div></div>
-      </div>
-      ${coms.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Commodities</div><div style="display:flex;flex-wrap:wrap;gap:4px">${comsVisible} ${comsMore}</div>${comsHiddenHtml}</div>`:""}
-      ${covRegions.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regions Present</div><div style="display:flex;flex-wrap:wrap;gap:4px">${regDisplay}</div></div>`:""}
-      ${vContacts.length?`<div style="padding-top:4px;border-top:1px solid var(--border)"><a href="#" onclick="navToContactsByVendor('${escAttr(v.vendor_name)}');return false;" style="font-size:11px;color:var(--accent);text-decoration:none">👤 ${vContacts.length} contact${vContacts.length>1?"s":""} →</a></div>`:""}
-      ${(()=>{
-        if(!vFeedback.length) return "";
-        const vid2="vfb2-"+v.vendor_name.replace(/[^a-z0-9]/gi,"_");
-        const fbRows=vFeedback.map(f=>`<div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <strong style="color:var(--text)">${escH(f.client_name||"")}</strong>
-            ${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}
-            ${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}
-            ${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}
-            ${f.created_by?`<span style="color:var(--muted);font-size:10px">👤 ${escH(f.created_by)}</span>`:""}
-          </div>
-          ${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}
-        </div>`).join("");
-        const collapsed=vFeedback.length>2;
-        return `<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-            <span style="font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px">capSpire Feedback (${vFeedback.length})</span>
-            ${collapsed?`<button onclick="const d=document.getElementById('${vid2}');d.style.display=d.style.display==='none'?'block':'none';this.textContent=this.textContent==='▼ Show all'?'▲ Hide':'▼ Show all'" style="font-size:10px;background:none;border:none;color:var(--accent);cursor:pointer;padding:0">▼ Show all</button>`:""}
-          </div>
-          ${collapsed
-            ? `<div>${vFeedback.slice(0,2).map(f=>`<div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="color:var(--text)">${escH(f.client_name||"")}</strong>${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}</div>${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}</div>`).join("")}</div>
-               <div id="${vid2}" style="display:none">${vFeedback.slice(2).map(f=>`<div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:5px;margin-bottom:4px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="color:var(--text)">${escH(f.client_name||"")}</strong>${f.project_name?`<span style="color:var(--muted);font-size:10px">📁 ${escH(f.project_name)}</span>`:""}${f.region?`<span style="color:var(--muted);font-size:10px">📍 ${escH(f.region)}</span>`:""}${f.since_year?`<span style="color:var(--muted);font-size:10px">📅 ${f.since_year}</span>`:""}</div>${f.notes?`<div style="color:var(--muted);font-size:10px;margin-top:2px;font-style:italic">${escH(f.notes)}</div>`:""}</div>`).join("")}</div>`
-            : fbRows}
-        </div>`;
-      })()}
-    </div>`;
-    grid.appendChild(card);
-  });
-  wrap.appendChild(grid); el.appendChild(wrap);
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('s-'+id);
+  if(el) el.classList.add('active');
 }
 
-function navToProductsByVendorType(vendor,type){
-  const vn=normName(vendor);
-  const exactVendor=[...new Set((state.products||[]).map(p=>p.vendor).filter(Boolean))].find(pv=>normName(pv)===vn||normName(pv).includes(vn.slice(0,12))||vn.includes(normName(pv).slice(0,12)))||vendor;
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
-  state.filters['p_vendor']=exactVendor; state.filters['p_type']=type; state.pages={}; setTab('products');
-}
-function navToContactsByVendor(vendor){
-  const vn=normName(vendor);
-  const exactVendor=[...new Set((state.contacts||[]).map(c=>c.vendor).filter(Boolean))].find(cv=>normName(cv)===vn||normName(cv).includes(vn.slice(0,12))||vn.includes(normName(cv).slice(0,12)))||vendor;
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('con_'))delete state.filters[k];});
-  state.filters['con_vendor']=exactVendor; state.pages={}; setTab('contacts');
+function setNavActive(s){
+  document.getElementById('nb-cs').className = 'dd-btn'+(s==='cs'?' cs':'');
+  document.getElementById('nb-sb').className = 'dd-btn'+(s==='sb'?' sb':'');
 }
 
-function renderReportMarket(el,backBtn,report){
-  const pcc=state.pcc||[]; const products=state.products||[];
-  const commodities=[...new Set(pcc.map(r=>r.commodity))].filter(Boolean).sort();
-  const data=commodities.map(c=>{
-    const entries=pcc.filter(r=>r.commodity===c);
-    const covered=entries.filter(r=>r.coverage_level==="Covered").length;
-    const partial=entries.filter(r=>r.coverage_level&&r.coverage_level.includes("Partial")).length;
-    const notCov=entries.filter(r=>r.coverage_level==="Not Covered").length;
-    const total=entries.length; const covPct=total?Math.round(covered/total*100):0;
-    const prods=[...new Set(entries.map(r=>r.product).filter(Boolean))];
-    const ctrmCount=prods.filter(p=>{const pr=products.find(x=>x.product_name===p);return(pr?.product_type||"").toLowerCase().includes("ctrm");}).length;
-    const riskCount=prods.filter(p=>{const pr=products.find(x=>x.product_name===p);return(pr?.product_type||"").toLowerCase().includes("risk");}).length;
-    const vendors=[...new Set(entries.map(r=>{const pr=products.find(p=>p.product_name===r.product);return pr?.vendor;}).filter(Boolean))];
-    return{c,total,covered,partial,notCov,covPct,ctrmCount,riskCount,vendors};
-  }).sort((a,b)=>b.covered-a.covered);
-  el.innerHTML=""; const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
-  const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap";
-  hdr.innerHTML=`${backBtn}<span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${data.length} commodities</span>`;
-  wrap.appendChild(hdr);
-  const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px";
-  data.forEach(d=>{
-    const{c,total,covered,partial,notCov,covPct,ctrmCount,riskCount,vendors}=d;
-    const cid="mcard-"+c.replace(/[^a-z0-9]/gi,"_");
-    const barCov=total?Math.round(covered/total*100):0; const barPartial=total?Math.round(partial/total*100):0; const barNot=total?100-barCov-barPartial:0;
-    const vendorsVisible=vendors.slice(0,3).map(v=>`<a href="#" onclick="navToProductsByVendorCom('${escAttr(v)}','${escAttr(c)}');return false;" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33;text-decoration:none">${v}</a>`).join(" ");
-    const vendorsHidden=vendors.slice(3);
-    const vendorsMore=vendorsHidden.length?`<span id="${cid}-more" onclick="document.getElementById('${cid}-hidden').style.display='flex';this.style.display='none'" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent)44;cursor:pointer">+${vendorsHidden.length} more</span>`:"";
-    const vendorsHiddenHtml=vendorsHidden.length?`<div id="${cid}-hidden" style="display:none;flex-wrap:wrap;gap:4px;margin-top:4px">${vendorsHidden.map(v=>`<a href="#" onclick="navToProductsByVendorCom('${escAttr(v)}','${escAttr(c)}');return false;" style="padding:1px 6px;border-radius:8px;font-size:10px;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)33;text-decoration:none">${v}</a>`).join(" ")}</div>`:"";
-    const card=document.createElement("div"); card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .15s";
-    card.onmouseover=()=>card.style.boxShadow="0 4px 20px rgba(0,0,0,.3)"; card.onmouseout=()=>card.style.boxShadow="";
-    card.innerHTML=`<div style="padding:14px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><a href="#" onclick="navToPccByCommodity('${escAttr(c)}');return false;" style="font-weight:700;font-size:14px;color:var(--text);text-decoration:none">${c}</a><div style="text-align:right;flex-shrink:0"><div style="font-size:22px;font-weight:700;color:${covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)"}">${covPct}%</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Covered</div></div></div><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${ctrmCount?`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--accent)22;color:var(--accent);border:1px solid var(--accent)44">⚡ CTRM: ${ctrmCount}</span>`:""}${riskCount?`<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:var(--purple)22;color:var(--purple);border:1px solid var(--purple)44">🛡 Risk: ${riskCount}</span>`:""}</div></div>
-    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-      <div><div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px;margin-bottom:5px">${barCov?`<div style="flex:${barCov};background:var(--green)"></div>`:""}${barPartial?`<div style="flex:${barPartial};background:var(--yellow)"></div>`:""}${barNot?`<div style="flex:${barNot};background:var(--red)"></div>`:""}${!total?`<div style="flex:1;background:var(--border)"></div>`:""}</div><div style="display:flex;gap:10px;flex-wrap:wrap"><span style="font-size:10px;color:var(--green)">● Covered: ${covered}</span><span style="font-size:10px;color:var(--yellow)">● Partial: ${partial}</span><span style="font-size:10px;color:var(--red)">● Not Covered: ${notCov}</span></div></div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;text-align:center"><div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--accent)">${total}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Products</div></div><div style="background:var(--bg3);border-radius:6px;padding:7px 4px"><div style="font-size:16px;font-weight:700;color:var(--purple)">${vendors.length}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Vendors</div></div></div>
-      ${vendors.length?`<div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Vendors</div><div style="display:flex;flex-wrap:wrap;gap:4px">${vendorsVisible} ${vendorsMore}</div>${vendorsHiddenHtml}</div>`:""}
-    </div>`;
-    grid.appendChild(card);
-  });
-  wrap.appendChild(grid); el.appendChild(wrap);
+// ── STARS ────────────────────────────────────────────────────────
+function setStars(containerId, n){
+  const stars = document.getElementById(containerId)?.querySelectorAll('.star');
+  if(stars) stars.forEach((s,i)=>s.classList.toggle('on',i<n));
+}
+function getStars(containerId){
+  const stars = document.getElementById(containerId)?.querySelectorAll('.star');
+  if(!stars) return 0;
+  return [...stars].filter(s=>s.classList.contains('on')).length;
 }
 
-function navToPccByCommodity(commodity){
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('pcc_'))delete state.filters[k];});
-  state.filters['pcc_com']=[commodity]; state.filters['com_view']='coverage'; state.pages={}; setTab('commodities');
-}
-function navToProductsByVendorCom(vendor){
-  Object.keys(state.filters).forEach(k=>{if(k.startsWith('p_'))delete state.filters[k];});
-  state.filters['p_vendor']=vendor; state.pages={}; setTab('products');
-}
-
-
-function renderReportIntelligence(el, backBtn, report){
-  const selProd = state._intProd || null;
-  if(selProd) { renderIntelligenceDetail(el, backBtn, report, selProd); return; }
-  const products = state.products || [];
-  const pcc = state.pcc || [];
-  const clients = state.clients || [];
-  const fVendor = state._intFVendor || "";
-  const fType   = state._intFType   || "";
-  const fQ      = (state._intFQ     || "").toLowerCase();
-  const vendors = [...new Set(products.map(p=>p.vendor).filter(Boolean))].sort();
-  const types   = [...new Set(products.map(p=>p.product_type).filter(Boolean))].sort();
-  let prods = products.filter(p=>
-    (!fVendor || p.vendor===fVendor) &&
-    (!fType   || (p.product_type||"").toLowerCase().includes(fType.toLowerCase())) &&
-    (!fQ      || (p.product_name||"").toLowerCase().includes(fQ))
-  );
-  el.innerHTML="";
-  const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
-  const hdr=document.createElement("div");
-  hdr.innerHTML=`${backBtn}<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap"><span class="card-title" style="font-size:15px">${report.icon} ${report.title}</span><span style="color:var(--muted);font-size:12px">${prods.length} products</span></div>
-    <div class="filters" style="margin-bottom:16px;border-radius:8px">
-      <input id="int-q" value="${fQ}" oninput="state._intFQ=this.value;clearTimeout(window._intQTimer);window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var el=document.getElementById('int-q');if(el){var v=el.value;el.focus();el.value='';el.value=v;}},0);},300)" placeholder="Search product..." style="width:180px">
-      <select onchange="state._intFVendor=this.value;renderReporting()" style="font-size:12px"><option value="">All Vendors</option>${vendors.map(v=>`<option value="${v}" ${v===fVendor?"selected":""}>${v}</option>`).join("")}</select>
-      <select onchange="state._intFType=this.value;renderReporting()" style="font-size:12px"><option value="">All Types</option>${types.map(t=>`<option value="${t}" ${t===fType?"selected":""}>${t}</option>`).join("")}</select>
-      <button class="btn btn-reset" onclick="state._intFVendor='';state._intFType='';state._intFQ='';renderReporting()">↺ Reset</button>
-    </div>`;
-  wrap.appendChild(hdr);
-  const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px";
-  prods.forEach(p=>{
-    const pccEntries=pcc.filter(r=>r.product===p.product_name);
-    const covPct=pccEntries.length?Math.round(pccEntries.filter(r=>r.coverage_level==="Covered").length/pccEntries.length*100):null;
-    const fbCount=(clients||[]).filter(c=>c.product===p.product_name).length;
-    const card=document.createElement("div");
-    card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .15s;position:relative";
-    card.onmouseover=()=>{card.style.borderColor="var(--accent)";card.style.transform="translateY(-2px)";};
-    card.onmouseout=()=>{card.style.borderColor="var(--border)";card.style.transform="";};
-    card.onclick=()=>{state._intProd=p.product_name;renderReporting();};
-    card.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-      <div style="font-weight:700;font-size:13px;color:var(--text);flex:1;padding-right:8px">${p.product_name}</div>
-      ${covPct!==null?"<div style='font-size:18px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+"'>"+covPct+"%</div>":""}
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${p.vendor||""}</div>
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      ${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}
-      ${fbCount>0?`<span style="font-size:10px;color:var(--accent);font-weight:600">💬 ${fbCount} feedback${fbCount>1?"s":""}</span>`:`<span style="font-size:10px;color:var(--muted)">No feedback yet</span>`}
-    </div>
-    <div style="position:absolute;bottom:12px;right:14px;font-size:11px;color:var(--accent)">View detail →</div>`;
-    grid.appendChild(card);
-  });
-  if(prods.length===0) grid.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:20px">No products found.</div>`;
-  wrap.appendChild(grid); el.appendChild(wrap);
-}
-
-function renderIntelligenceDetail(el, backBtn, report, productName){
-  const prod=(state.products||[]).find(p=>p.product_name===productName)||{product_name:productName};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
-  const risk=(state.risk||[]).filter(r=>r.product===productName);
-  const clients=(state.clients||[]).filter(c=>c.product===productName);
-  const vendorName = (prod.vendor||"").toLowerCase().trim();
-  const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
-  const activeSection=state._intSection||"pcc";
-  const isCtrmOnly = ctrm.length>0 && risk.length===0;
-  const isRiskOnly = risk.length>0 && ctrm.length===0;
-  const covPct=pcc.length?Math.round(pcc.filter(r=>r.coverage_level==="Covered").length/pcc.length*100):null;
-  const covColor=lv=>lv==="Covered"||lv==="Deployed"?"var(--green)":lv&&(lv.includes("Partial")||lv==="Capable")?"var(--yellow)":"var(--red)";
-
-  el.innerHTML="";
-  const wrap=document.createElement("div"); wrap.style.cssText="padding:16px";
-
-  // ── Vendor feedback row ──
-  // Also include product-level feedbacks (from Product tab) in header
-  // Header shows only product-level feedback (not vendor-level)
-  const allHeaderFeedback = [...clients];
-  function vendorFbHtml(){
-    if(!allHeaderFeedback.length) return "";
-    const fbs = allHeaderFeedback;
-    const rows = fbs.map(f=>
-      "<div style='background:var(--bg3);border-radius:6px;padding:8px 12px;margin:4px 0;font-size:11px'>"
-      +"<div style='display:flex;gap:10px;flex-wrap:wrap;align-items:center'>"
-      +"<strong style='color:var(--text)'>"+escH(f.client_name||"")+"</strong>"
-      +(f.project_name?"<span style='color:var(--muted)'>📁 "+escH(f.project_name)+"</span>":"")
-      +(f.region?"<span style='color:var(--muted)'>📍 "+escH(f.region)+"</span>":"")
-      +(f.since_year?"<span style='color:var(--muted)'>📅 "+f.since_year+"</span>":"")
-      +(f.created_by?"<span style='color:var(--muted)'>👤 "+escH(f.created_by)+"</span>":"")
-      +"</div>"
-      +(f.notes?"<div style='color:var(--muted);margin-top:3px;font-style:italic'>"+escH(f.notes)+"</div>":"")
-      +"</div>"
-    ).join("");
-    // If more than 2, wrap in dropdown
-    if(fbs.length>2){
-      const uid="vfb-"+productName.replace(/[^a-z0-9]/gi,"_");
-      return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
-        +"<div onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('span.arr').textContent=d.style.display==='none'?'▾':'▴'\" style='cursor:pointer;font-size:11px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:6px'>"
-        +"💬 capSpire Feedback ("+fbs.length+") <span class='arr'>▾</span></div>"
-        +"<div id='"+uid+"' style='display:none;margin-top:6px'>"+rows+"</div>"
-        +"</div>";
-    }
-    return "<div style='margin-top:8px;border-top:1px solid var(--border);padding-top:8px'>"
-      +"<div style='font-size:11px;color:var(--accent);font-weight:600;margin-bottom:5px'>💬 capSpire Vendor Feedback ("+vendorClients.length+")</div>"
-      +rows+"</div>";
+// ── FORM: capSpire View of the Product ───────────────────────────
+function initCsViewForm(){
+  // Populate product dropdown
+  const sel = document.getElementById('csv-product');
+  if(sel){
+    sel.innerHTML = '<option value="">— Select product —</option>'
+      + (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name))
+        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
   }
-
-  // ── Inline feedback row for a specific official row ──
-  function fbRowsForOfficial(type, matchFn){
-    return clients.filter(c=>c.source_table===type&&matchFn(c));
-  }
-
-  function renderFbRows(fbs, type, matchFn){
-    if(!fbs.length) return "";
-    return fbs.map(f=>{
-      let blocks=[];
-      try{ if(type==='pcc'&&f.pcc_blocks) blocks=JSON.parse(f.pcc_blocks); }catch(e){}
-      try{ if(type==='ctrm'&&f.ctrm_blocks) blocks=JSON.parse(f.ctrm_blocks); }catch(e){}
-      try{ if(type==='risk'&&f.risk_blocks) blocks=JSON.parse(f.risk_blocks); }catch(e){}
-      // Filter blocks to only show the one matching the current official row
-      if(matchFn && blocks.length) blocks = blocks.filter(matchFn);
-      const blockHtml = blocks.length ? blocks.map(b=>
-        "<span style='font-size:10px;padding:1px 6px;background:var(--bg2);border-radius:3px;margin:1px'>"
-        +(b.commodity||b.category?"<span style='color:var(--accent)'>"+escH(b.commodity||b.category||"")+"</span> ":"")
-        +(b.function_name?"<em>"+escH(b.function_name)+"</em> ":"")
-        +(b.coverage_level?"<span style='color:"+covColor(b.coverage_level)+"'>● "+escH(b.coverage_level)+"</span>":"")
-        +(b.notes?"<span style='color:var(--muted);font-style:italic'> "+escH(b.notes)+"</span>":"")
-        +"</span>"
-      ).join("") : (f.coverage_level?"<span style='color:"+covColor(f.coverage_level)+"'>● "+escH(f.coverage_level)+"</span> ":"")+
-        (f.notes?"<span style='color:var(--muted);font-style:italic'>"+escH(f.notes)+"</span>":"");
-      return "<div style='background:var(--bg3);border-left:3px solid var(--accent);padding:5px 10px;margin:2px 0 2px 16px;border-radius:0 4px 4px 0;font-size:11px;display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
-        +"<strong>"+escH(f.client_name||"")+"</strong>"
-        +(f.region?"<span style='color:var(--muted)'>📍"+escH(f.region)+"</span>":"")
-        +(f.since_year?"<span style='color:var(--muted)'>📅"+f.since_year+"</span>":"")
-        +blockHtml
-        +"</div>";
-    }).join("");
-  }
-
-  function fbToggleRow(rowId, fbs, type, matchFn){
-    if(!fbs.length) return {btn:"", rows:""};
-    const uid = "fb-"+rowId;
-    const btn = "<button onclick=\"const d=document.getElementById('"+uid+"');d.style.display=d.style.display==='none'?'block':'none';this.querySelector('.arr').textContent=d.style.display==='none'?'▼':'▲'\" style='font-size:10px;padding:2px 8px;background:var(--accent)22;border:1px solid var(--accent)44;color:var(--accent);border-radius:4px;cursor:pointer;margin-left:6px'>💬 "+fbs.length+" <span class='arr'>▼</span></button>";
-    const rows = "<tr id='"+uid+"' style='display:none'><td colspan='10' style='padding:2px 12px 6px 12px;background:var(--bg3)'>"+renderFbRows(fbs,type,matchFn)+"</td></tr>";
-    return {btn, rows};
-  }
-
-  // ── Header ──
-  const hdr=document.createElement("div");
-  hdr.innerHTML=
-    "<button onclick=\"state._intProd=null;state._intSection=null;state._intFPccCom='';state._intFPccCov='';state._intFCtrmFn='';state._intFCtrmCom='';state._intFCtrmCov='';state._intFRiskCat='';state._intFRiskFn='';renderReporting()\" class=\"btn\" style=\"margin-bottom:12px;display:inline-flex;align-items:center;gap:5px\">&#8592; Back to Products</button>"
-    +"<div class=\"card\" style=\"margin-bottom:14px\">"
-      +"<div style=\"padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px\">"
-        +"<div style='flex:1'>"
-          +"<div style=\"font-size:17px;font-weight:700;color:var(--text)\">"
-            +"<a href=\"#\" onclick=\"navToTab('products','p_q','"+escAttr(productName)+"');return false;\" style=\"color:var(--accent)\">"+escH(productName)+"</a>"
-          +"</div>"
-          +"<div style=\"font-size:12px;color:var(--muted);margin-top:3px\">"+escH(prod.vendor||"")+(prod.product_type?" &nbsp;·&nbsp; "+bdg(prod.product_type.includes("Risk")?"Risk":"CTRM",prod.product_type.includes("Risk")?"var(--purple)":"var(--accent)"):"")+"</div>"
-          +(prod.deployment_model?"<div style='font-size:11px;color:var(--muted);margin-top:4px'>Deployment: "+escH(prod.deployment_model)+"</div>":"")
-          +(prod.version_info?"<div style='font-size:11px;color:var(--yellow);margin-top:2px'>Version: "+escH(prod.version_info)+"</div>":"")
-          +vendorFbHtml()
-        +"</div>"
-        +"<div style='display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start'>"
-          +(covPct!==null?"<div style='text-align:center'><div style='font-size:22px;font-weight:700;color:"+(covPct>70?"var(--green)":covPct>40?"var(--yellow)":"var(--red)")+"'>"+covPct+"%</div><div style='font-size:9px;color:var(--muted);text-transform:uppercase'>Coverage</div></div>":"")
-          +"<div style='text-align:center'><div style='font-size:22px;font-weight:700;color:var(--accent)'>"+clients.length+"</div><div style='font-size:9px;color:var(--muted);text-transform:uppercase'>Feedbacks</div></div>"
-          +"<button class='btn btn-success' style='font-size:11px;padding:5px 12px' onclick='exportProductIntelligenceExcel(\""+escAttr(productName)+"\")'>&#8595; Export</button>"
-        +"</div>"
-      +"</div>"
-    +"</div>";
-  wrap.appendChild(hdr);
-
-  // ── Section tabs ──
-  const tabsDiv=document.createElement("div"); tabsDiv.style.cssText="display:flex;gap:4px;margin-bottom:14px";
-  [["pcc","🌾 Commodity"],["ctrm","⚡ CTRM"],["risk","🛡 Risk"]].forEach(([id,label])=>{
-    const btn=document.createElement("button");
-    btn.className="tab"+(activeSection===id?" active":"");
-    btn.textContent=label;
-    btn.onclick=()=>{state._intSection=id;renderReporting();};
-    tabsDiv.appendChild(btn);
-  });
-  wrap.appendChild(tabsDiv);
-
-  const content=document.createElement("div");
-
-  // ── PCC SECTION ──
-  if(activeSection==="pcc"){
-    const coms=[...new Set(pcc.map(r=>r.commodity).filter(Boolean))].sort();
-    const covs=[...new Set(pcc.map(r=>r.coverage_level).filter(Boolean))].sort();
-    const fPccCom=state._intFPccCom||""; const fPccCov=state._intFPccCov||"";
-    const fbPcc=clients.filter(c=>c.pcc_blocks||(c.commodities&&c.source_table==="products"));
-    let rows=pcc.filter(r=>(!fPccCom||r.commodity===fPccCom)&&(!fPccCov||r.coverage_level===fPccCov));
-
-    let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
-      +'<select onchange="state._intFPccCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>'+coms.map(c=>'<option value="'+escAttr(c)+'" '+(c===fPccCom?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
-      +'<select onchange="state._intFPccCov=this.value;renderReporting()" style="font-size:12px"><option value="">All Coverage</option>'+covs.map(c=>'<option value="'+escAttr(c)+'" '+(c===fPccCov?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
-      +'<button class="btn btn-reset" onclick="state._intFPccCom=\'\';state._intFPccCov=\'\';renderReporting()">&#8635; Reset</button>'
-      +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
-      +'</div>';
-
-    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
-      +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">COMMODITY</th>'
-      +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
-      +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
-      +'</tr></thead><tbody>';
-
-    rows.forEach(r=>{
-      const fbs=fbPcc.filter(c=>{
-        let blocks=[];
-        try{if(c.pcc_blocks)blocks=JSON.parse(c.pcc_blocks);}catch(e){}
-        if(blocks.length) return blocks.some(b=>b.commodity===r.commodity);
-        return (c.commodities||"").split(",").map(s=>s.trim()).includes(r.commodity);
-      });
-      const matchFn=b=>b.commodity===r.commodity;
-      const {btn,rows:fbRows}=fbToggleRow("pcc-"+r.id, fbs, "pcc", matchFn);
-      const cColor=covColor(r.coverage_level);
-      html+='<tr style="border-bottom:1px solid var(--row-border)">'
-        +'<td style="padding:8px 12px;font-weight:600">'+escH(r.commodity)+'</td>'
-        +'<td style="padding:8px 12px"><span style="color:'+cColor+';font-weight:600">'+escH(r.coverage_level||"–")+'</span></td>'
-        +'<td style="padding:8px 12px">'+btn+'</td>'
-        +'</tr>'+fbRows;
-    });
-
-    // If no official data but has feedback
-    if(!rows.length && fbPcc.length){
-      html+='<tr><td colspan="3" style="padding:12px;color:var(--muted);font-size:12px">No official commodity data. capSpire feedback:</td></tr>';
-      html+='<tr><td colspan="3" style="padding:8px 12px">'+renderFbRows(fbPcc,"pcc")+'</td></tr>';
-    }
-
-    html+='</tbody></table></div>';
-    content.innerHTML=html;
-
-  // ── CTRM SECTION ──
-  } else if(activeSection==="ctrm"){
-    const fns=[...new Set(ctrm.map(r=>r.function_name).filter(Boolean))].sort();
-    const coms=[...new Set(ctrm.map(r=>r.commodity).filter(Boolean))].sort();
-    const fCtrmFn=state._intFCtrmFn||""; const fCtrmCom=state._intFCtrmCom||""; const fCtrmCov=state._intFCtrmCov||"";
-    const fbCtrm=clients.filter(c=>c.ctrm_blocks);
-    let rows=ctrm.filter(r=>(!fCtrmFn||r.function_name===fCtrmFn)&&(!fCtrmCom||r.commodity===fCtrmCom));
-
-    let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
-      +'<select onchange="state._intFCtrmFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>'+fns.map(f=>'<option value="'+escAttr(f)+'" '+(f===fCtrmFn?"selected":"")+'>'+escH(f)+'</option>').join('')+'</select>'
-      +'<select onchange="state._intFCtrmCom=this.value;renderReporting()" style="font-size:12px"><option value="">All Commodities</option>'+coms.map(c=>'<option value="'+escAttr(c)+'" '+(c===fCtrmCom?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
-      +'<button class="btn btn-reset" onclick="state._intFCtrmFn=\'\';state._intFCtrmCom=\'\';renderReporting()">&#8635; Reset</button>'
-      +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
-      +'</div>';
-
-    const noOfficialCtrm = ctrm.length===0;
-    if(noOfficialCtrm && !fbCtrm.length){
-      html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official CTRM data. No capSpire feedback yet.</div>';
-    } else if(noOfficialCtrm && fbCtrm.length){
-      html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official CTRM data. Showing capSpire feedback only.</div>';
-      html+=renderFbRows(fbCtrm,"ctrm");
-    } else {
-      html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">FUNCTION</th>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">COMMODITY</th>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
-        +'</tr></thead><tbody>';
-
-      rows.forEach(r=>{
-        const code=getCode(r.coverage_level);
-        const fbs=fbCtrm.filter(c=>{
-          let blocks=[];
-          try{if(c.ctrm_blocks)blocks=JSON.parse(c.ctrm_blocks);}catch(e){}
-          if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity));
-          return c.function_name===r.function_name;
-        });
-        const matchFnCtrm=b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity);
-        const {btn,rows:fbRows}=fbToggleRow("ctrm-"+r.id, fbs, "ctrm", matchFnCtrm);
-        html+='<tr style="border-bottom:1px solid var(--row-border)">'
-          +'<td style="padding:8px 12px;font-weight:600">'+escH(r.function_name)+'</td>'
-          +'<td style="padding:8px 12px">'+bdg(r.commodity,"var(--accent)")+'</td>'
-          +'<td style="padding:8px 12px">'+bdg(COV_LABEL[code],COV_COLOR[code])+'</td>'
-          +'<td style="padding:8px 12px">'+btn+'</td>'
-          +'</tr>'+fbRows;
-      });
-      html+='</tbody></table></div>';
-    }
-    content.innerHTML=html;
-
-  // ── RISK SECTION ──
-  } else if(activeSection==="risk"){
-    const cats=[...new Set(risk.map(r=>r.category).filter(Boolean))].sort();
-    const fns=[...new Set(risk.map(r=>r.function_name).filter(Boolean))].sort();
-    const fRiskCat=state._intFRiskCat||""; const fRiskFn=state._intFRiskFn||"";
-    const fbRisk=clients.filter(c=>c.risk_blocks);
-    let rows=risk.filter(r=>(!fRiskCat||r.category===fRiskCat)&&(!fRiskFn||r.function_name===fRiskFn));
-
-    let html='<div class="filters" style="border-radius:8px;margin-bottom:10px">'
-      +'<select onchange="state._intFRiskCat=this.value;renderReporting()" style="font-size:12px"><option value="">All Categories</option>'+cats.map(c=>'<option value="'+escAttr(c)+'" '+(c===fRiskCat?"selected":"")+'>'+escH(c)+'</option>').join('')+'</select>'
-      +'<select onchange="state._intFRiskFn=this.value;renderReporting()" style="font-size:12px"><option value="">All Functions</option>'+fns.map(f=>'<option value="'+escAttr(f)+'" '+(f===fRiskFn?"selected":"")+'>'+escH(f)+'</option>').join('')+'</select>'
-      +'<button class="btn btn-reset" onclick="state._intFRiskCat=\'\';state._intFRiskFn=\'\';renderReporting()">&#8635; Reset</button>'
-      +'<span style="font-size:11px;color:var(--muted);margin-left:auto">'+rows.length+' rows</span>'
-      +'</div>';
-
-    const noOfficialRisk = risk.length===0;
-    if(noOfficialRisk && !fbRisk.length){
-      html+='<div style="padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px">This product has no official Risk data. No capSpire feedback yet.</div>';
-    } else if(noOfficialRisk && fbRisk.length){
-      html+='<div style="padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;margin-bottom:10px">This product has no official Risk data. Showing capSpire feedback only.</div>';
-      html+=renderFbRows(fbRisk,"risk");
-    } else {
-      html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">CATEGORY</th>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">FUNCTION</th>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3);text-align:left">OFFICIAL COVERAGE</th>'
-        +'<th style="padding:7px 12px;font-size:10px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg3)"></th>'
-        +'</tr></thead><tbody>';
-
-      rows.forEach(r=>{
-        const code=getCode(r.coverage_level);
-        const fbs=fbRisk.filter(c=>{
-          let blocks=[];
-          try{if(c.risk_blocks)blocks=JSON.parse(c.risk_blocks);}catch(e){}
-          if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.category||b.category===r.category));
-          return c.function_name===r.function_name;
-        });
-        const matchFnRisk=b=>b.function_name===r.function_name&&(!b.category||b.category===r.category);
-        const {btn,rows:fbRows}=fbToggleRow("risk-"+r.id, fbs, "risk", matchFnRisk);
-        html+='<tr style="border-bottom:1px solid var(--row-border)">'
-          +'<td style="padding:8px 12px">'+bdg(r.category,"var(--purple)")+'</td>'
-          +'<td style="padding:8px 12px;font-weight:600">'+escH(r.function_name)+'</td>'
-          +'<td style="padding:8px 12px">'+bdg(COV_LABEL[code],COV_COLOR[code])+'</td>'
-          +'<td style="padding:8px 12px">'+btn+'</td>'
-          +'</tr>'+fbRows;
-      });
-      html+='</tbody></table></div>';
-    }
-    content.innerHTML=html;
-  }
-
-  wrap.appendChild(content);
-  el.appendChild(wrap);
+  // Auto-fill date and user
+  const session = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const el_date = document.getElementById('csv-date');
+  const el_by = document.getElementById('csv-by');
+  if(el_date) el_date.value = new Date().toLocaleDateString('en-GB');
+  if(el_by) el_by.value = session?.user?.email||'';
+  // Reset fields
+  setStars('csv-stars',0);
+  const fields = ['csv-strengths','csv-gaps','csv-notes'];
+  fields.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const ctxSel = document.getElementById('csv-context');
+  if(ctxSel) ctxSel.value='';
+  // Build commodity pills
+  buildCsvCommodities();
 }
 
-
-
-function toggleIntRow(id){
-  const el=document.getElementById(id);
-  if(!el) return;
-  const wasHidden=el.style.display==="none";
-  el.style.display=wasHidden?"table-row":"none";
-  const btn=el.previousElementSibling?.querySelector("button");
-  if(btn) btn.textContent=btn.textContent.includes("▼")?btn.textContent.replace("▼","▲"):btn.textContent.replace("▲","▼");
-}
-function exportProductIntelligenceExcel(productName){
-  if(typeof XLSX==="undefined"){alert("Excel library not loaded.");return;}
-  const prod=(state.products||[]).find(p=>p.product_name===productName)||{};
-  const pcc=(state.pcc||[]).filter(r=>r.product===productName);
-  const ctrm=(state.ctrm||[]).filter(r=>r.product===productName);
-  const risk=(state.risk||[]).filter(r=>r.product===productName);
-  const clients=(state.clients||[]).filter(c=>c.product===productName);
-  const vendorClients=(state.clients||[]).filter(c=>c.vendor_name&&normName(c.vendor_name)===normName(prod.vendor||""));
-  const wb=XLSX.utils.book_new();
-
-  // Sheet 1: Product Info
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-    ["Field","Value"],
-    ["Product",productName],["Vendor",prod.vendor||""],["Type",prod.product_type||""],
-    ["Deployment",prod.deployment_model||""],["Version",prod.version_info||""],["Notes",prod.notes||""]
-  ]),"Product Info");
-
-  // Sheet 2: Vendor Feedback
-  if(vendorClients.length){
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-      ["Client","Project","Region","Since Year","Notes","Created By"],
-      ...vendorClients.map(c=>[c.client_name,c.project_name||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])
-    ]),"Vendor Feedback");
-  }
-
-  // Sheet 3: Commodity
-  if(pcc.length){
-    const pccFb=clients.filter(c=>c.source_table==="pcc");
-    const rows=[["Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
-    pcc.forEach(r=>{
-      const fbs=pccFb.filter(c=>{
-        let blocks=[]; try{if(c.pcc_blocks)blocks=JSON.parse(c.pcc_blocks);}catch(e){}
-        if(blocks.length) return blocks.some(b=>b.commodity===r.commodity);
-        return (c.commodities||"").includes(r.commodity);
-      });
-      if(!fbs.length) rows.push([r.commodity,r.coverage_level,"","",""]);
-      else fbs.forEach(f=>{
-        let blocks=[]; try{if(f.pcc_blocks)blocks=JSON.parse(f.pcc_blocks);}catch(e){}
-        const blk=blocks.find(b=>b.commodity===r.commodity)||{};
-        rows.push([r.commodity,r.coverage_level,f.client_name,blk.coverage_level||f.coverage_level||"",blk.notes||f.notes||""]);
-      });
-    });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Commodity Coverage");
-  }
-
-  // Sheet 4: CTRM
-  if(ctrm.length){
-    const ctrmFb=clients.filter(c=>c.source_table==="ctrm");
-    const rows=[["Function","Commodity","Official Coverage","FB Client","FB Coverage","FB Notes"]];
-    ctrm.forEach(r=>{
-      const fbs=ctrmFb.filter(c=>{
-        let blocks=[]; try{if(c.ctrm_blocks)blocks=JSON.parse(c.ctrm_blocks);}catch(e){}
-        if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.commodity||b.commodity===r.commodity));
-        return c.function_name===r.function_name;
-      });
-      if(!fbs.length) rows.push([r.function_name,r.commodity||"",r.coverage_level,"","",""]);
-      else fbs.forEach(f=>{
-        let blocks=[]; try{if(f.ctrm_blocks)blocks=JSON.parse(f.ctrm_blocks);}catch(e){}
-        const blk=blocks.find(b=>b.function_name===r.function_name)||{};
-        rows.push([r.function_name,r.commodity||"",r.coverage_level,f.client_name,blk.coverage_level||f.coverage_level||"",blk.notes||f.notes||""]);
-      });
-    });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"CTRM Coverage");
-  }
-
-  // Sheet 5: Risk
-  if(risk.length){
-    const riskFb=clients.filter(c=>c.source_table==="risk");
-    const rows=[["Category","Function","Official Coverage","FB Client","FB Coverage","FB Notes"]];
-    risk.forEach(r=>{
-      const fbs=riskFb.filter(c=>{
-        let blocks=[]; try{if(c.risk_blocks)blocks=JSON.parse(c.risk_blocks);}catch(e){}
-        if(blocks.length) return blocks.some(b=>b.function_name===r.function_name&&(!b.category||b.category===r.category));
-        return c.function_name===r.function_name;
-      });
-      if(!fbs.length) rows.push([r.category||"",r.function_name,r.coverage_level,"","",""]);
-      else fbs.forEach(f=>{
-        let blocks=[]; try{if(f.risk_blocks)blocks=JSON.parse(f.risk_blocks);}catch(e){}
-        const blk=blocks.find(b=>b.function_name===r.function_name)||{};
-        rows.push([r.category||"",r.function_name,r.coverage_level,f.client_name,blk.coverage_level||f.coverage_level||"",blk.notes||f.notes||""]);
-      });
-    });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),"Risk Coverage");
-  }
-
-  // Sheet 6: All Feedback
-  if(clients.length){
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
-      ["Client","Project","Type","Commodity/Category","Function","Coverage","Region","Since Year","Notes","Created By"],
-      ...clients.map(c=>[c.client_name,c.project_name||"",c.source_table||"",c.commodities||c.category||"",c.function_name||"",c.coverage_level||"",c.region||"",c.since_year||"",c.notes||"",c.created_by||""])
-    ]),"All Feedback");
-  }
-
-  XLSX.writeFile(wb,"product_"+productName.replace(/[^a-z0-9]/gi,"_")+".xlsx");
+function onCsvProductChange(){
+  const sel = document.getElementById('csv-product');
+  const prod = (state.products||[]).find(p=>p.product_name===sel?.value);
+  const vEl = document.getElementById('csv-vendor');
+  if(vEl) vEl.value = prod?.vendor||'';
 }
 
+function buildCsvCommodities(){
+  const coms = (state.commodities||[]).map(c=>c.commodity||c.name||c).filter(Boolean).sort();
+  const container = document.getElementById('csv-coms');
+  if(!container) return;
+  container.innerHTML = coms.map(c=>`<span class="pill" onclick="this.classList.toggle('on')">${escH(c)}</span>`).join('')
+    + `<input id="csv-com-new" placeholder="+ Add commodity" style="border:none;outline:none;font-size:11px;color:var(--muted);min-width:120px;padding:2px 4px;" onkeydown="if(event.key==='Enter'&&this.value.trim()){const p=document.createElement('span');p.className='pill on';p.textContent=this.value.trim();p.onclick=()=>p.classList.toggle('on');this.parentElement.insertBefore(p,this);this.value='';event.preventDefault();}">`;
+}
 
-function renderImport(){
-  document.getElementById("section-import").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">📥 Import Data</span></div>
-    <div style="padding:16px">
-      <div style="background:var(--bg3);border:1px solid var(--yellow)44;border-radius:8px;padding:14px;margin-bottom:20px">
-        <div style="font-weight:700;color:var(--yellow);margin-bottom:8px">⚠ Important — Read before importing</div>
-        <ul style="color:var(--muted);font-size:12px;line-height:2.2;padding-left:18px">
-          <li>Files must be in <strong style="color:var(--text)">CSV format (.csv)</strong> — NOT Excel (.xlsx or .xls)</li>
-          <li>To save as CSV from Excel: <strong style="color:var(--text)">File → Save As → CSV (Comma delimited)</strong></li>
-          <li>The first row must be the column headers — do not change them</li>
-          <li>Leave the ID column empty for new records (it will be assigned automatically)</li>
-          <li>Records with an existing ID will be updated; new IDs will be inserted</li>
-          <li>Numeric percentage fields must be between 0 and 1 (e.g. 50% = 0.5)</li>
-        </ul>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-        ${ALL_TABLES.map(t=>`
-        <div class="card" style="margin:0">
-          <div class="card-head" style="padding:8px 12px"><span style="font-weight:600;font-size:12px">${t.label}</span></div>
-          <div style="padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-success" onclick="downloadTemplate('${t.id}','${t.label}',[${t.cols.map(c=>`'${c}'`).join(",")}])">⬇ Template</button>
-            <label class="btn btn-primary" style="cursor:pointer">
-              ⬆ Upload CSV
-              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(event,'${t.id}')">
-            </label>
-            <span id="import-status-${t.id}" style="font-size:11px;color:var(--muted);width:100%"></span>
-          </div>
-        </div>`).join("")}
-      </div>
+async function saveCsView(){
+  const product = document.getElementById('csv-product')?.value;
+  if(!product){ alert('Please select a product'); return; }
+  const prod = (state.products||[]).find(p=>p.product_name===product);
+  const coms = [...document.querySelectorAll('#csv-coms .pill.on')].map(p=>p.textContent).join(',');
+  const body = {
+    product_name: product,
+    vendor: prod?.vendor||'',
+    assessed_by: document.getElementById('csv-by')?.value||'',
+    assessment_date: new Date().toISOString().split('T')[0],
+    source_context: document.getElementById('csv-context')?.value||'',
+    rating: getStars('csv-stars'),
+    strengths: document.getElementById('csv-strengths')?.value||'',
+    gaps: document.getElementById('csv-gaps')?.value||'',
+    commodities: coms,
+    notes: document.getElementById('csv-notes')?.value||''
+  };
+  try{
+    await apiFetch('cs_product_views',{method:'POST',body});
+    alert('Saved successfully');
+    goBack();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+// ── FORM: Market Intel ───────────────────────────────────────────
+function initMarketForm(){
+  buildCountrySelect('mi-country');
+  // Product multiselect
+  const prods = (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name)).map(p=>p.product_name);
+  const msContainer = document.getElementById('mi-products-ms');
+  if(msContainer) msContainer.innerHTML = createMultiSelect('mi-prods', prods, [], 'All Products', 'mi_prods');
+  // Reset
+  setStars('mi-stars',0);
+  ['mi-client','mi-link','mi-comments'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['mi-sector','mi-context'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const dateEl = document.getElementById('mi-date');
+  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+}
+
+async function saveMarketIntel(){
+  const client = document.getElementById('mi-client')?.value?.trim();
+  if(!client){ alert('Please enter a client / company name'); return; }
+  const selectedProds = [...document.querySelectorAll('#mi-products-ms input[type=checkbox]:checked')].map(cb=>cb.value).join(',');
+  const body = {
+    client_company: client,
+    sector: document.getElementById('mi-sector')?.value||'',
+    country: document.getElementById('mi-country')?.value||'',
+    intel_date: document.getElementById('mi-date')?.value||'',
+    source_context: document.getElementById('mi-context')?.value||'',
+    rating: getStars('mi-stars'),
+    products_mentioned: selectedProds,
+    comments: document.getElementById('mi-comments')?.value||'',
+    link_ref: document.getElementById('mi-link')?.value||''
+  };
+  try{
+    await apiFetch('cs_market_intel',{method:'POST',body});
+    alert('Saved successfully');
+    goBack();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+// ── FORM: System Selection Intel ─────────────────────────────────
+let ssProdCount = 1;
+
+function initSelectionForm(){
+  buildCountrySelect('ss-country');
+  ssProdCount = 1;
+  const entries = document.getElementById('ss-prod-entries');
+  if(entries){
+    entries.innerHTML = buildSsProdEntry(0);
+    populateSsProdSelects();
+  }
+  ['ss-client','ss-notes','ss-link'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const yearEl = document.getElementById('ss-year');
+  if(yearEl) yearEl.value = '';
+}
+
+function buildSsProdEntry(idx){
+  const prods = (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name));
+  return `<div class="prod-entry" data-idx="${idx}">
+    <div class="prod-entry-head"><span>Product ${idx+1}</span><button class="rm-btn" onclick="removeSsProd(this)">✕ Remove</button></div>
+    <div class="frow">
+      <div class="field"><label>Product</label><select class="ss-prod-sel"><option value="">— Select —</option>${prods.map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Outcome</label><select class="ss-outcome-sel"><option value="Selected">Selected</option><option value="Shortlisted">Shortlisted</option><option value="Rejected">Rejected</option></select></div>
     </div>
   </div>`;
 }
 
-function downloadTemplate(tableId,label,cols){
-  if(typeof XLSX==="undefined"){alert("Loading Excel library, please try again.");return;}
-  const ws=XLSX.utils.aoa_to_sheet([cols]);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Template");
-  XLSX.writeFile(wb,"template_"+tableId+".xlsx");
-}
-
-async function parseFileToRows(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      try{
-        const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        const raw=XLSX.utils.sheet_to_json(ws,{defval:null,raw:false});
-        const rows=raw.map(r=>{
-          const obj={};
-          Object.entries(r).forEach(([k,v])=>{
-            const key=String(k).trim();
-            const val=(v===null||v==="")?null:(!isNaN(v)&&v!=="")?Number(v):String(v).trim();
-            if(val!==null&&val!=="")obj[key]=val;
-          });
-          return obj;
-        }).filter(r=>Object.keys(r).length>0);
-        resolve(rows);
-      }catch(e){reject(e);}
-    };
-    reader.onerror=()=>reject(new Error("Could not read file"));
-    reader.readAsArrayBuffer(file);
+function populateSsProdSelects(){
+  const prods = (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name));
+  document.querySelectorAll('.ss-prod-sel').forEach(sel=>{
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Select —</option>'+prods.map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
+    sel.value = cur;
   });
 }
 
-async function importFile(event,table){
-  const file=event.target.files[0];if(!file)return;
-  const statusEl=document.getElementById("import-status-"+table);
-  const ext=file.name.split(".").pop().toLowerCase();if(!["xlsx","xls","csv"].includes(ext)){statusEl.textContent="Please upload Excel or CSV";statusEl.style.color="var(--red)";return;}
-  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
-  try{
-    const text=await file.text();
-    const lines=text.split("\n").filter(l=>l.trim());
-    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
-    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
-    rows=lines.slice(1).map(line=>{
-      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-      const obj={};
-      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
-      return obj;
-    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
-    statusEl.textContent="Importing "+rows.length+" records...";
-    let ok=0,err=0;
-    for(const row of rows){
-      try{
-        if(row.id){
-          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
-          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
-          else await apiFetch(table,{method:"POST",body:row});
-        }else{
-          const{id,...r}=row;
-          await apiFetch(table,{method:"POST",body:r});
-        }
-        ok++;
-      }catch(e){err++;}
-    }
-    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
-    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
-    // Reload affected data
-    if(table==="vendors")state.vendors=await getAll("vendors");
-    else if(table==="products")state.products=await getAll("products");
-    else if(table==="commodities")state.commodities=await getAll("commodities");
-    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
-    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
-    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
-    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
-    render();
-  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
+function addSsProd(){
+  ssProdCount++;
+  const entries = document.getElementById('ss-prod-entries');
+  if(entries){
+    entries.insertAdjacentHTML('beforeend', buildSsProdEntry(ssProdCount-1));
+  }
 }
+
+function removeSsProd(btn){
+  const entry = btn.closest('.prod-entry');
+  if(document.querySelectorAll('.prod-entry').length > 1) entry.remove();
+}
+
+async function saveSystemSelection(){
+  const client = document.getElementById('ss-client')?.value?.trim();
+  if(!client){ alert('Please enter a client name'); return; }
+  const products = [...document.querySelectorAll('.prod-entry')].map(entry=>{
+    const prod = entry.querySelector('.ss-prod-sel')?.value;
+    const outcome = entry.querySelector('.ss-outcome-sel')?.value;
+    return {product: prod, outcome};
+  }).filter(p=>p.product);
+  
+  const selBody = {
+    client_company: client,
+    year: parseInt(document.getElementById('ss-year')?.value)||null,
+    country: document.getElementById('ss-country')?.value||'',
+    notes: document.getElementById('ss-notes')?.value||'',
+    link_ref: document.getElementById('ss-link')?.value||''
+  };
+  try{
+    const res = await apiFetch('cs_system_selections',{method:'POST',body:selBody});
+    const selId = res[0]?.id;
+    if(selId && products.length){
+      for(const p of products){
+        await apiFetch('cs_system_selection_products',{method:'POST',body:{selection_id:selId,...p}});
+      }
+    }
+    alert('Saved successfully');
+    goBack();
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+// ── CS PRODUCTS PAGE ─────────────────────────────────────────────
+async function renderCsProducts(){
+  const el = document.getElementById('cs-prod-main');
+  if(!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading...</div>';
+
+  try{
+    const [views, market, selections, selProds] = await Promise.all([
+      getAll('cs_product_views'),
+      getAll('cs_market_intel'),
+      getAll('cs_system_selections'),
+      getAll('cs_system_selection_products')
+    ]);
+
+    // Build product intel map
+    const prodMap = {};
+    const addEntry = (prodName, type) => {
+      if(!prodName) return;
+      if(!prodMap[prodName]) prodMap[prodName] = {views:0, market:0, selections:0};
+      prodMap[prodName][type]++;
+    };
+    views.forEach(v=>addEntry(v.product_name,'views'));
+    market.forEach(m=>(m.products_mentioned||'').split(',').filter(Boolean).forEach(p=>addEntry(p.trim(),'market')));
+    selProds.forEach(sp=>addEntry(sp.product,'selections'));
+
+    // Get product details
+    const allProdNames = Object.keys(prodMap).sort();
+    const getVendor = name => (state.products||[]).find(p=>p.product_name===name)?.vendor||'';
+    const getType = name => (state.products||[]).find(p=>p.product_name===name)?.product_type||'';
+
+    // Build filters state
+    if(!state.filters) state.filters = {};
+    const fQ = (state.filters.csp_q||'').toLowerCase();
+    const fType = state.filters.csp_type||[];
+    const fVendor = state.filters.csp_vendor||[];
+
+    let rows = allProdNames.filter(name=>{
+      if(fQ && !name.toLowerCase().includes(fQ) && !getVendor(name).toLowerCase().includes(fQ)) return false;
+      if(fType.length){
+        const hasView = fType.includes('capSpire View') && prodMap[name].views>0;
+        const hasMkt = fType.includes('Market Intel') && prodMap[name].market>0;
+        const hasSel = fType.includes('System Selection') && prodMap[name].selections>0;
+        if(!hasView && !hasMkt && !hasSel) return false;
+      }
+      if(fVendor.length && !fVendor.includes(getVendor(name))) return false;
+      return true;
+    });
+
+    const allVendors = [...new Set(allProdNames.map(getVendor).filter(Boolean))].sort();
+    const typeOptions = ['capSpire View','Market Intel','System Selection'];
+
+    el.innerHTML = `
+      <div class="pg-title">Products</div>
+      <div class="pg-sub">Products with capSpire intel entries</div>
+      <div class="card">
+        <div class="filters">
+          <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;renderCsProducts()" placeholder="Search..." style="min-width:160px">
+          ${createMultiSelect('csp-type',typeOptions,fType,'All Types','csp_type')}
+          ${createMultiSelect('csp-vendor',allVendors,fVendor,'All Vendors','csp_vendor')}
+          <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_type=[];state.filters.csp_vendor=[];renderCsProducts()">⟳ Reset</button>
+          <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} products</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Product</th><th>Type</th><th>Vendor</th></tr></thead>
+            <tbody>
+              ${rows.map(name=>`<tr>
+                <td><a class="tbl-link" onclick="openCsProdPanel('${escAttr(name)}')">${escH(name)}</a></td>
+                <td>${[
+                  prodMap[name].views>0?`<span style="font-size:10px;padding:2px 6px;background:#eff6ff;color:#1d4ed8;border-radius:4px">capSpire View (${prodMap[name].views})</span>`:'',
+                  prodMap[name].market>0?`<span style="font-size:10px;padding:2px 6px;background:#f0fdfa;color:#0f766e;border-radius:4px;margin-left:3px">Market Intel (${prodMap[name].market})</span>`:'',
+                  prodMap[name].selections>0?`<span style="font-size:10px;padding:2px 6px;background:#faf5ff;color:#7c3aed;border-radius:4px;margin-left:3px">System Selection (${prodMap[name].selections})</span>`:''
+                ].filter(Boolean).join('')}</td>
+                <td>${escH(getVendor(name))}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+
+    // Re-attach msApply for multiselects
+  } catch(e){
+    el.innerHTML = `<div style="color:var(--red)">Error loading data: ${e.message}</div>`;
+  }
+}
+
+window._csProdViews = [];
+window._csProdMarket = [];
+window._csProdSelections = [];
+
+async function openCsProdPanel(productName){
+  const el = document.getElementById('cs-prod-main');
+  if(!el) return;
+
+  try{
+    const [views, market, selections, selProds] = await Promise.all([
+      getAll(`cs_product_views?product_name=eq.${encodeURIComponent(productName)}`),
+      getAll('cs_market_intel'),
+      getAll('cs_system_selections'),
+      getAll(`cs_system_selection_products?product=eq.${encodeURIComponent(productName)}`)
+    ]);
+    const prodMarket = market.filter(m=>(m.products_mentioned||'').split(',').map(s=>s.trim()).includes(productName));
+    const selIds = selProds.map(sp=>sp.selection_id);
+    const prodSels = selections.filter(s=>selIds.includes(s.id));
+
+    const stars = n => '★'.repeat(n)+'☆'.repeat(5-n);
+
+    const sideHtml = `
+      <div class="sp-head">
+        <h3>${escH(productName)}</h3>
+        <p>${escH((state.products||[]).find(p=>p.product_name===productName)?.vendor||'')}</p>
+      </div>
+      <div class="sp-body">
+        ${views.length?`<div class="sp-section">
+          <h5>capSpire View of the Product (${views.length})</h5>
+          ${views.map(v=>`<div style="padding:6px 0;border-bottom:1px solid var(--bg3)">
+            <div class="sp-row"><span class="sk">Assessed by</span><span class="sv">${escH(v.assessed_by||'')}</span></div>
+            <div class="sp-row"><span class="sk">Date</span><span class="sv">${escH(v.assessment_date||'')}</span></div>
+            <div class="sp-row"><span class="sk">Rating</span><span class="sv" style="color:#f59e0b">${stars(v.rating||0)}</span></div>
+            ${v.strengths?`<div style="margin-top:4px;font-size:11px"><b>Strengths:</b> ${escH(v.strengths)}</div>`:''}
+            ${v.gaps?`<div style="font-size:11px"><b>Gaps:</b> ${escH(v.gaps)}</div>`:''}
+          </div>`).join('')}
+        </div>`:''}
+        ${prodMarket.length?`<div class="sp-section">
+          <h5>Market Intel (${prodMarket.length})</h5>
+          ${prodMarket.map(m=>`<div style="padding:5px 0;border-bottom:1px solid var(--bg3);font-size:11px">
+            <b>${escH(m.client_company||'')}</b> · ${escH(m.country||'')} · ${escH(m.intel_date||'')}
+            ${m.comments?`<div style="color:var(--muted);margin-top:2px">${escH(m.comments)}</div>`:''}
+          </div>`).join('')}
+        </div>`:''}
+        ${prodSels.length?`<div class="sp-section">
+          <h5>System Selection (${prodSels.length})</h5>
+          ${prodSels.map(s=>`<div style="font-size:11px;padding:5px 0;border-bottom:1px solid var(--bg3)">
+            <b>${escH(s.client_company||'')}</b> · ${s.year||''} · ${escH(s.country||'')}
+            ${s.notes?`<div style="color:var(--muted);margin-top:2px">${escH(s.notes)}</div>`:''}
+          </div>`).join('')}
+        </div>`:''}
+        <button class="btn bs" style="width:100%;margin-top:8px;font-size:12px" onclick="renderCsProducts()">✕ Close panel</button>
+      </div>`;
+
+    // Rebuild with split layout
+    const tableEl = el.querySelector('.card');
+    if(tableEl){
+      // Highlight the clicked row
+      el.querySelectorAll('tr').forEach(tr=>{
+        tr.style.background = tr.querySelector('a')?.textContent?.trim()===productName ? 'var(--bg3)' : '';
+      });
+      // Add side panel
+      const existing = el.querySelector('.split-layout');
+      if(existing){
+        existing.querySelector('.side-panel').innerHTML = sideHtml;
+      } else {
+        const wrap = document.createElement('div');
+        wrap.className = 'split-layout';
+        tableEl.replaceWith(wrap);
+        wrap.appendChild(tableEl);
+        const panel = document.createElement('div');
+        panel.className = 'side-panel';
+        panel.innerHTML = sideHtml;
+        wrap.appendChild(panel);
+      }
+    }
+  }catch(e){ console.error(e); }
+}
+
+// ── SIGN OUT ─────────────────────────────────────────────────────
+function signOut(){
+  localStorage.removeItem('pa_session');
+  document.getElementById('topnav').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+}
+
+
 
 // ── MODALS ──
 function openModal(title,fields,saveFn){
@@ -1714,17 +1578,6 @@ function closeProductDetail(){
   document.getElementById("client-form-panel")?.remove();
 }
 
-
-function intSearch(val){
-  state._intFQ=val;
-  clearTimeout(window._intQTimer);
-  window._intQTimer=setTimeout(function(){renderReporting();setTimeout(function(){var e=document.getElementById('int-q');if(e)e.focus();},0);},300);
-}
-function vLandSearch(val){
-  state._vLandQ=val;
-  clearTimeout(window._vLandTimer);
-  window._vLandTimer=setTimeout(function(){renderReporting();setTimeout(function(){var e=document.getElementById('vland-q');if(e)e.focus();},0);},300);
-}
 function openClientForm(productName, clientId, ctx){
   document.getElementById("client-form-panel")?.remove();
   const existing = clientId ? (state.clients||[]).find(c=>c.id===clientId) : null;
@@ -2426,24 +2279,6 @@ function openContactModal(id){
 }
 
 // ── RENDER ──
-function render(){
-  if(activeTab==="overview")renderOverview();
-  else if(activeTab==="vendors")renderVendors();
-  else if(activeTab==="products")renderProducts();
-  else if(activeTab==="commodities"){
-    // Show commodities list or commodity coverage based on sub-view
-    if(state.filters.com_view==="coverage")renderCommCoverage();
-    else renderCommoditiesView();
-  }
-  else if(activeTab==="ctrm")renderCTRM();
-  else if(activeTab==="risk")renderRisk();
-  else if(activeTab==="geo")renderGeo();
-  else if(activeTab==="customertype")renderCustomerType();
-  else if(activeTab==="contacts")renderContacts();
-  else if(activeTab==="reporting")renderReporting();
-  else if(activeTab==="import")renderImport();
-  else if(activeTab==="logs")renderLogs();
-}
 
 function renderCommoditiesView(){
   const q=(state.filters.pcc_q||"").toLowerCase();
@@ -2795,6 +2630,7 @@ async function checkAuth() {
 window.addEventListener("load", function() {
   checkAuth();
 });
+
 
 </script>
 </body>
