@@ -804,7 +804,7 @@ function renderVendors(){
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn btn-primary\" style=\"font-size:11px;padding:3px 8px;margin-right:4px\" onclick=\"openProductDetail('${escAttr(v.vendor_name)}',{source_table:'vendor',vendor_name:'${escAttr(v.vendor_name)}'})\">capSpire Feedback</button><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
@@ -1581,9 +1581,9 @@ function openModal(title,fields,saveFn){
     return`<div class="fg"><label class="lbl">${f.label}</label><input type="${f.type||"text"}" value="${f.value||""}" ${f.ro?"readonly":""}></div>`;
   }).join("");
   modalSaveFn=saveFn;
-  document.getElementById("modal").classList.add("open");
+  document.getElementById("modal-overlay").classList.add("open");
 }
-function closeModal(){document.getElementById("modal").classList.remove("open");modalSaveFn=null;}
+function closeModal(){const mo=document.getElementById("modal-overlay");if(mo)mo.style.display="none";modalSaveFn=null;}
 function saveModal(){if(modalSaveFn)modalSaveFn();}
 function getVals(keys){
   const els=[...document.getElementById("modal-fields").querySelectorAll("input,select,textarea")];
