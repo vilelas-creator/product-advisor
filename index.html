@@ -1615,7 +1615,8 @@ function openModal(title,fields,saveFn){
     return`<div class="fg"><label class="lbl">${f.label}</label><input type="${f.type||"text"}" value="${f.value||""}" ${f.ro?"readonly":""}></div>`;
   }).join("");
   modalSaveFn=saveFn;
-  document.getElementById("modal-overlay").classList.add("open");
+  const _mo=document.getElementById("modal-overlay");if(_mo)_mo.style.display="flex";
+  const _sb=document.getElementById("modal-save-btn");if(_sb)_sb.onclick=saveModal;
 }
 function closeModal(){const mo=document.getElementById("modal-overlay");if(mo)mo.style.display="none";modalSaveFn=null;}
 function saveModal(){if(modalSaveFn)modalSaveFn();}
