@@ -1829,20 +1829,71 @@ async function openCsDetail(name) {
       }).join('');
     };
 
-    const buildSbTab = () => {
+    const buildSbTab = (subTab) => {
       if(!sbProd) return '<div style="color:var(--muted);padding:1rem;text-align:center">This product is not in the Sourcebook</div>';
+      if(subTab === 'commodity') {
+        const prodComs = (state.pcc||[]).filter(p=>p.product===name||p.product_name===name);
+        if(!prodComs.length) return '<div style="color:var(--muted);padding:1rem;text-align:center">No commodity coverage data</div>';
+        return `<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg2)">
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Commodity</th>
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Coverage</th>
+            </tr></thead>
+            <tbody>${prodComs.map(r=>`<tr style="border-bottom:0.5px solid var(--bg3)">
+              <td style="padding:7px 12px">${escH(r.commodity||r.commodity_name||'')}</td>
+              <td style="padding:7px 12px">${escH(r.coverage||r.coverage_level||'')}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      }
+      if(subTab === 'ctrm') {
+        const prodCtrm = (state.ctrm||[]).filter(p=>p.product===name||p.product_name===name);
+        if(!prodCtrm.length) return '<div style="color:var(--muted);padding:1rem;text-align:center">No functional footprint data</div>';
+        return `<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg2)">
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Function</th>
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Commodity</th>
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Coverage</th>
+            </tr></thead>
+            <tbody>${prodCtrm.map(r=>`<tr style="border-bottom:0.5px solid var(--bg3)">
+              <td style="padding:7px 12px">${escH(r.function_name||'')}</td>
+              <td style="padding:7px 12px">${escH(r.commodity||'')}</td>
+              <td style="padding:7px 12px">${escH(r.coverage_level||'')}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      }
+      if(subTab === 'risk') {
+        const prodRisk = (state.risk||[]).filter(p=>p.product===name||p.product_name===name);
+        if(!prodRisk.length) return '<div style="color:var(--muted);padding:1rem;text-align:center">No risk coverage data</div>';
+        return `<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg2)">
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Category</th>
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Function</th>
+              <th style="padding:7px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)">Coverage</th>
+            </tr></thead>
+            <tbody>${prodRisk.map(r=>`<tr style="border-bottom:0.5px solid var(--bg3)">
+              <td style="padding:7px 12px">${escH(r.category||'')}</td>
+              <td style="padding:7px 12px">${escH(r.function_name||'')}</td>
+              <td style="padding:7px 12px">${escH(r.coverage_level||'')}</td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+      }
+      // Default: product info
       const rows = [
         ['Product type', sbProd.product_type],
         ['Deployment', sbProd.deployment_model],
         ['Version', sbProd.version_info],
         ['Licensing', sbProd.licensing_model],
       ].filter(r=>r[1]);
-      return `
-        <div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
-          ${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid var(--bg3);font-size:12px"><span style="color:var(--muted)">${escH(k)}</span><span style="font-weight:500">${escH(v)}</span></div>`).join('')}
-        </div>
-        ${sbProd.notes?`<div style="font-size:12px;line-height:1.5;color:var(--muted)">${escH(sbProd.notes)}</div>`:''}`;
-    };
+      return `<div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+        ${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid var(--bg3);font-size:12px"><span style="color:var(--muted)">${escH(k)}</span><span style="font-weight:500">${escH(v)}</span></div>`).join('')}
+      </div>${sbProd.notes?`<div style="font-size:12px;line-height:1.5;color:var(--muted)">${escH(sbProd.notes)}</div>`:''}`;
+    };;
 
     // ── RENDER PANEL ─────────────────────────────────────────────
     el.innerHTML = `
@@ -1866,8 +1917,16 @@ async function openCsDetail(name) {
             ${buildViewTab()}
           </div>
         </div>
-        <div id="csd-sb-section" style="display:none;padding:14px 16px">
-          ${buildSbTab()}
+        <div id="csd-sb-section" style="display:none">
+          <div style="display:flex;gap:4px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap" id="csd-tabs-sb">
+            <button class="csd-tab-sb active" onclick="csdSwitchSb('info')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:var(--bg);border:1px solid var(--border);font-family:inherit">Product Info</button>
+            <button class="csd-tab-sb" onclick="csdSwitchSb('commodity')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Commodity Coverage</button>
+            <button class="csd-tab-sb" onclick="csdSwitchSb('ctrm')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Functional Footprint</button>
+            <button class="csd-tab-sb" onclick="csdSwitchSb('risk')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Risk Coverage</button>
+          </div>
+          <div style="padding:14px 16px" id="csd-sb-body">
+            ${buildSbTab('info')}
+          </div>
         </div>
       </div>`;
 
@@ -1886,6 +1945,17 @@ function csdSwitchL1(tab) {
     const isActive = (i===0&&tab==='cs')||(i===1&&tab==='sb');
     t.style.color = isActive ? 'var(--accent)' : 'var(--muted)';
     t.style.borderBottomColor = isActive ? 'var(--accent)' : 'transparent';
+  });
+}
+
+function csdSwitchSb(tab) {
+  const body = document.getElementById('csd-sb-body');
+  if(body && window._csdBuilders) body.innerHTML = window._csdBuilders.sb(tab);
+  document.querySelectorAll('.csd-tab-sb').forEach(t=>{
+    const isActive = t.getAttribute('onclick').includes(`'${tab}'`);
+    t.style.background = isActive ? 'var(--bg)' : 'transparent';
+    t.style.borderColor = isActive ? 'var(--border)' : 'transparent';
+    t.style.color = isActive ? 'var(--text)' : 'var(--muted)';
   });
 }
 
