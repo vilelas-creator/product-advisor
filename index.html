@@ -165,14 +165,49 @@ tr:hover td{background:var(--bg2);}
 <body>
 
 <!-- AUTH -->
-<div id="auth-screen">
-  <div class="auth-box">
-    <h2>Product Advisor</h2>
-    <p>CTRM & Risk Management Intelligence</p>
-    <input id="login-email" type="email" placeholder="Email" autocomplete="email">
-    <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button onclick="doLogin()">Sign In</button>
-    <div id="auth-err"></div>
+<div id="auth-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:32px;margin-bottom:8px">📊</div>
+      <div style="font-weight:700;font-size:20px;color:var(--accent)">Product Advisor</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">CTRM & Risk Management Intelligence</div>
+    </div>
+    <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <button id="tab-login" onclick="showAuthTab('login')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">Sign In</button>
+      <button id="tab-register" onclick="showAuthTab('register')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Register</button>
+    </div>
+    <div id="auth-login">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
+        <input id="login-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
+        <input id="login-password" type="password" placeholder="••••••••" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <button onclick="doLogin()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Sign In</button>
+      <div id="login-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
+      <div style="text-align:center;margin-top:16px">
+        <a onclick="showForgotPassword()" href="#" style="font-size:12px;color:var(--accent)">Forgot password?</a>
+      </div>
+    </div>
+    <div id="auth-register" style="display:none">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Full Name</label>
+        <input id="register-name" type="text" placeholder="Your full name" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
+        <input id="register-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
+        <input id="register-password" type="password" placeholder="Min. 6 characters" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <button onclick="doRegister()" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Create Account</button>
+      <div id="register-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
+      <div id="register-success" style="margin-top:12px;color:var(--green);font-size:12px;text-align:center;display:none"></div>
+    </div>
   </div>
 </div>
 
@@ -449,26 +484,79 @@ tr:hover td{background:var(--bg2);}
   </div>
 </div>
 
-<script>
-// ── SOURCEBOOK UTILITIES (from base) ──
+<script>function showAuthTab(tab) {
+  document.getElementById("auth-login").style.display = tab === "login" ? "block" : "none";
+  document.getElementById("auth-register").style.display = tab === "register" ? "block" : "none";
+  document.getElementById("tab-login").style.background = tab === "login" ? "var(--accent)" : "var(--bg3)";
+  document.getElementById("tab-login").style.color = tab === "login" ? "#fff" : "var(--muted)";
+  document.getElementById("tab-register").style.background = tab === "register" ? "var(--accent)" : "var(--bg3)";
+  document.getElementById("tab-register").style.color = tab === "register" ? "#fff" : "var(--muted)";
+}
 
-const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
-const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
-const GROQ_MODEL="llama-3.3-70b-versatile";
-const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
-const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
-const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
-let isDark=true;
-let currentUser="User";
+async function showForgotPassword() {
+  const email = prompt("Enter your email address:");
+  if (!email) return;
+  try {
+    await authFetch("/recover", {body: {email}});
+    alert("Password reset email sent! Check your inbox.");
+  } catch(e) { alert("Error: " + e.message); }
+}
 
-function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
+async function doRegister() {
+  const name = document.getElementById("register-name").value.trim();
+  const email = document.getElementById("register-email").value.trim();
+  const password = document.getElementById("register-password").value;
+  const errEl = document.getElementById("register-error");
+  const sucEl = document.getElementById("register-success");
+  errEl.style.display = "none"; sucEl.style.display = "none";
+  if (!name || !email || !password) { errEl.textContent = "Please fill in all fields."; errEl.style.display = "block"; return; }
+  if (password.length < 6) { errEl.textContent = "Password must be at least 6 characters."; errEl.style.display = "block"; return; }
+  try {
+    await authFetch("/signup", {body: {email, password, data: {full_name: name}}});
+    sucEl.textContent = "Account created! You can now sign in with your email and password.";
+    sucEl.style.display = "block";
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  }
+}
 
-let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
-let modalSaveFn=null;
+async function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const errEl = document.getElementById("login-error");
+  errEl.style.display = "none";
+  if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
+  try {
+    const data = await authFetch("/token?grant_type=password", {body: {email, password}});
+    localStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, refresh_token: data.refresh_token, user: data.user}));
+    onLogin(data.user);
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = "block";
+  }
+}
 
-async function getAuthToken(){
-  const session=JSON.parse(localStorage.getItem("pa_session")||"{}");
-  return session?.access_token||SB_KEY;
+async function checkAuth() {
+  document.getElementById("auth-screen").style.display = "flex";
+  // Check for existing session
+  try {
+    const saved = localStorage.getItem("pa_session");
+    if (saved) {
+      const session = JSON.parse(saved);
+      if (session?.user) {
+        onLogin(session.user);
+        return;
+      }
+    }
+  } catch(e) {}
+  // Add keyboard listeners
+  ["login-email","login-password"].forEach(id => {
+    document.getElementById(id)?.addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+  });
+  ["register-name","register-email","register-password"].forEach(id => {
+    document.getElementById(id)?.addEventListener("keydown", e => { if(e.key==="Enter") doRegister(); });
+  });
 }
 
 async function refreshSession(){
@@ -491,6 +579,32 @@ async function refreshSession(){
   }catch(e){}
   return null;
 }
+
+function getAuthToken(){
+  const session=JSON.parse(localStorage.getItem("pa_session")||"{}");
+  return session?.access_token||SB_KEY;
+}
+
+
+// ── SOURCEBOOK UTILITIES (from base) ──
+
+const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
+const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
+const GROQ_MODEL="llama-3.3-70b-versatile";
+const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
+const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
+const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
+let isDark=true;
+let currentUser="User";
+
+function toggleTheme(){isDark=!isDark;document.body.classList.toggle("light",!isDark);document.getElementById("theme-btn").textContent=isDark?"☀️ Light":"🌙 Dark";}
+
+let state={vendors:[],products:[],contacts:[],ctrm:[],risk:[],geo:[],pcc:[],ct:[],commodities:[],pages:{},filters:{},ctrmLoading:true};
+let modalSaveFn=null;
+
+
+
+
 
 async function apiFetch(table,opts={}){
   const{method="GET",body,params={}}=opts;
@@ -1051,51 +1165,14 @@ function renderImport(){
 
 
 // ── AUTH ─────────────────────────────────────────────────────────
-async function doLogin() {
-  const email = document.getElementById('login-email')?.value?.trim();
-  const pw = document.getElementById('login-password')?.value;
-  const err = document.getElementById('auth-err');
-  if(!email||!pw){ if(err) err.textContent='Please enter email and password.'; return; }
-  if(err) err.textContent='';
-  try {
-    const res = await fetch(AUTH_URL+'/token?grant_type=password', {
-      method:'POST',
-      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({email,password:pw})
-    });
-    const data = await res.json();
-    if(!res.ok) { if(err) err.textContent = data.error_description||data.msg||'Login failed'; return; }
-    localStorage.setItem('pa_session', JSON.stringify({access_token:data.access_token, refresh_token:data.refresh_token, user:data.user}));
-    onLogin(data.user);
-  } catch(e) { if(err) err.textContent='Network error: '+e.message; }
-}
+
 
 async function getToken() {
   const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
   return sess?.access_token || SB_KEY;
 }
 
-async function checkAuth() {
-  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
-  if(!sess?.access_token) return false;
-  try {
-    const res = await fetch(AUTH_URL+'/user', {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token}});
-    if(res.ok) { const u = await res.json(); onLogin(u); return true; }
-    // Try refresh
-    if(sess.refresh_token) {
-      const r2 = await fetch(AUTH_URL+'/token?grant_type=refresh_token', {
-        method:'POST', headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({refresh_token:sess.refresh_token})
-      });
-      if(r2.ok) {
-        const d = await r2.json();
-        localStorage.setItem('pa_session', JSON.stringify({access_token:d.access_token,refresh_token:d.refresh_token||sess.refresh_token,user:d.user||sess.user}));
-        onLogin(d.user||sess.user); return true;
-      }
-    }
-  } catch(e) {}
-  return false;
-}
+
 
 function onLogin(user) {
   currentUser = user;
