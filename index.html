@@ -229,7 +229,7 @@ tr:hover td{background:var(--bg2);}
       <div class="dd-item" onclick="nav('sb-products','sb')">📦 Products</div>
       <div class="dd-item" onclick="nav('sb-commodities','sb')">🌾 Commodities</div>
       <div class="dd-item" onclick="nav('sb-ctrm','sb')">⚡ CTRM Coverage</div>
-      <div class="dd-item" onclick="nav('sb-risk','sb')">🛡 Risk Coverage</div>
+      <div class="dd-item" onclick="nav('sb-risk','sb')">🛡 Functional Footprint (Risk)</div>
       <div class="dd-item" onclick="nav('sb-geo','sb')">🌍 Geographic Coverage</div>
       <div class="dd-item" onclick="nav('sb-ct','sb')">👤 Customer Types</div>
       <div class="dd-item" onclick="nav('sb-import','sb')">📥 Import Data</div>
@@ -451,7 +451,7 @@ tr:hover td{background:var(--bg2);}
       <div class="sb-item" onclick="nav('sb-products','sb')"><div class="si">📦</div><span>Products</span></div>
       <div class="sb-item" onclick="nav('sb-commodities','sb')"><div class="si">🌾</div><span>Commodities</span></div>
       <div class="sb-item" onclick="nav('sb-ctrm','sb')"><div class="si">⚡</div><span>CTRM Coverage</span></div>
-      <div class="sb-item" onclick="nav('sb-risk','sb')"><div class="si">🛡</div><span>Risk Coverage</span></div>
+      <div class="sb-item" onclick="nav('sb-risk','sb')"><div class="si">🛡</div><span>Functional Footprint (Risk)</span></div>
       <div class="sb-item" onclick="nav('sb-geo','sb')"><div class="si">🌍</div><span>Geographic Coverage</span></div>
       <div class="sb-item" onclick="nav('sb-ct','sb')"><div class="si">👤</div><span>Customer Types</span></div>
       <div class="sb-item" onclick="nav('sb-import','sb')"><div class="si">📥</div><span>Import Data</span></div>
@@ -464,7 +464,7 @@ tr:hover td{background:var(--bg2);}
 <div class="screen" id="s-sb-products"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Products</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-products"></div></div></div>
 <div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Commodities</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
 <div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">CTRM Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
-<div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Risk Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
+<div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Functional Footprint (Risk)</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
 <div class="screen" id="s-sb-geo"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Geographic Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-geo"></div></div></div>
 <div class="screen" id="s-sb-ct"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Customer Types</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-customertype"></div></div></div>
 <div class="screen" id="s-sb-import"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Import Data</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-import"></div></div></div>
@@ -1018,7 +1018,7 @@ function renderRisk(){
   const page=state.pages.risk||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-risk").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🛡 Risk Coverage</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredRisk(),'risk_coverage','Risk Coverage')">⬇ Excel</button></div>
+    <div class="card-head"><span class="card-title">🛡 Functional Footprint (Risk)</span><span class="card-meta">${state.risk.length.toLocaleString()} records</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredRisk(),'risk_coverage','Functional Footprint (Risk)')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-risk_q" value="${q}" oninput="sf('risk_q',this.value)" placeholder="Search all columns...">
       ${createMultiSelect('risk_prod', prods, state.filters.risk_prod||[], 'All Products', 'risk_prod')}
@@ -1114,7 +1114,7 @@ const ALL_TABLES=[
   {id:"products",label:"Products",cols:["id","product_name","product_type","vendor","product_type2","deployment_model","version_info","licensing_model","notes"]},
   {id:"product_commodities_coverage",label:"Commodity Coverage",cols:["id","product","product_type","commodity","coverage_level"]},
   {id:"product_function_ctrm",label:"CTRM Coverage",cols:["id","product","function_name","commodity","coverage_level"]},
-  {id:"product_function_risk",label:"Risk Coverage",cols:["id","product","category","function_name","coverage_level"]},
+  {id:"product_function_risk",label:"Functional Footprint (Risk)",cols:["id","product","category","function_name","coverage_level"]},
   {id:"geographic_coverage",label:"Geographic Coverage",cols:["id","product_type","product","north_america","europe_russia","south_america","middle_east_africa","asia_australia"]},
   {id:"customer_type_coverage",label:"Customer Type Coverage",cols:["id","product_type","product","utility","energy_retailer","generator_non_renewables","renewables_generator","trader_broker","hedge_fund_cta","bank_financial_institution","consultant_analyst","agricultural_producer","biofuels","producer_marketer","refining_petrochemical","merchant_energy_firm","industrial_consumer","other"]},
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
@@ -1654,6 +1654,13 @@ async function saveF3() {
 }
 
 
+let _cspTimer = null;
+function debounceCsProducts() {
+  clearTimeout(_cspTimer);
+  _cspTimer = setTimeout(()=>renderCsProducts(), 250);
+}
+
+
 async function renderCsProducts() {
   const el = document.getElementById('cs-prod-el');
   if(!el) return;
@@ -1729,16 +1736,14 @@ async function renderCsProducts() {
       <div class="pg-sub">All products — click to view full detail</div>
       <div class="card">
         <div class="filters">
-          <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;renderCsProducts()" placeholder="Search..." style="min-width:150px">
-          ${createMultiSelect('csp_intel',['capSpire','sourcebook','capSpire&sourcebook'],fIntel,'All intel','csp_intel')}
-          ${createMultiSelect('csp_vendor',allVendors,fVendor,'All vendors','csp_vendor')}
-          <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_intel=[];state.filters.csp_vendor=[];renderCsProducts()">⟳ Reset</button>
+          <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;debounceCsProducts()" placeholder="Search..." style="min-width:150px">
+          <button class="btn btn-reset" onclick="state.filters.csp_q='';document.getElementById('csp-q').value='';renderCsProducts()">⟳ Reset</button>
           <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} product${rows.length!==1?'s':''}</span>
         </div>
         <div style="overflow-x:auto">
           <table>
             <thead><tr>
-              <th>Product</th><th>Vendor</th><th>Intel</th><th>Avg. rating</th><th>Last entry</th><th></th>
+              <th>Product</th><th>Vendor</th><th>Intel</th><th>Avg. rating</th><th></th>
             </tr></thead>
             <tbody>
               ${rows.map(name => {
@@ -1752,11 +1757,10 @@ async function renderCsProducts() {
                   <td style="color:var(--muted)">${escH(vendor)}</td>
                   <td>${intelBadge(name)}</td>
                   <td>${starsHtml(avg)}</td>
-                  <td style="color:var(--muted);font-size:12px">${lastDate}</td>
                   <td><button class="btn btn-reset" style="font-size:11px;white-space:nowrap" onclick="openCsDetail('${escAttr(name)}')">View detail</button></td>
                 </tr>`;
               }).join('')}
-              ${!rows.length?'<tr><td colspan="6" style="padding:1.5rem;text-align:center;color:var(--muted)">No products found</td></tr>':''}
+              ${!rows.length?'<tr><td colspan="5" style="padding:1.5rem;text-align:center;color:var(--muted)">No products found</td></tr>':''}
             </tbody>
           </table>
         </div>
@@ -1934,7 +1938,7 @@ async function openCsDetail(name) {
             <button class="csd-tab-sb active" onclick="csdSwitchSb('info')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:var(--bg);border:1px solid var(--border);font-family:inherit">Product Info</button>
             <button class="csd-tab-sb" onclick="csdSwitchSb('commodity')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Commodity Coverage</button>
             <button class="csd-tab-sb" onclick="csdSwitchSb('ctrm')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Functional Footprint</button>
-            <button class="csd-tab-sb" onclick="csdSwitchSb('risk')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Risk Coverage</button>
+            <button class="csd-tab-sb" onclick="csdSwitchSb('risk')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Functional Footprint (Risk)</button>
           </div>
           <div style="padding:14px 16px" id="csd-sb-body">
             ${buildSbTab('info')}
@@ -2787,7 +2791,7 @@ function openRiskModal(id){
   const prods=[...new Set(state.products.map(x=>x.product_name).filter(Boolean))].sort();
   const cats=[...new Set(state.risk.map(x=>x.category).filter(Boolean))].sort();
   const covs=["Deployed","Capable","Not Capable","N/A"];
-  openModal(r?"Edit Risk Coverage":"Add Risk Coverage",[
+  openModal(r?"Edit Functional Footprint (Risk)":"Add Functional Footprint (Risk)",[
     {label:"ID",value:r?.id||"",ro:true},
     {label:"Product",type:"select",value:r?.product||"",options:prods},
     {label:"Category",type:"select",value:r?.category||"",options:cats},
