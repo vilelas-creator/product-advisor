@@ -8,108 +8,112 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#ffffff;--bg2:#f9fafb;--bg3:#f3f4f6;--border:#e5e7eb;--text:#111827;--muted:#6b7280;
-  --accent:#2563eb;--green:#16a34a;--yellow:#d97706;--red:#dc2626;--purple:#7c3aed;
-  --input-bg:#ffffff;--row-border:#f3f4f6;
+  --bg:#fff;--bg2:#f9fafb;--bg3:#f3f4f6;--border:#e5e7eb;
+  --text:#111827;--muted:#6b7280;--accent:#2563eb;
+  --green:#16a34a;--yellow:#d97706;--red:#dc2626;--purple:#7c3aed;
+  --input-bg:#fff;--row-border:#f3f4f6;
 }
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;min-height:100vh;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;}
 
-/* LOGIN */
-#login-screen{position:fixed;inset:0;background:#f9fafb;display:flex;align-items:center;justify-content:center;z-index:1000;}
-.login-box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:2rem;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
-.login-box h2{font-size:16px;font-weight:600;margin-bottom:4px;}
-.login-box p{font-size:12px;color:var(--muted);margin-bottom:1.5rem;}
-.login-box input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;margin-bottom:10px;}
-.login-box button{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;}
+/* AUTH */
+#auth-screen{position:fixed;inset:0;background:#f9fafb;z-index:9999;display:flex;align-items:center;justify-content:center;}
+.auth-box{background:#fff;border:1px solid var(--border);border-radius:14px;padding:2rem;width:360px;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+.auth-box h2{font-size:18px;font-weight:700;margin-bottom:4px;}
+.auth-box p{font-size:12px;color:var(--muted);margin-bottom:1.5rem;}
+.auth-box input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;margin-bottom:10px;color:var(--text);}
+.auth-box button{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;}
+#auth-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center;}
 
-/* TOP NAV */
-#topnav{height:46px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:2px;background:#fff;position:sticky;top:0;z-index:200;}
-.logo{font-size:13px;font-weight:700;margin-right:1.5rem;color:var(--text);}
+/* TOPNAV */
+#topnav{display:none;height:46px;border-bottom:1.5px solid var(--border);align-items:center;padding:0 1.25rem;gap:0;background:#fff;position:sticky;top:0;z-index:200;}
+.tnav-logo{font-size:14px;font-weight:700;margin-right:1.5rem;color:var(--text);}
 .dd{position:relative;}
-.dd-btn{height:46px;padding:0 13px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2.5px solid transparent;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;}
+.dd-btn{height:46px;padding:0 13px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;border-bottom:2.5px solid transparent;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit;}
 .dd-btn:hover{color:var(--text);}
 .dd-btn.cs{color:var(--accent);border-bottom-color:var(--accent);}
 .dd-btn.sb{color:#0d9488;border-bottom-color:#0d9488;}
-.dd-btn .arr{font-size:9px;transition:transform .15s;}
-.dd:hover .arr{transform:rotate(180deg);}
-.dd-menu{display:none;position:absolute;top:45px;left:0;background:#fff;border:1px solid var(--border);border-radius:10px;padding:5px;min-width:195px;box-shadow:0 4px 18px rgba(0,0,0,.1);z-index:300;}
+.dd-arr{font-size:9px;transition:transform .15s;}
+.dd:hover .dd-arr{transform:rotate(180deg);}
+.dd-menu{display:none;position:absolute;top:45px;left:0;background:#fff;border:1px solid var(--border);border-radius:10px;padding:5px;min-width:200px;box-shadow:0 4px 18px rgba(0,0,0,.1);z-index:300;}
 .dd:hover .dd-menu{display:block;}
-.dd-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;color:#374151;white-space:nowrap;}
+.dd-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;color:#374151;white-space:nowrap;font-size:13px;}
 .dd-item:hover{background:var(--bg3);}
 .dd-sep{height:1px;background:var(--bg3);margin:3px 0;}
-.nav-r{margin-left:auto;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:8px;}
-.nav-r button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;}
-.nav-r button:hover{color:var(--text);}
-
-/* BREADCRUMB */
-.bc{padding:8px 1.25rem;font-size:11px;color:var(--muted);border-bottom:1px solid var(--bg3);display:flex;align-items:center;gap:4px;}
-.bc .bcs{color:var(--text);font-weight:500;}
-.bc .sep{color:#d1d5db;}
+.tnav-r{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.tnav-r button{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;}
 
 /* SCREENS */
 .screen{display:none;}
 .screen.active{display:block;}
-.content{padding:1.25rem;}
+.pg-content{padding:1.25rem;}
+.bc{padding:8px 1.25rem;font-size:11px;color:var(--muted);border-bottom:1px solid var(--bg3);display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.bc .bcs{color:var(--text);font-weight:500;}
+.bc .sep{color:#d1d5db;}
 .back-btn{background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:1rem;padding:0;font-family:inherit;}
 .back-btn:hover{color:var(--text);}
 .pg-title{font-size:17px;font-weight:600;margin-bottom:3px;}
-.pg-sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem;}
+.pg-sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;}
 
-/* HOME CARDS */
-.home-two{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-.big-card{border:1.5px solid var(--border);border-radius:13px;padding:1.4rem;cursor:pointer;transition:all .15s;}
-.big-card:hover{border-color:#93c5fd;box-shadow:0 0 0 4px #eff6ff;}
-.big-card.sb:hover{border-color:#5eead4;box-shadow:0 0 0 4px #f0fdfa;}
-.big-card .bci{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:11px;}
-.big-card h2{font-size:15px;font-weight:600;margin-bottom:5px;}
-.big-card p{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
-.big-card ul{list-style:none;display:flex;flex-direction:column;gap:4px;}
-.big-card ul li{font-size:12px;color:#374151;display:flex;align-items:center;gap:6px;}
-.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:var(--accent);}
-.dot.tl{background:#0d9488;}
+/* HOME */
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.home-card{border:1.5px solid var(--border);border-radius:13px;padding:1.4rem;cursor:pointer;transition:all .15s;}
+.home-card:hover{border-color:#93c5fd;box-shadow:0 0 0 4px #eff6ff;}
+.home-card.sb:hover{border-color:#5eead4;box-shadow:0 0 0 4px #f0fdfa;}
+.home-card .hci{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px;}
+.home-card h2{font-size:15px;font-weight:600;margin-bottom:5px;}
+.home-card p{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+.home-card ul{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.home-card ul li{font-size:12px;color:#374151;display:flex;align-items:center;gap:7px;}
+.li-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 
-/* 3-COL & 4-COL GRIDS */
+/* CARDS GRID */
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.opt-card{border:1px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer;transition:all .15s;}
+.opt-card{border:1px solid var(--border);border-radius:10px;padding:1.1rem;cursor:pointer;transition:all .15s;}
 .opt-card:hover{border-color:#93c5fd;background:#f9fbff;}
-.opt-card .oi{font-size:22px;margin-bottom:8px;}
+.opt-card .oi{font-size:24px;margin-bottom:9px;}
 .opt-card h4{font-size:13px;font-weight:600;margin-bottom:3px;}
 .opt-card p{font-size:11px;color:var(--muted);line-height:1.4;}
 .sb-item{border:1px solid var(--border);border-radius:9px;padding:.9rem;cursor:pointer;transition:all .15s;}
 .sb-item:hover{border-color:#5eead4;background:#f0fdfa;}
-.sb-item .si{font-size:18px;margin-bottom:5px;}
+.sb-item .si{font-size:20px;margin-bottom:6px;}
 .sb-item span{font-size:12px;font-weight:500;color:#374151;}
 
 /* FORMS */
-.fw{max-width:520px;}
-.field{margin-bottom:12px;}
+.fw{max-width:540px;}
+.field{margin-bottom:13px;}
 .field label{font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;}
 .req{color:var(--red);}
-.field input,.field select,.field textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;}
 .field input[readonly]{background:var(--bg2);color:var(--muted);}
-.field textarea{resize:vertical;min-height:64px;}
+.field textarea{resize:vertical;min-height:70px;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.pill-g{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
-.pill{font-size:11px;padding:2px 8px;border-radius:20px;cursor:pointer;border:1px solid var(--border);color:#374151;background:#fff;transition:all .12s;}
-.pill.on{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;}
-.pill-add{font-size:11px;padding:2px 9px;border-radius:20px;border:1px dashed #d1d5db;color:var(--muted);cursor:pointer;background:#fff;}
-.pill-add:hover{border-color:#93c5fd;color:var(--accent);}
-.stars{display:flex;gap:3px;margin-top:4px;}
-.star{font-size:22px;cursor:pointer;color:#d1d5db;transition:color .1s;user-select:none;}
+.stars{display:flex;gap:4px;margin-top:4px;}
+.star{font-size:24px;cursor:pointer;color:#d1d5db;user-select:none;}
 .star.on{color:#f59e0b;}
-.btn-row{display:flex;gap:8px;margin-top:1.1rem;}
+.btn-row{display:flex;gap:8px;margin-top:1.25rem;}
 
-/* PRODUCTS TABLE (capSpire Intel) */
+/* SYSTEM SELECTION */
 .prod-entry{border:1px solid var(--border);border-radius:8px;padding:.75rem;margin-bottom:8px;background:var(--bg2);}
-.prod-entry-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;font-size:12px;}
-.rm-btn{font-size:11px;color:var(--red);cursor:pointer;background:none;border:none;padding:0;font-family:inherit;}
-.add-prod-btn{font-size:12px;color:var(--accent);cursor:pointer;background:none;border:1px dashed #93c5fd;border-radius:7px;padding:6px 12px;width:100%;text-align:center;font-family:inherit;}
-.add-prod-btn:hover{background:#eff6ff;}
+.prod-entry h5{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.rm-btn{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;font-family:inherit;}
+.add-entry-btn{width:100%;padding:7px;border:1px dashed #93c5fd;border-radius:7px;background:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:12px;}
+.add-entry-btn:hover{background:#eff6ff;}
 
-/* SOURCEBOOK shared styles */
+/* CS PRODUCTS TABLE */
+.split{display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start;}
+.sp{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.sp-head{padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.sp-head h3{font-size:14px;font-weight:600;}
+.sp-head p{font-size:11px;color:var(--muted);}
+.sp-body{padding:12px 14px;}
+.sp-sec{margin-bottom:12px;}
+.sp-sec h5{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.sp-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bg3);font-size:12px;}
+
+/* SOURCEBOOK */
 .card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px;}
-.card-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.card-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;}
 .card-title{font-size:14px;font-weight:600;}
 .card-meta{font-size:11px;color:var(--muted);}
 .filters{display:flex;align-items:center;gap:7px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap;}
@@ -119,104 +123,64 @@ thead tr{background:var(--bg2);}
 th{padding:8px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);}
 td{padding:8px 12px;border-bottom:1px solid var(--row-border);color:var(--text);vertical-align:top;}
 tr:hover td{background:var(--bg2);}
-.tbl-link{color:var(--accent);cursor:pointer;text-decoration:none;}
-.tbl-link:hover{text-decoration:underline;}
+.tlink{color:var(--accent);cursor:pointer;text-decoration:none;}
+.tlink:hover{text-decoration:underline;}
 .pager{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);}
 .pager button{padding:3px 10px;background:#fff;border:1px solid var(--border);border-radius:5px;font-size:12px;cursor:pointer;font-family:inherit;}
-.pager button:hover{background:var(--bg2);}
 
 /* BUTTONS */
 .btn{padding:7px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;}
 .btn-primary{background:var(--accent);color:#fff;}
-.btn-primary:hover{background:#1d4ed8;}
-.btn-success{background:#16a34a;color:#fff;}
+.btn-success{background:var(--green);color:#fff;}
 .btn-reset{background:var(--bg2);color:var(--muted);border:1px solid var(--border);}
-.btn-reset:hover{color:var(--text);}
-.bs{background:var(--bg3);color:#374151;border:1px solid var(--border);}
-
-/* SPLIT PANEL */
-.split-layout{display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start;}
-.side-panel{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
-.sp-head{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);}
-.sp-head h3{font-size:14px;font-weight:600;}
-.sp-head p{font-size:11px;color:var(--muted);}
-.sp-body{padding:12px 14px;}
-.sp-section{margin-bottom:12px;}
-.sp-section h5{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
-.sp-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bg3);font-size:12px;}
-.sp-row .sk{color:var(--muted);}
-.sp-row .sv{color:var(--text);font-weight:500;}
+.btn-secondary{background:var(--bg3);color:#374151;border:1px solid var(--border);}
 
 /* MODAL */
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:400;align-items:center;justify-content:center;}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center;}
 #modal-overlay.open{display:flex;}
-#modal-box{background:#fff;border-radius:12px;padding:1.5rem;width:500px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15);}
-#modal-box h3{font-size:15px;font-weight:600;margin-bottom:1rem;}
-.modal-field{margin-bottom:12px;}
-.modal-field label{font-size:12px;font-weight:500;display:block;margin-bottom:4px;color:#374151;}
-.modal-field input,.modal-field select,.modal-field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;}
-.modal-field textarea{min-height:80px;resize:vertical;}
-.modal-btns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
-
+#modal-box{background:#fff;border-radius:12px;padding:1.5rem;width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15);}
+#modal-title{font-size:15px;font-weight:600;margin-bottom:1rem;color:var(--text);}
 .fg{margin-bottom:12px;}
 .fg label,.lbl{font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px;}
-.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);}
 .fg textarea{min-height:80px;resize:vertical;}
+.modal-btns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
+
+/* MULTISELECT */
+.ms-wrap{position:relative;display:inline-block;}
+.ms-trigger{padding:5px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.ms-trigger.active{border-color:var(--accent);background:#eff6ff;color:var(--accent);}
+.ms-drop{display:none;position:absolute;top:calc(100% + 3px);left:0;background:#fff;border:1px solid var(--border);border-radius:8px;padding:5px;min-width:200px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:100;}
+.ms-drop.open{display:block;}
+.ms-search{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;margin-bottom:5px;}
+.ms-list{max-height:180px;overflow-y:auto;}
+.ms-item{display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:5px;cursor:pointer;font-size:12px;}
+.ms-item:hover{background:var(--bg3);}
+.ms-item input{margin:0;cursor:pointer;}
+.ms-footer{display:flex;gap:5px;padding:5px 3px 2px;border-top:1px solid var(--bg3);margin-top:4px;}
+.ms-footer button{flex:1;padding:4px;border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit;background:#fff;}
+.ms-footer .ms-ok{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
 </head>
 <body>
 
-<div id="auth-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:99999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;padding:36px">
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="font-size:32px;margin-bottom:8px">📊</div>
-      <div style="font-weight:700;font-size:20px;color:var(--accent)">Product Advisor</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px">CTRM & Risk Management Intelligence</div>
-    </div>
-    <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:24px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
-      <button id="tab-login" onclick="showAuthTab('login')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">Sign In</button>
-      <button id="tab-register" onclick="showAuthTab('register')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:var(--bg3);color:var(--muted);font-family:inherit">Register</button>
-    </div>
-    <div id="auth-login">
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
-        <input id="login-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
-        <input id="login-password" type="password" placeholder="••••••••" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <button onclick="doLogin()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Sign In</button>
-      <div id="login-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
-      <div style="text-align:center;margin-top:16px">
-        <a onclick="showForgotPassword()" href="#" style="font-size:12px;color:var(--accent)">Forgot password?</a>
-      </div>
-    </div>
-    <div id="auth-register" style="display:none">
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Full Name</label>
-        <input id="register-name" type="text" placeholder="Your full name" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Email</label>
-        <input id="register-email" type="email" placeholder="your@email.com" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase">Password</label>
-        <input id="register-password" type="password" placeholder="Min. 6 characters" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
-      </div>
-      <button onclick="doRegister()" style="width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Create Account</button>
-      <div id="register-error" style="margin-top:12px;color:var(--red);font-size:12px;text-align:center;display:none"></div>
-      <div id="register-success" style="margin-top:12px;color:var(--green);font-size:12px;text-align:center;display:none"></div>
-    </div>
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h2>Product Advisor</h2>
+    <p>CTRM & Risk Management Intelligence</p>
+    <input id="login-email" type="email" placeholder="Email" autocomplete="email">
+    <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Sign In</button>
+    <div id="auth-err"></div>
   </div>
 </div>
 
-<!-- TOP NAV -->
-<div id="topnav" style="display:none">
-  <span class="logo">Product Advisor</span>
+<!-- TOPNAV -->
+<div id="topnav">
+  <span class="tnav-logo">Product Advisor</span>
   <div class="dd">
-    <button class="dd-btn" id="nb-cs">capSpire Intel <span class="arr">▾</span></button>
+    <button class="dd-btn" id="nb-cs">capSpire Intel <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('addintel','cs')">➕ Add Intel</div>
       <div class="dd-item" onclick="nav('cs-products','cs')">📦 Products</div>
@@ -224,7 +188,7 @@ tr:hover td{background:var(--bg2);}
     </div>
   </div>
   <div class="dd">
-    <button class="dd-btn" id="nb-sb">Sourcebook Intel <span class="arr">▾</span></button>
+    <button class="dd-btn" id="nb-sb">Sourcebook Intel <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('sb-vendors','sb')">🏢 Vendors</div>
       <div class="dd-item" onclick="nav('sb-products','sb')">📦 Products</div>
@@ -236,36 +200,34 @@ tr:hover td{background:var(--bg2);}
       <div class="dd-item" onclick="nav('sb-import','sb')">📥 Import Data</div>
     </div>
   </div>
-  <div class="nav-r">
+  <div class="tnav-r">
     <span id="nav-user"></span>
-    <button onclick="signOut()">Sign Out</button>
+    <button onclick="doLogout()">Sign Out</button>
   </div>
 </div>
 
-<!-- ═══ SCREENS ═══ -->
-
 <!-- HOME -->
 <div class="screen" id="s-home">
-  <div class="content">
-    <div class="home-two">
-      <div class="big-card" onclick="nav('cs-home','cs')">
-        <div class="bci" style="background:#eff6ff">🏢</div>
+  <div class="pg-content">
+    <div class="home-grid" style="margin-top:.5rem">
+      <div class="home-card" onclick="nav('cs-home','cs')">
+        <div class="hci" style="background:#eff6ff">🏢</div>
         <h2>capSpire Intel</h2>
         <p>Internal intelligence gathered by capSpire — product views, market signals and system selections.</p>
         <ul>
-          <li><span class="dot"></span>Add Intel</li>
-          <li><span class="dot"></span>Products with capSpire intel</li>
-          <li><span class="dot"></span>Contacts</li>
+          <li><span class="li-dot" style="background:var(--accent)"></span>Add Intel (3 types)</li>
+          <li><span class="li-dot" style="background:var(--accent)"></span>Products with capSpire intel</li>
+          <li><span class="li-dot" style="background:var(--accent)"></span>Contacts</li>
         </ul>
       </div>
-      <div class="big-card sb" onclick="nav('sb-home','sb')">
-        <div class="bci" style="background:#f0fdfa">📚</div>
+      <div class="home-card sb" onclick="nav('sb-home','sb')">
+        <div class="hci" style="background:#f0fdfa">📚</div>
         <h2>Sourcebook Intel</h2>
         <p>Official Sourcebook data — vendors, products and coverage across commodities, CTRM and risk.</p>
         <ul>
-          <li><span class="dot tl"></span>Vendors, Products, Commodities</li>
-          <li><span class="dot tl"></span>CTRM, Risk & Geographic Coverage</li>
-          <li><span class="dot tl"></span>Customer Types, Import Data</li>
+          <li><span class="li-dot" style="background:#0d9488"></span>Vendors, Products, Commodities</li>
+          <li><span class="li-dot" style="background:#0d9488"></span>CTRM, Risk & Geographic Coverage</li>
+          <li><span class="li-dot" style="background:#0d9488"></span>Customer Types, Import Data</li>
         </ul>
       </div>
     </div>
@@ -275,7 +237,7 @@ tr:hover td{background:var(--bg2);}
 <!-- CS HOME -->
 <div class="screen" id="s-cs-home">
   <div class="bc">capSpire Intel</div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="pg-title">capSpire Intel</div>
     <div class="pg-sub">Internal intelligence gathered by capSpire consultants</div>
@@ -290,12 +252,12 @@ tr:hover td{background:var(--bg2);}
 <!-- ADD INTEL -->
 <div class="screen" id="s-addintel">
   <div class="bc">capSpire Intel <span class="sep">›</span> <span class="bcs">Add Intel</span></div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="pg-title">Add Intel</div>
     <div class="pg-sub">Select the type of intel to record</div>
     <div class="g3">
-      <div class="opt-card" onclick="nav('form-csview','cs')"><div class="oi">🔍</div><h4>capSpire View of the Product</h4><p>Internal assessment of a specific product</p></div>
+      <div class="opt-card" onclick="nav('form-view','cs')"><div class="oi">🔍</div><h4>capSpire View of the Product</h4><p>Internal assessment of a specific product</p></div>
       <div class="opt-card" onclick="nav('form-market','cs')"><div class="oi">📊</div><h4>Market Intel</h4><p>Market information from clients or events</p></div>
       <div class="opt-card" onclick="nav('form-selection','cs')"><div class="oi">⚖️</div><h4>System Selection Intel</h4><p>Intel from system selection processes</p></div>
     </div>
@@ -303,43 +265,49 @@ tr:hover td{background:var(--bg2);}
 </div>
 
 <!-- FORM 1: capSpire View -->
-<div class="screen" id="s-form-csview">
+<div class="screen" id="s-form-view">
   <div class="bc">capSpire Intel <span class="sep">›</span> Add Intel <span class="sep">›</span> <span class="bcs">capSpire View of the Product</span></div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="fw">
       <div class="pg-title">capSpire View of the Product</div>
       <div class="pg-sub">Internal capSpire assessment — strengths, gaps and commodity coverage</div>
-      <div class="field"><label>Product <span class="req">*</span></label><select id="csv-product" onchange="onCsvProductChange()"><option value="">— Select product —</option></select></div>
+      <div class="field"><label>Product <span class="req">*</span></label><select id="f1-product" onchange="f1ProductChange()"><option value="">— Select product —</option></select></div>
       <div class="frow">
-        <div class="field"><label>Vendor</label><input id="csv-vendor" readonly></div>
-        <div class="field"><label>Assessed by</label><input id="csv-by" readonly></div>
+        <div class="field"><label>Vendor</label><input id="f1-vendor" readonly></div>
+        <div class="field"><label>Assessed by</label><input id="f1-by" readonly></div>
       </div>
       <div class="frow">
-        <div class="field"><label>Date</label><input id="csv-date" readonly></div>
-        <div class="field"><label>Source / context</label><select id="csv-context"><option value="">— Select —</option><option>Client meeting</option><option>Conference</option><option>RFP / Tender</option><option>Demo</option><option>Internal research</option><option>Other</option></select></div>
+        <div class="field"><label>Date</label><input id="f1-date" readonly></div>
+        <div class="field"><label>Source / context</label>
+          <select id="f1-context">
+            <option value="">— Select —</option>
+            <option>Client meeting</option><option>Conference</option>
+            <option>RFP / Tender</option><option>Demo</option>
+            <option>Internal research</option><option>Other</option>
+          </select>
+        </div>
       </div>
       <div class="field">
         <label>Overall rating</label>
-        <div class="stars" id="csv-stars">
-          <span class="star" onclick="setStars('csv-stars',1)">★</span>
-          <span class="star" onclick="setStars('csv-stars',2)">★</span>
-          <span class="star" onclick="setStars('csv-stars',3)">★</span>
-          <span class="star" onclick="setStars('csv-stars',4)">★</span>
-          <span class="star" onclick="setStars('csv-stars',5)">★</span>
+        <div class="stars" id="f1-stars">
+          <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
+          <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
+          <span class="star" data-n="5">★</span>
         </div>
       </div>
-      <div class="field"><label>Strengths</label><textarea id="csv-strengths" placeholder="Describe the product's main strengths..."></textarea></div>
-      <div class="field"><label>Gaps / weaknesses</label><textarea id="csv-gaps" placeholder="Describe identified gaps or limitations..."></textarea></div>
+      <div class="field"><label>Strengths</label><textarea id="f1-strengths" placeholder="Describe the product's main strengths..."></textarea></div>
+      <div class="field"><label>Gaps / weaknesses</label><textarea id="f1-gaps" placeholder="Describe identified gaps or limitations..."></textarea></div>
       <div class="field">
         <label>Relevant commodities</label>
-        <div class="pill-g" id="csv-coms"></div>
+        <div id="f1-coms-wrap"></div>
       </div>
-      <div class="field"><label>Additional notes</label><textarea id="csv-notes" placeholder="Any other relevant information..."></textarea></div>
+      <div class="field"><label>Additional notes</label><textarea id="f1-notes" placeholder="Any other relevant information..."></textarea></div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveCsView()">Save</button>
-        <button class="btn bs" onclick="goBack()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveF1()">Save</button>
+        <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
       </div>
+      <div id="f1-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
     </div>
   </div>
 </div>
@@ -347,40 +315,49 @@ tr:hover td{background:var(--bg2);}
 <!-- FORM 2: Market Intel -->
 <div class="screen" id="s-form-market">
   <div class="bc">capSpire Intel <span class="sep">›</span> Add Intel <span class="sep">›</span> <span class="bcs">Market Intel</span></div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="fw">
       <div class="pg-title">Market Intel</div>
       <div class="pg-sub">Market intelligence gathered from clients, events or public sources</div>
       <div class="frow">
-        <div class="field"><label>Client / Company <span class="req">*</span></label><input id="mi-client" placeholder="Company name"></div>
-        <div class="field"><label>Sector</label><select id="mi-sector"><option value="">— Select —</option><option>Energy Trading</option><option>Utilities</option><option>Oil & Gas</option><option>Commodities</option><option>Finance</option><option>Other</option></select></div>
+        <div class="field"><label>Client / Company <span class="req">*</span></label><input id="f2-client" placeholder="Company name"></div>
+        <div class="field"><label>Sector</label>
+          <select id="f2-sector">
+            <option value="">— Select —</option>
+            <option>Energy Trading</option><option>Utilities</option>
+            <option>Oil & Gas</option><option>Commodities</option>
+            <option>Finance</option><option>Other</option>
+          </select>
+        </div>
       </div>
-      <div class="field"><label>Country</label><select id="mi-country"><option value="">— Select country —</option></select></div>
+      <div class="field"><label>Country</label><select id="f2-country"><option value="">— Select country —</option></select></div>
       <div class="frow">
-        <div class="field"><label>Date</label><input id="mi-date" type="date"></div>
-        <div class="field"><label>Source / context</label><select id="mi-context"><option value="">— Select —</option><option>Client meeting</option><option>Conference</option><option>RFP / Tender</option><option>LinkedIn / News</option><option>Other</option></select></div>
-      </div>
-      <div class="field">
-        <label>Overall rating</label>
-        <div class="stars" id="mi-stars">
-          <span class="star" onclick="setStars('mi-stars',1)">★</span>
-          <span class="star" onclick="setStars('mi-stars',2)">★</span>
-          <span class="star" onclick="setStars('mi-stars',3)">★</span>
-          <span class="star" onclick="setStars('mi-stars',4)">★</span>
-          <span class="star" onclick="setStars('mi-stars',5)">★</span>
+        <div class="field"><label>Date</label><input id="f2-date" type="date"></div>
+        <div class="field"><label>Source / context</label>
+          <select id="f2-context">
+            <option value="">— Select —</option>
+            <option>Client meeting</option><option>Conference</option>
+            <option>RFP / Tender</option><option>LinkedIn / News</option><option>Other</option>
+          </select>
         </div>
       </div>
       <div class="field">
-        <label>Products mentioned</label>
-        <div id="mi-products-ms"></div>
+        <label>Overall rating</label>
+        <div class="stars" id="f2-stars">
+          <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
+          <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
+          <span class="star" data-n="5">★</span>
+        </div>
       </div>
-      <div class="field"><label>Comments</label><textarea id="mi-comments" rows="4" placeholder="Describe the information gathered..."></textarea></div>
-      <div class="field"><label>Link / Reference</label><input id="mi-link" type="url" placeholder="https://..."></div>
+      <div class="field"><label>Products mentioned</label><div id="f2-prods-wrap"></div></div>
+      <div class="field"><label>Comments</label><textarea id="f2-comments" placeholder="Describe the information gathered..."></textarea></div>
+      <div class="field"><label>Link / Reference</label><input id="f2-link" type="url" placeholder="https://..."></div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveMarketIntel()">Save</button>
-        <button class="btn bs" onclick="goBack()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveF2()">Save</button>
+        <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
       </div>
+      <div id="f2-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
     </div>
   </div>
 </div>
@@ -388,33 +365,26 @@ tr:hover td{background:var(--bg2);}
 <!-- FORM 3: System Selection -->
 <div class="screen" id="s-form-selection">
   <div class="bc">capSpire Intel <span class="sep">›</span> Add Intel <span class="sep">›</span> <span class="bcs">System Selection Intel</span></div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="fw">
       <div class="pg-title">System Selection Intel</div>
       <div class="pg-sub">Intel from system selection processes</div>
       <div class="frow">
-        <div class="field"><label>Client <span class="req">*</span></label><input id="ss-client" placeholder="Company name"></div>
-        <div class="field"><label>Year</label><input id="ss-year" type="number" placeholder="2025"></div>
+        <div class="field"><label>Client <span class="req">*</span></label><input id="f3-client" placeholder="Company name"></div>
+        <div class="field"><label>Year</label><input id="f3-year" type="number" placeholder="2025" min="2000" max="2030"></div>
       </div>
-      <div class="field"><label>Country</label><select id="ss-country"><option value="">— Select country —</option></select></div>
+      <div class="field"><label>Country</label><select id="f3-country"><option value="">— Select country —</option></select></div>
       <div class="field"><label>Products evaluated</label></div>
-      <div id="ss-prod-entries">
-        <div class="prod-entry" data-idx="0">
-          <div class="prod-entry-head"><span>Product 1</span><button class="rm-btn" onclick="removeSsProd(this)">✕ Remove</button></div>
-          <div class="frow">
-            <div class="field"><label>Product</label><select class="ss-prod-sel"><option value="">— Select —</option></select></div>
-            <div class="field"><label>Outcome</label><select class="ss-outcome-sel"><option value="Selected">Selected</option><option value="Shortlisted">Shortlisted</option><option value="Rejected">Rejected</option></select></div>
-          </div>
-        </div>
-      </div>
-      <button class="add-prod-btn" onclick="addSsProd()">+ Add another product</button>
-      <div class="field" style="margin-top:12px"><label>Notes</label><textarea id="ss-notes" placeholder="Additional information about the selection process..."></textarea></div>
-      <div class="field"><label>Link / Reference</label><input id="ss-link" type="url" placeholder="https://..."></div>
+      <div id="f3-entries"></div>
+      <button class="add-entry-btn" onclick="addF3Entry()">+ Add another product</button>
+      <div class="field"><label>Notes</label><textarea id="f3-notes" placeholder="Additional information about the process..."></textarea></div>
+      <div class="field"><label>Link / Reference</label><input id="f3-link" type="url" placeholder="https://..."></div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveSystemSelection()">Save</button>
-        <button class="btn bs" onclick="goBack()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveF3()">Save</button>
+        <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
       </div>
+      <div id="f3-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
     </div>
   </div>
 </div>
@@ -422,16 +392,16 @@ tr:hover td{background:var(--bg2);}
 <!-- CS PRODUCTS -->
 <div class="screen" id="s-cs-products">
   <div class="bc">capSpire Intel <span class="sep">›</span> <span class="bcs">Products</span></div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
-    <div id="cs-prod-main"></div>
+    <div id="cs-prod-el"></div>
   </div>
 </div>
 
 <!-- CS CONTACTS -->
 <div class="screen" id="s-cs-contacts">
   <div class="bc">capSpire Intel <span class="sep">›</span> <span class="bcs">Contacts</span></div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div id="section-contacts"></div>
   </div>
@@ -440,10 +410,10 @@ tr:hover td{background:var(--bg2);}
 <!-- SB HOME -->
 <div class="screen" id="s-sb-home">
   <div class="bc">Sourcebook Intel</div>
-  <div class="content">
+  <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="pg-title">Sourcebook Intel</div>
-    <div class="pg-sub">Official Sourcebook data — vendors, products and coverage</div>
+    <div class="pg-sub">Official Sourcebook data</div>
     <div class="g4">
       <div class="sb-item" onclick="nav('sb-vendors','sb')"><div class="si">🏢</div><span>Vendors</span></div>
       <div class="sb-item" onclick="nav('sb-products','sb')"><div class="si">📦</div><span>Products</span></div>
@@ -457,19 +427,30 @@ tr:hover td{background:var(--bg2);}
   </div>
 </div>
 
-<!-- SB SECTIONS (rendered by existing functions) -->
-<div class="screen" id="s-sb-vendors"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Vendors</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-vendors"></div></div></div>
-<div class="screen" id="s-sb-products"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Products</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-products"></div></div></div>
-<div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Commodities</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
-<div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">CTRM Coverage</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
-<div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Risk Coverage</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
-<div class="screen" id="s-sb-geo"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Geographic Coverage</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-geo"></div></div></div>
-<div class="screen" id="s-sb-ct"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Customer Types</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ct"></div></div></div>
-<div class="screen" id="s-sb-import"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Import Data</span></div><div class="content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-import"></div></div></div>
+<!-- SB SECTIONS -->
+<div class="screen" id="s-sb-vendors"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Vendors</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-vendors"></div></div></div>
+<div class="screen" id="s-sb-products"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Products</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-products"></div></div></div>
+<div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Commodities</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
+<div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">CTRM Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
+<div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Risk Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
+<div class="screen" id="s-sb-geo"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Geographic Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-geo"></div></div></div>
+<div class="screen" id="s-sb-ct"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Customer Types</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-customertype"></div></div></div>
+<div class="screen" id="s-sb-import"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Import Data</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-import"></div></div></div>
 
-
+<!-- MODAL -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal-box">
+    <div id="modal-title"></div>
+    <div id="modal-fields"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
+// ── SOURCEBOOK UTILITIES (from base) ──
 
 const SB_URL="https://hhltetlifatsskrfkywu.supabase.co";
 const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
@@ -578,9 +559,9 @@ function sf(key,val){
 }
 
 function renderCurrentScreen(){
-  const active = document.querySelector('.screen.active');
+  const active=document.querySelector('.screen.active');
   if(!active) return;
-  const id = active.id.replace('s-','');
+  const id=active.id.replace('s-','');
   if(id==='sb-vendors') renderVendors();
   else if(id==='sb-products') renderProducts();
   else if(id==='sb-commodities') renderCommodities();
@@ -811,6 +792,8 @@ function renderOverview(){
 }
 
 
+
+// ── SOURCEBOOK RENDERS ──
 // ── VENDORS ──
 function renderVendors(){
   const q=(state.filters.v_q||"").toLowerCase();
@@ -821,7 +804,7 @@ function renderVendors(){
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn btn-primary\" style=\"font-size:11px;padding:3px 8px;margin-right:4px\" onclick=\"openProductDetail('${escAttr(v.vendor_name)}',{source_table:'vendor',vendor_name:'${escAttr(v.vendor_name)}'})\">capSpire Feedback</button><button class=\"btn\" onclick=\"openVendorModal(${v.id})\">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
@@ -844,7 +827,7 @@ function renderProducts(){
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn btn-primary" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openProductDetail('${escAttr(p.product_name)}',{source_table:'products'})">capSpire Feedback</button><button class="btn" onclick="openProductModal(${p.id})">Edit</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
@@ -970,7 +953,7 @@ function renderCustomerType(){
   let rows=state.ct.filter(g=>(!typeF||g.product_type===typeF)&&(!q||Object.values(g).some(val=>(val||"").toString().toLowerCase().includes(q)))); rows=msFilter(rows,'product','ct_prod');
   const CT_COLS=[{k:"utility",l:"Utility"},{k:"energy_retailer",l:"Energy Retailer"},{k:"generator_non_renewables",l:"Generator - Non-Renewables"},{k:"renewables_generator",l:"Renewables Generator"},{k:"trader_broker",l:"Trader/Broker"},{k:"hedge_fund_cta",l:"Hedge Fund/CTA"},{k:"bank_financial_institution",l:"Bank/Financial Institution"},{k:"consultant_analyst",l:"Consultant/Analyst"},{k:"agricultural_producer",l:"Agricultural Producer"},{k:"biofuels",l:"Biofuels"},{k:"producer_marketer",l:"Producer/Producer Marketer"},{k:"refining_petrochemical",l:"Refining/Petrochemical"},{k:"merchant_energy_firm",l:"Merchant Energy Firm"},{k:"industrial_consumer",l:"Industrial Consumer"},{k:"other",l:"Other"}];
   const pct=v=>{if(!v&&v!==0)return'<span style="color:var(--border)">—</span>';const p=Math.round(parseFloat(v)*100);if(isNaN(p))return'<span style="color:var(--muted)">—</span>';const col=p>40?"var(--green)":p>20?"var(--yellow)":"var(--accent)";return`<div><div style="font-size:11px;color:${col};font-weight:600">${p}%</div>${bar(p,col)}</div>`;};
-  document.getElementById("section-ct").innerHTML=`<div class="card">
+  document.getElementById("section-customertype").innerHTML=`<div class="card">
     <div class="card-head"><span class="card-title">👥 Customer Type Coverage</span><span class="card-meta">${rows.length} products</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCt(),'customer_type_coverage','Customer Types')">⬇ Excel</button></div>
     <div class="filters">
       <input id="search-ct_q" value="${q}" oninput="sf('ct_q',this.value)" placeholder="Search all columns...">
@@ -1008,7 +991,7 @@ function renderContacts(){
       <td><a href="mailto:${c.email}">${c.email||""}</a></td>
       <td style="color:var(--muted)">${c.phone_number||""}</td>
       <td style="color:var(--muted)">${c.region||""}</td>
-      <td><button class="btn" onclick="openContactModal(${c.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border-color:var(--red)" onclick="deleteContact(${c.id})">Delete</button></td>
+      <td><button class="btn" onclick="openContactModal(${c.id})">Edit</button></td>
     </tr>`).join("")}
     </tbody></table></div>`}
   </div>`;
@@ -1026,174 +1009,113 @@ const ALL_TABLES=[
   {id:"product_contacts",label:"Contacts",cols:["id","product","product_type","vendor","contact_name","role_title","email","phone_number","region","linkedin_profile"]},
 ];
 
-// ── COUNTRIES ────────────────────────────────────────────────────
-const COUNTRIES = [
-  {name:"Afghanistan",continent:"Asia"},{name:"Albania",continent:"Europe"},{name:"Algeria",continent:"Africa"},
-  {name:"Argentina",continent:"South America"},{name:"Australia",continent:"APAC"},{name:"Austria",continent:"Europe"},
-  {name:"Belgium",continent:"Europe"},{name:"Brazil",continent:"South America"},{name:"Canada",continent:"North America"},
-  {name:"Chile",continent:"South America"},{name:"China",continent:"Asia"},{name:"Colombia",continent:"South America"},
-  {name:"Croatia",continent:"Europe"},{name:"Czech Republic",continent:"Europe"},{name:"Denmark",continent:"Europe"},
-  {name:"Egypt",continent:"Africa"},{name:"Finland",continent:"Europe"},{name:"France",continent:"Europe"},
-  {name:"Germany",continent:"Europe"},{name:"Greece",continent:"Europe"},{name:"Hong Kong",continent:"Asia"},
-  {name:"Hungary",continent:"Europe"},{name:"India",continent:"Asia"},{name:"Indonesia",continent:"Asia"},
-  {name:"Ireland",continent:"Europe"},{name:"Israel",continent:"Middle East"},{name:"Italy",continent:"Europe"},
-  {name:"Japan",continent:"Asia"},{name:"Jordan",continent:"Middle East"},{name:"Kuwait",continent:"Middle East"},
-  {name:"Malaysia",continent:"Asia"},{name:"Mexico",continent:"North America"},{name:"Netherlands",continent:"Europe"},
-  {name:"New Zealand",continent:"APAC"},{name:"Nigeria",continent:"Africa"},{name:"Norway",continent:"Europe"},
-  {name:"Oman",continent:"Middle East"},{name:"Pakistan",continent:"Asia"},{name:"Peru",continent:"South America"},
-  {name:"Philippines",continent:"Asia"},{name:"Poland",continent:"Europe"},{name:"Portugal",continent:"Europe"},
-  {name:"Qatar",continent:"Middle East"},{name:"Romania",continent:"Europe"},{name:"Russia",continent:"Europe"},
-  {name:"Saudi Arabia",continent:"Middle East"},{name:"Singapore",continent:"Asia"},{name:"South Africa",continent:"Africa"},
-  {name:"South Korea",continent:"Asia"},{name:"Spain",continent:"Europe"},{name:"Sweden",continent:"Europe"},
-  {name:"Switzerland",continent:"Europe"},{name:"Taiwan",continent:"Asia"},{name:"Thailand",continent:"Asia"},
-  {name:"Turkey",continent:"Europe"},{name:"UAE",continent:"Middle East"},{name:"Ukraine",continent:"Europe"},
-  {name:"United Kingdom",continent:"Europe"},{name:"United States",continent:"North America"},
-  {name:"Venezuela",continent:"South America"},{name:"Vietnam",continent:"Asia"}
-];
 
-function buildCountrySelect(selId){
-  const sel = document.getElementById(selId);
-  if(!sel) return;
-  const byContinent = {};
-  COUNTRIES.forEach(c=>{
-    if(!byContinent[c.continent]) byContinent[c.continent]=[];
-    byContinent[c.continent].push(c.name);
-  });
-  const continentOrder = ["Europe","North America","Middle East","Asia","APAC","South America","Africa"];
-  let html = '<option value="">— Select country —</option>';
-  continentOrder.forEach(cont=>{
-    if(!byContinent[cont]) return;
-    html += `<optgroup label="${cont}">`;
-    byContinent[cont].sort().forEach(name=>{ html += `<option>${name}</option>`; });
-    html += '</optgroup>';
-  });
-  sel.innerHTML = html;
+// ── NEW NAVIGATION & CAPSPIRE INTEL ──
+
+// ── STATE ────────────────────────────────────────────────────────
+// state already declared above
+
+
+// ── AUTH ─────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email')?.value?.trim();
+  const pw = document.getElementById('login-password')?.value;
+  const err = document.getElementById('auth-err');
+  if(!email||!pw){ if(err) err.textContent='Please enter email and password.'; return; }
+  if(err) err.textContent='';
+  try {
+    const res = await fetch(AUTH_URL+'/token?grant_type=password', {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pw})
+    });
+    const data = await res.json();
+    if(!res.ok) { if(err) err.textContent = data.error_description||data.msg||'Login failed'; return; }
+    localStorage.setItem('pa_session', JSON.stringify({access_token:data.access_token, refresh_token:data.refresh_token, user:data.user}));
+    onLogin(data.user);
+  } catch(e) { if(err) err.textContent='Network error: '+e.message; }
 }
 
-function renderImport(){
-  document.getElementById("section-import").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">📥 Import Data</span></div>
-    <div style="padding:16px">
-      <div style="background:var(--bg3);border:1px solid var(--yellow)44;border-radius:8px;padding:14px;margin-bottom:20px">
-        <div style="font-weight:700;color:var(--yellow);margin-bottom:8px">⚠ Important — Read before importing</div>
-        <ul style="color:var(--muted);font-size:12px;line-height:2.2;padding-left:18px">
-          <li>Files must be in <strong style="color:var(--text)">CSV format (.csv)</strong> — NOT Excel (.xlsx or .xls)</li>
-          <li>To save as CSV from Excel: <strong style="color:var(--text)">File → Save As → CSV (Comma delimited)</strong></li>
-          <li>The first row must be the column headers — do not change them</li>
-          <li>Leave the ID column empty for new records (it will be assigned automatically)</li>
-          <li>Records with an existing ID will be updated; new IDs will be inserted</li>
-          <li>Numeric percentage fields must be between 0 and 1 (e.g. 50% = 0.5)</li>
-        </ul>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-        ${ALL_TABLES.map(t=>`
-        <div class="card" style="margin:0">
-          <div class="card-head" style="padding:8px 12px"><span style="font-weight:600;font-size:12px">${t.label}</span></div>
-          <div style="padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn btn-success" onclick="downloadTemplate('${t.id}','${t.label}',[${t.cols.map(c=>`'${c}'`).join(",")}])">⬇ Template</button>
-            <label class="btn btn-primary" style="cursor:pointer">
-              ⬆ Upload CSV
-              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importFile(event,'${t.id}')">
-            </label>
-            <span id="import-status-${t.id}" style="font-size:11px;color:var(--muted);width:100%"></span>
-          </div>
-        </div>`).join("")}
-      </div>
-    </div>
-  </div>`;
+async function getToken() {
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  return sess?.access_token || SB_KEY;
 }
 
-function downloadTemplate(tableId,label,cols){
-  if(typeof XLSX==="undefined"){alert("Loading Excel library, please try again.");return;}
-  const ws=XLSX.utils.aoa_to_sheet([cols]);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Template");
-  XLSX.writeFile(wb,"template_"+tableId+".xlsx");
-}
-
-async function parseFileToRows(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      try{
-        const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-        const ws=wb.Sheets[wb.SheetNames[0]];
-        const raw=XLSX.utils.sheet_to_json(ws,{defval:null,raw:false});
-        const rows=raw.map(r=>{
-          const obj={};
-          Object.entries(r).forEach(([k,v])=>{
-            const key=String(k).trim();
-            const val=(v===null||v==="")?null:(!isNaN(v)&&v!=="")?Number(v):String(v).trim();
-            if(val!==null&&val!=="")obj[key]=val;
-          });
-          return obj;
-        }).filter(r=>Object.keys(r).length>0);
-        resolve(rows);
-      }catch(e){reject(e);}
-    };
-    reader.onerror=()=>reject(new Error("Could not read file"));
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-async function importFile(event,table){
-  const file=event.target.files[0];if(!file)return;
-  const statusEl=document.getElementById("import-status-"+table);
-  const ext=file.name.split(".").pop().toLowerCase();if(!["xlsx","xls","csv"].includes(ext)){statusEl.textContent="Please upload Excel or CSV";statusEl.style.color="var(--red)";return;}
-  statusEl.textContent="Reading file...";statusEl.style.color="var(--yellow)";
-  try{
-    const text=await file.text();
-    const lines=text.split("\n").filter(l=>l.trim());
-    if(lines.length<2){statusEl.textContent="File is empty!";statusEl.style.color="var(--red)";return;}
-    const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
-    rows=lines.slice(1).map(line=>{
-      const vals=line.split(",").map(v=>v.trim().replace(/^"|"$/g,""));
-      const obj={};
-      headers.forEach((h,i)=>{const v=vals[i]||"";obj[h]=v===""?null:isNaN(v)||v===""?v:Number(v);});
-      return obj;
-    }).filter(r=>Object.values(r).some(v=>v!==null&&v!==""));
-    statusEl.textContent="Importing "+rows.length+" records...";
-    let ok=0,err=0;
-    for(const row of rows){
-      try{
-        if(row.id){
-          const ex=await apiFetch(table+"?id=eq."+row.id,{params:{limit:1}});
-          if(ex.length>0)await apiFetch(table+"?id=eq."+row.id,{method:"PATCH",body:row});
-          else await apiFetch(table,{method:"POST",body:row});
-        }else{
-          const{id,...r}=row;
-          await apiFetch(table,{method:"POST",body:r});
-        }
-        ok++;
-      }catch(e){err++;}
+async function checkAuth() {
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  if(!sess?.access_token) return false;
+  try {
+    const res = await fetch(AUTH_URL+'/user', {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sess.access_token}});
+    if(res.ok) { const u = await res.json(); onLogin(u); return true; }
+    // Try refresh
+    if(sess.refresh_token) {
+      const r2 = await fetch(AUTH_URL+'/token?grant_type=refresh_token', {
+        method:'POST', headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({refresh_token:sess.refresh_token})
+      });
+      if(r2.ok) {
+        const d = await r2.json();
+        localStorage.setItem('pa_session', JSON.stringify({access_token:d.access_token,refresh_token:d.refresh_token||sess.refresh_token,user:d.user||sess.user}));
+        onLogin(d.user||sess.user); return true;
+      }
     }
-    statusEl.textContent="✓ "+ok+" imported"+(err>0?" ("+err+" errors)":"");
-    statusEl.style.color=err>0?"var(--yellow)":"var(--green)";
-    // Reload affected data
-    if(table==="vendors")state.vendors=await getAll("vendors");
-    else if(table==="products")state.products=await getAll("products");
-    else if(table==="commodities")state.commodities=await getAll("commodities");
-    else if(table==="product_contacts")state.contacts=await getAll("product_contacts");
-    else if(table==="geographic_coverage")state.geo=await getAll("geographic_coverage");
-    else if(table==="product_commodities_coverage")state.pcc=await getAll("product_commodities_coverage");
-    else if(table==="customer_type_coverage")state.ct=await getAll("customer_type_coverage");
-    render();
-  }catch(e){statusEl.textContent="Error: "+e.message;statusEl.style.color="var(--red)";}
+  } catch(e) {}
+  return false;
 }
 
+function onLogin(user) {
+  currentUser = user;
+  const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  document.getElementById('auth-screen').style.display = 'none';
+  const tnav = document.getElementById('topnav');
+  if(tnav) tnav.style.display = 'flex';
+  const nu = document.getElementById('nav-user');
+  if(nu) nu.textContent = name;
+  init();
+}
+
+function doLogout() {
+  localStorage.removeItem('pa_session');
+  location.reload();
+}
+
+// ── API ──────────────────────────────────────────────────────────
+
+
+
+
+// ── INIT ─────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const [v,p,ct,g,pcc,risk,ctypes,com,ctrm] = await Promise.all([
+      getAll('vendors'), getAll('products'), getAll('product_contacts'),
+      getAll('geographic_coverage'), getAll('product_commodities_coverage'),
+      getAll('product_function_risk'), getAll('customer_type_coverage'),
+      getAll('commodities'), getAll('product_function_ctrm')
+    ]);
+    state.vendors=v; state.products=p; state.contacts=ct;
+    state.geo=g; state.pcc=pcc; state.risk=risk; state.ct=ctypes;
+    state.commodities=com; state.ctrm=ctrm;
+    showScreen('home');
+  } catch(e) {
+    console.error('Init error:', e);
+    showScreen('home');
+  }
+}
 
 // ── NAVIGATION ───────────────────────────────────────────────────
 const navHist = [];
-let currentSection = '';
 
-function nav(id, section){
+function nav(id, section) {
   const cur = document.querySelector('.screen.active');
   if(cur) navHist.push(cur.id);
   showScreen(id);
   setNavActive(section);
-  currentSection = section;
-  // Render content on navigate
-  if(id==='cs-products') renderCsProducts();
+  // Init forms/pages on navigate
+  if(id==='form-view') initF1();
+  else if(id==='form-market') initF2();
+  else if(id==='form-selection') initF3();
+  else if(id==='cs-products') renderCsProducts();
   else if(id==='cs-contacts') renderContacts();
   else if(id==='sb-vendors') renderVendors();
   else if(id==='sb-products') renderProducts();
@@ -1203,441 +1125,453 @@ function nav(id, section){
   else if(id==='sb-geo') renderGeo();
   else if(id==='sb-ct') renderCustomerType();
   else if(id==='sb-import') renderImport();
-  else if(id==='form-csview') initCsViewForm();
-  else if(id==='form-market') initMarketForm();
-  else if(id==='form-selection') initSelectionForm();
 }
 
-function goBack(){
-  if(!navHist.length){ showScreen('home'); setNavActive(''); return; }
+function goBack() {
   const prev = navHist.pop();
-  const id = typeof prev === 'string' && prev.startsWith('s-') ? prev.slice(2) : (prev||'home');
+  if(!prev) { showScreen('home'); setNavActive(''); return; }
+  const id = prev.replace(/^s-/,'');
   showScreen(id);
-  const sec = id.includes('cs')||id.includes('addintel')||id.includes('form') ? 'cs'
-           : id.includes('sb') ? 'sb' : '';
+  const sec = ['cs-home','addintel','form-view','form-market','form-selection','cs-products','cs-contacts'].includes(id)?'cs'
+             : id.startsWith('sb')?'sb':'';
   setNavActive(sec);
-  // Re-render if needed
-  if(id==='cs-products') renderCsProducts();
-  else if(id==='cs-contacts') renderContacts();
-  else if(id.startsWith('sb-') && id!=='sb-home'){
-    const page = id.replace('sb-','');
-    if(page==='vendors') renderVendors();
-    else if(page==='products') renderProducts();
-    else if(page==='commodities') renderCommodities();
-    else if(page==='ctrm') renderCTRM();
-    else if(page==='risk') renderRisk();
-    else if(page==='geo') renderGeo();
-    else if(page==='ct') renderCustomerType();
-    else if(page==='import') renderImport();
-  }
 }
 
-function showScreen(id){
+function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el = document.getElementById('s-'+id);
   if(el) el.classList.add('active');
 }
 
-function setNavActive(s){
+function setNavActive(s) {
   document.getElementById('nb-cs').className = 'dd-btn'+(s==='cs'?' cs':'');
   document.getElementById('nb-sb').className = 'dd-btn'+(s==='sb'?' sb':'');
 }
 
+// ── COUNTRIES ────────────────────────────────────────────────────
+const COUNTRIES_BY_CONTINENT = {
+  'Europe':['Albania','Austria','Belgium','Bosnia','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','Iceland','Ireland','Italy','Kosovo','Latvia','Lithuania','Luxembourg','Malta','Moldova','Montenegro','Netherlands','North Macedonia','Norway','Poland','Portugal','Romania','Russia','Serbia','Slovakia','Slovenia','Spain','Sweden','Switzerland','Turkey','Ukraine','United Kingdom'],
+  'North America':['Canada','Mexico','United States'],
+  'South America':['Argentina','Bolivia','Brazil','Chile','Colombia','Ecuador','Paraguay','Peru','Uruguay','Venezuela'],
+  'Middle East':['Bahrain','Iran','Iraq','Israel','Jordan','Kuwait','Lebanon','Oman','Qatar','Saudi Arabia','UAE','Yemen'],
+  'Asia':['Afghanistan','Bangladesh','China','Hong Kong','India','Indonesia','Japan','Kazakhstan','Malaysia','Myanmar','Pakistan','Philippines','Singapore','South Korea','Sri Lanka','Taiwan','Thailand','Vietnam'],
+  'APAC':['Australia','New Zealand','Papua New Guinea'],
+  'Africa':['Algeria','Angola','Egypt','Ethiopia','Ghana','Kenya','Libya','Morocco','Nigeria','South Africa','Tanzania','Tunisia']
+};
+
+function buildCountrySelect(id) {
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  let html = '<option value="">— Select country —</option>';
+  Object.entries(COUNTRIES_BY_CONTINENT).forEach(([cont,countries]) => {
+    html += `<optgroup label="${cont}">`;
+    countries.forEach(c => { html += `<option>${c}</option>`; });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+}
+
 // ── STARS ────────────────────────────────────────────────────────
-function setStars(containerId, n){
-  const stars = document.getElementById(containerId)?.querySelectorAll('.star');
-  if(stars) stars.forEach((s,i)=>s.classList.toggle('on',i<n));
-}
-function getStars(containerId){
-  const stars = document.getElementById(containerId)?.querySelectorAll('.star');
-  if(!stars) return 0;
-  return [...stars].filter(s=>s.classList.contains('on')).length;
-}
-
-// ── FORM: capSpire View of the Product ───────────────────────────
-function initCsViewForm(){
-  // Populate product dropdown
-  const sel = document.getElementById('csv-product');
-  if(sel){
-    sel.innerHTML = '<option value="">— Select product —</option>'
-      + (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name))
-        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
-  }
-  // Auto-fill date and user
-  const session = JSON.parse(localStorage.getItem('pa_session')||'{}');
-  const el_date = document.getElementById('csv-date');
-  const el_by = document.getElementById('csv-by');
-  if(el_date) el_date.value = new Date().toISOString().split('T')[0];
-  if(el_by) el_by.value = session?.user?.email||'';
-  // Reset fields
-  setStars('csv-stars',0);
-  const fields = ['csv-strengths','csv-gaps','csv-notes'];
-  fields.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const ctxSel = document.getElementById('csv-context');
-  if(ctxSel) ctxSel.value='';
-  // Build commodity pills
-  buildCsvCommodities();
-}
-
-function onCsvProductChange(){
-  const sel = document.getElementById('csv-product');
-  const prod = (state.products||[]).find(p=>p.product_name===sel?.value);
-  const vEl = document.getElementById('csv-vendor');
-  if(vEl) vEl.value = prod?.vendor||'';
-}
-
-function buildCsvCommodities(){
-  const coms = (state.commodities||[]).map(c=>c.commodity_name||c.commodity||c.name||'').filter(Boolean).sort();
-  const container = document.getElementById('csv-coms');
+function initStars(containerId) {
+  const container = document.getElementById(containerId);
   if(!container) return;
-  // Use multiselect + free text add
-  container.innerHTML = createMultiSelect('csv-coms-ms', coms, [], 'Select commodities', 'csv_coms_sel')
-    + '<button onclick="addCustomCom()" style="font-size:11px;padding:3px 9px;border:1px dashed #d1d5db;border-radius:20px;background:#fff;color:var(--muted);cursor:pointer;margin-top:4px">+ Add other</button>'
-    + '<div id="csv-custom-coms" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px"></div>';
-}
-
-function addCustomCom(){
-  const v = prompt('Add commodity:');
-  if(!v||!v.trim()) return;
-  const container = document.getElementById('csv-custom-coms');
-  if(container){
-    const span = document.createElement('span');
-    span.className = 'pill on';
-    span.textContent = v.trim();
-    span.onclick = () => span.classList.toggle('on');
-    container.appendChild(span);
-  }
-}
-
-async function saveCsView(){
-  const product = document.getElementById('csv-product')?.value;
-  if(!product){ alert('Please select a product'); return; }
-  const prod = (state.products||[]).find(p=>p.product_name===product);
-  const selComs = [...(document.getElementById('csv-coms')||{}).querySelectorAll?.('input[type=checkbox]:checked')||[]].map(cb=>cb.value);
-  const customComs = [...(document.getElementById('csv-custom-coms')||{}).querySelectorAll?.('.pill.on')||[]].map(p=>p.textContent);
-  const coms = [...selComs,...customComs].filter(Boolean).join(',');
-  const body = {
-    product_name: product,
-    vendor: prod?.vendor||'',
-    assessed_by: document.getElementById('csv-by')?.value||'',
-    assessment_date: new Date().toISOString().split('T')[0],
-    source_context: document.getElementById('csv-context')?.value||'',
-    rating: getStars('csv-stars')||null,
-    strengths: document.getElementById('csv-strengths')?.value||'',
-    gaps: document.getElementById('csv-gaps')?.value||'',
-    commodities: coms,
-    notes: document.getElementById('csv-notes')?.value||''
-  };
-  // Remove null/empty fields
-  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined||body[k]===0)delete body[k];});
-  console.log('Saving cs_product_views:', JSON.stringify(body));
-  try{
-    await apiFetch('cs_product_views',{method:'POST',body});
-    alert('Saved successfully');
-    goBack();
-  }catch(e){
-    if(e.message&&e.message.includes('cs_product_views')){
-      alert('Table cs_product_views not found in Supabase.\n\nPlease run the SQL setup script to create the new tables:\n\nCREATE TABLE cs_product_views (\n  id BIGSERIAL PRIMARY KEY,\n  product_name TEXT,\n  vendor TEXT,\n  assessed_by TEXT,\n  assessment_date DATE,\n  source_context TEXT,\n  rating INT,\n  strengths TEXT,\n  gaps TEXT,\n  commodities TEXT,\n  notes TEXT,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);');
-    } else {
-      alert('Error: '+e.message);
-    }
-  }
-}
-
-// ── FORM: Market Intel ───────────────────────────────────────────
-function initMarketForm(){
-  buildCountrySelect('mi-country');
-  // Product multiselect
-  const prods = (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name)).map(p=>p.product_name);
-  const msContainer = document.getElementById('mi-products-ms');
-  if(msContainer) msContainer.innerHTML = createMultiSelect('mi-prods', prods, [], 'All Products', 'mi_prods');
-  // Reset
-  setStars('mi-stars',0);
-  ['mi-client','mi-link','mi-comments'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['mi-sector','mi-context'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  const dateEl = document.getElementById('mi-date');
-  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-}
-
-async function saveMarketIntel(){
-  const client = document.getElementById('mi-client')?.value?.trim();
-  if(!client){ alert('Please enter a client / company name'); return; }
-  const selectedProds = [...document.querySelectorAll('#mi-products-ms input[type=checkbox]:checked')].map(cb=>cb.value).join(',');
-  const body = {
-    client_company: client,
-    sector: document.getElementById('mi-sector')?.value||'',
-    country: document.getElementById('mi-country')?.value||'',
-    intel_date: document.getElementById('mi-date')?.value||null,
-    source_context: document.getElementById('mi-context')?.value||'',
-    rating: getStars('mi-stars')||null,
-    products_mentioned: selectedProds,
-    comments: document.getElementById('mi-comments')?.value||'',
-    link_ref: document.getElementById('mi-link')?.value||''
-  };
-  Object.keys(body).forEach(k=>{if(body[k]===null||body[k]===''||body[k]===undefined||body[k]===0)delete body[k];});
-  console.log('Saving cs_market_intel:', JSON.stringify(body));
-  try{
-    await apiFetch('cs_market_intel',{method:'POST',body});
-    alert('Saved successfully');
-    goBack();
-  }catch(e){ alert('Error: '+e.message); }
-}
-
-// ── FORM: System Selection Intel ─────────────────────────────────
-let ssProdCount = 1;
-
-function initSelectionForm(){
-  buildCountrySelect('ss-country');
-  ssProdCount = 1;
-  const entries = document.getElementById('ss-prod-entries');
-  if(entries){
-    entries.innerHTML = buildSsProdEntry(0);
-    populateSsProdSelects();
-  }
-  ['ss-client','ss-notes','ss-link'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  const yearEl = document.getElementById('ss-year');
-  if(yearEl) yearEl.value = '';
-}
-
-function buildSsProdEntry(idx){
-  const prods = (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name));
-  return `<div class="prod-entry" data-idx="${idx}">
-    <div class="prod-entry-head"><span>Product ${idx+1}</span><button class="rm-btn" onclick="removeSsProd(this)">✕ Remove</button></div>
-    <div class="frow">
-      <div class="field"><label>Product</label><select class="ss-prod-sel"><option value="">— Select —</option>${prods.map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('')}</select></div>
-      <div class="field"><label>Outcome</label><select class="ss-outcome-sel"><option value="Selected">Selected</option><option value="Shortlisted">Shortlisted</option><option value="Rejected">Rejected</option></select></div>
-    </div>
-  </div>`;
-}
-
-function populateSsProdSelects(){
-  const prods = (state.products||[]).sort((a,b)=>a.product_name.localeCompare(b.product_name));
-  document.querySelectorAll('.ss-prod-sel').forEach(sel=>{
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">— Select —</option>'+prods.map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
-    sel.value = cur;
+  container.querySelectorAll('.star').forEach(star => {
+    star.onclick = () => {
+      const n = parseInt(star.dataset.n);
+      container.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i<n));
+    };
   });
 }
 
-function addSsProd(){
-  ssProdCount++;
-  const entries = document.getElementById('ss-prod-entries');
-  if(entries){
-    entries.insertAdjacentHTML('beforeend', buildSsProdEntry(ssProdCount-1));
+function getStars(containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return null;
+  const on = container.querySelectorAll('.star.on').length;
+  return on > 0 ? on : null;
+}
+
+// ── MULTISELECT ──────────────────────────────────────────────────
+function buildMultiSelect(containerId, options, placeholder) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const uid = containerId.replace(/[^a-z0-9]/gi,'_');
+  container.innerHTML = `
+    <div class="ms-wrap">
+      <button type="button" class="ms-trigger" onclick="toggleMs('${uid}')">${placeholder} <span>▾</span></button>
+      <div class="ms-drop" id="ms_${uid}">
+        <input class="ms-search" placeholder="Search..." oninput="filterMs('${uid}',this.value)">
+        <div class="ms-list" id="msl_${uid}">
+          ${options.map(o=>`<label class="ms-item"><input type="checkbox" value="${escAttr(o)}"> ${escH(o)}</label>`).join('')}
+        </div>
+        <div class="ms-footer">
+          <button type="button" onclick="clearMs('${uid}')">Clear</button>
+          <button type="button" class="ms-ok" onclick="closeMs('${uid}')">OK</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleMs(uid) {
+  const drop = document.getElementById('ms_'+uid);
+  if(drop) drop.classList.toggle('open');
+}
+function closeMs(uid) {
+  const drop = document.getElementById('ms_'+uid);
+  if(drop) drop.classList.remove('open');
+  // Update trigger label
+  const checked = document.querySelectorAll(`#msl_${uid} input:checked`);
+  const trigger = drop?.previousElementSibling;
+  if(trigger) {
+    const placeholder = trigger.dataset.placeholder || trigger.textContent.split('▾')[0].trim();
+    if(!trigger.dataset.placeholder) trigger.dataset.placeholder = placeholder;
+    trigger.innerHTML = (checked.length ? `${checked.length} selected` : placeholder) + ' <span>▾</span>';
+    trigger.classList.toggle('active', checked.length > 0);
+  }
+}
+function clearMs(uid) {
+  document.querySelectorAll(`#msl_${uid} input`).forEach(cb => cb.checked=false);
+}
+function filterMs(uid, q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll(`#msl_${uid} .ms-item`).forEach(item => {
+    item.style.display = item.textContent.toLowerCase().includes(lq) ? '' : 'none';
+  });
+}
+function getMsSelected(containerId) {
+  const uid = containerId.replace(/[^a-z0-9]/gi,'_');
+  return [...(document.querySelectorAll(`#msl_${uid} input:checked`)||[])].map(cb=>cb.value);
+}
+
+// ── FORM 1: capSpire View ────────────────────────────────────────
+function initF1() {
+  // Products dropdown
+  const sel = document.getElementById('f1-product');
+  if(sel) {
+    sel.innerHTML = '<option value="">— Select product —</option>' +
+      [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
+        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
+  }
+  // Auto-fill
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const byEl = document.getElementById('f1-by');
+  const dateEl = document.getElementById('f1-date');
+  if(byEl) byEl.value = sess?.user?.email||'';
+  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  // Reset
+  ['f1-vendor','f1-strengths','f1-gaps','f1-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const ctx=document.getElementById('f1-context'); if(ctx) ctx.value='';
+  const err=document.getElementById('f1-err'); if(err) err.textContent='';
+  // Stars
+  initStars('f1-stars');
+  // Commodities multiselect
+  const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
+  buildMultiSelect('f1-coms-wrap', coms, 'Select commodities');
+  // Add "other" input
+  const wrap = document.getElementById('f1-coms-wrap');
+  if(wrap) {
+    const other = document.createElement('div');
+    other.style.cssText = 'margin-top:6px;display:flex;gap:6px;align-items:center';
+    other.innerHTML = '<input id="f1-com-other" placeholder="Add other commodity..." style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"> <button type="button" onclick="addOtherCom()" style="padding:5px 10px;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:var(--accent);font-family:inherit">Add</button>';
+    wrap.appendChild(other);
   }
 }
 
-function removeSsProd(btn){
-  const entry = btn.closest('.prod-entry');
-  if(document.querySelectorAll('.prod-entry').length > 1) entry.remove();
+function f1ProductChange() {
+  const sel = document.getElementById('f1-product');
+  const prod = state.products.find(p=>p.product_name===sel?.value);
+  const vEl = document.getElementById('f1-vendor');
+  if(vEl) vEl.value = prod?.vendor||'';
 }
 
-async function saveSystemSelection(){
-  const client = document.getElementById('ss-client')?.value?.trim();
-  if(!client){ alert('Please enter a client name'); return; }
-  const products = [...document.querySelectorAll('.prod-entry')].map(entry=>{
-    const prod = entry.querySelector('.ss-prod-sel')?.value;
-    const outcome = entry.querySelector('.ss-outcome-sel')?.value;
-    return {product: prod, outcome};
-  }).filter(p=>p.product);
-  
-  const selBody = {
-    client_company: client,
-    year: parseInt(document.getElementById('ss-year')?.value)||null,
-    country: document.getElementById('ss-country')?.value||'',
-    notes: document.getElementById('ss-notes')?.value||'',
-    link_ref: document.getElementById('ss-link')?.value||''
-  };
-  Object.keys(selBody).forEach(k=>{if(selBody[k]===null||selBody[k]===''||selBody[k]===undefined)delete selBody[k];});
-  try{
-    const res = await apiFetch('cs_system_selections',{method:'POST',body:selBody});
+function addOtherCom() {
+  const inp = document.getElementById('f1-com-other');
+  if(!inp||!inp.value.trim()) return;
+  const val = inp.value.trim();
+  // Add to multiselect list
+  const uid = 'f1_coms_wrap';
+  const list = document.getElementById('msl_'+uid);
+  if(list) {
+    const label = document.createElement('label');
+    label.className = 'ms-item';
+    label.innerHTML = `<input type="checkbox" value="${escAttr(val)}" checked> ${escH(val)}`;
+    list.appendChild(label);
+  }
+  inp.value = '';
+}
+
+async function saveF1() {
+  const product = document.getElementById('f1-product')?.value;
+  const err = document.getElementById('f1-err');
+  if(!product) { if(err) err.textContent='Please select a product.'; return; }
+  if(err) err.textContent='';
+  const prod = state.products.find(p=>p.product_name===product);
+  const coms = getMsSelected('f1-coms-wrap');
+  const body = {};
+  body.product_name = product;
+  const vendor = document.getElementById('f1-vendor')?.value; if(vendor) body.vendor=vendor;
+  const by = document.getElementById('f1-by')?.value; if(by) body.assessed_by=by;
+  const date = document.getElementById('f1-date')?.value; if(date) body.assessment_date=date;
+  const ctx = document.getElementById('f1-context')?.value; if(ctx) body.source_context=ctx;
+  const rating = getStars('f1-stars'); if(rating) body.rating=rating;
+  const str = document.getElementById('f1-strengths')?.value; if(str) body.strengths=str;
+  const gaps = document.getElementById('f1-gaps')?.value; if(gaps) body.gaps=gaps;
+  if(coms.length) body.commodities=coms.join(',');
+  const notes = document.getElementById('f1-notes')?.value; if(notes) body.notes=notes;
+  try {
+    await apiFetch('cs_product_views', {method:'POST', body});
+    alert('Saved successfully!');
+    goBack();
+  } catch(e) { if(err) err.textContent='Error: '+e.message; }
+}
+
+// ── FORM 2: Market Intel ─────────────────────────────────────────
+function initF2() {
+  buildCountrySelect('f2-country');
+  // Products multiselect
+  const prods = [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name)).map(p=>p.product_name);
+  buildMultiSelect('f2-prods-wrap', prods, 'Select products');
+  // Reset fields
+  ['f2-client','f2-comments','f2-link'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['f2-sector','f2-context'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const d=document.getElementById('f2-date'); if(d) d.value=new Date().toISOString().split('T')[0];
+  const err=document.getElementById('f2-err'); if(err) err.textContent='';
+  initStars('f2-stars');
+}
+
+async function saveF2() {
+  const client = document.getElementById('f2-client')?.value?.trim();
+  const err = document.getElementById('f2-err');
+  if(!client) { if(err) err.textContent='Please enter a client / company name.'; return; }
+  if(err) err.textContent='';
+  const prods = getMsSelected('f2-prods-wrap');
+  const body = {};
+  body.client_company = client;
+  const sector=document.getElementById('f2-sector')?.value; if(sector) body.sector=sector;
+  const country=document.getElementById('f2-country')?.value; if(country) body.country=country;
+  const date=document.getElementById('f2-date')?.value; if(date) body.intel_date=date;
+  const ctx=document.getElementById('f2-context')?.value; if(ctx) body.source_context=ctx;
+  const rating=getStars('f2-stars'); if(rating) body.rating=rating;
+  if(prods.length) body.products_mentioned=prods.join(',');
+  const comments=document.getElementById('f2-comments')?.value; if(comments) body.comments=comments;
+  const link=document.getElementById('f2-link')?.value; if(link) body.link_ref=link;
+  try {
+    await apiFetch('cs_market_intel', {method:'POST', body});
+    alert('Saved successfully!');
+    goBack();
+  } catch(e) { if(err) err.textContent='Error: '+e.message; }
+}
+
+// ── FORM 3: System Selection ─────────────────────────────────────
+function initF3() {
+  buildCountrySelect('f3-country');
+  ['f3-client','f3-notes','f3-link'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const y=document.getElementById('f3-year'); if(y) y.value='';
+  const err=document.getElementById('f3-err'); if(err) err.textContent='';
+  // Build first entry
+  const entries = document.getElementById('f3-entries');
+  if(entries) { entries.innerHTML=''; }
+  addF3Entry();
+}
+
+function buildProdOptions() {
+  return '<option value="">— Select —</option>'+
+    [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
+      .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
+}
+
+function addF3Entry() {
+  const entries = document.getElementById('f3-entries');
+  if(!entries) { return; }
+  const n = entries.children.length+1;
+  const div = document.createElement('div');
+  div.className = 'prod-entry';
+  div.innerHTML = `
+    <h5>Product ${n} <button type="button" class="rm-btn" onclick="this.closest('.prod-entry').remove()">✕ Remove</button></h5>
+    <div class="frow">
+      <div class="field"><label>Product</label><select class="f3-prod">${buildProdOptions()}</select></div>
+      <div class="field"><label>Outcome</label><select class="f3-outcome"><option value="Selected">Selected</option><option value="Shortlisted">Shortlisted</option><option value="Rejected">Rejected</option></select></div>
+    </div>`;
+  entries.appendChild(div);
+}
+
+async function saveF3() {
+  const client = document.getElementById('f3-client')?.value?.trim();
+  const err = document.getElementById('f3-err');
+  if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
+  if(err) err.textContent='';
+  const entries = [...(document.querySelectorAll('.prod-entry')||[])].map(e=>({
+    product: e.querySelector('.f3-prod')?.value||'',
+    outcome: e.querySelector('.f3-outcome')?.value||'Selected'
+  })).filter(e=>e.product);
+  const body = {client_company:client};
+  const year=parseInt(document.getElementById('f3-year')?.value); if(year) body.year=year;
+  const country=document.getElementById('f3-country')?.value; if(country) body.country=country;
+  const notes=document.getElementById('f3-notes')?.value; if(notes) body.notes=notes;
+  const link=document.getElementById('f3-link')?.value; if(link) body.link_ref=link;
+  try {
+    const res = await apiFetch('cs_system_selections', {method:'POST', body});
     const selId = res[0]?.id;
-    if(selId && products.length){
-      for(const p of products){
-        await apiFetch('cs_system_selection_products',{method:'POST',body:{selection_id:selId,...p}});
+    if(selId && entries.length) {
+      for(const e of entries) {
+        await apiFetch('cs_system_selection_products', {method:'POST', body:{selection_id:selId, product:e.product, outcome:e.outcome}});
       }
     }
-    alert('Saved successfully');
+    alert('Saved successfully!');
     goBack();
-  }catch(e){ alert('Error: '+e.message); }
+  } catch(e) { if(err) err.textContent='Error: '+e.message; }
 }
 
-// ── CS PRODUCTS PAGE ─────────────────────────────────────────────
-async function renderCsProducts(){
-  const el = document.getElementById('cs-prod-main');
+// ── CS PRODUCTS ──────────────────────────────────────────────────
+async function renderCsProducts() {
+  const el = document.getElementById('cs-prod-el');
   if(!el) return;
-  el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading...</div>';
-
-  try{
-    const [views, market, selections, selProds] = await Promise.all([
+  el.innerHTML = '<div style="color:var(--muted);padding:1rem">Loading...</div>';
+  try {
+    const [views, market, selProds] = await Promise.all([
       getAll('cs_product_views'),
       getAll('cs_market_intel'),
-      getAll('cs_system_selections'),
       getAll('cs_system_selection_products')
     ]);
-
-    // Build product intel map
-    const prodMap = {};
-    const addEntry = (prodName, type) => {
-      if(!prodName) return;
-      if(!prodMap[prodName]) prodMap[prodName] = {views:0, market:0, selections:0};
-      prodMap[prodName][type]++;
+    // Build map: product -> intel counts
+    const map = {};
+    const add = (name, type) => {
+      if(!name) return;
+      if(!map[name]) map[name]={views:0,market:0,selections:0,vendor:''};
+      map[name][type]++;
     };
-    views.forEach(v=>addEntry(v.product_name,'views'));
-    market.forEach(m=>(m.products_mentioned||'').split(',').filter(Boolean).forEach(p=>addEntry(p.trim(),'market')));
-    selProds.forEach(sp=>addEntry(sp.product,'selections'));
-
-    // Get product details
-    const allProdNames = Object.keys(prodMap).sort();
-    const getVendor = name => (state.products||[]).find(p=>p.product_name===name)?.vendor||'';
-    const getType = name => (state.products||[]).find(p=>p.product_name===name)?.product_type||'';
-
-    // Build filters state
-    if(!state.filters) state.filters = {};
-    const fQ = (state.filters.csp_q||'').toLowerCase();
+    views.forEach(v=>{ add(v.product_name,'views'); if(v.product_name&&v.vendor&&!map[v.product_name].vendor) map[v.product_name].vendor=v.vendor; });
+    market.forEach(m=>(m.products_mentioned||'').split(',').filter(Boolean).forEach(p=>add(p.trim(),'market')));
+    selProds.forEach(sp=>add(sp.product,'selections'));
+    const names = Object.keys(map).sort();
+    const q = (state.filters.csp_q||'').toLowerCase();
     const fType = state.filters.csp_type||[];
     const fVendor = state.filters.csp_vendor||[];
-
-    let rows = allProdNames.filter(name=>{
-      if(fQ && !name.toLowerCase().includes(fQ) && !getVendor(name).toLowerCase().includes(fQ)) return false;
+    let rows = names.filter(name=>{
+      if(q && !name.toLowerCase().includes(q)) return false;
       if(fType.length){
-        const hasView = fType.includes('capSpire View') && prodMap[name].views>0;
-        const hasMkt = fType.includes('Market Intel') && prodMap[name].market>0;
-        const hasSel = fType.includes('System Selection') && prodMap[name].selections>0;
-        if(!hasView && !hasMkt && !hasSel) return false;
+        const ok = (fType.includes('capSpire View')&&map[name].views>0)||(fType.includes('Market Intel')&&map[name].market>0)||(fType.includes('System Selection')&&map[name].selections>0);
+        if(!ok) return false;
       }
-      if(fVendor.length && !fVendor.includes(getVendor(name))) return false;
+      const vendor = map[name].vendor || (state.products.find(p=>p.product_name===name)?.vendor||'');
+      if(fVendor.length && !fVendor.includes(vendor)) return false;
       return true;
     });
-
-    const allVendors = [...new Set(allProdNames.map(getVendor).filter(Boolean))].sort();
-    const typeOptions = ['capSpire View','Market Intel','System Selection'];
-
+    const allVendors=[...new Set(names.map(n=>map[n].vendor||(state.products.find(p=>p.product_name===n)?.vendor||'')).filter(Boolean))].sort();
     el.innerHTML = `
       <div class="pg-title">Products</div>
       <div class="pg-sub">Products with capSpire intel entries</div>
       <div class="card">
         <div class="filters">
           <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;renderCsProducts()" placeholder="Search..." style="min-width:160px">
-          ${createMultiSelect('csp-type',typeOptions,fType,'All Types','csp_type')}
-          ${createMultiSelect('csp-vendor',allVendors,fVendor,'All Vendors','csp_vendor')}
+          ${createMultiSelect('csp_type',['capSpire View','Market Intel','System Selection'],fType,'All Types','csp_type')}
+          ${createMultiSelect('csp_vendor',allVendors,fVendor,'All Vendors','csp_vendor')}
           <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_type=[];state.filters.csp_vendor=[];renderCsProducts()">⟳ Reset</button>
           <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} products</span>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Product</th><th>Type</th><th>Vendor</th></tr></thead>
+            <thead><tr><th>Product</th><th>Intel</th><th>Vendor</th></tr></thead>
             <tbody>
-              ${rows.map(name=>`<tr>
-                <td><a class="tbl-link" onclick="openCsProdPanel('${escAttr(name)}')">${escH(name)}</a></td>
-                <td>${[
-                  prodMap[name].views>0?`<span style="font-size:10px;padding:2px 6px;background:#eff6ff;color:#1d4ed8;border-radius:4px">capSpire View (${prodMap[name].views})</span>`:'',
-                  prodMap[name].market>0?`<span style="font-size:10px;padding:2px 6px;background:#f0fdfa;color:#0f766e;border-radius:4px;margin-left:3px">Market Intel (${prodMap[name].market})</span>`:'',
-                  prodMap[name].selections>0?`<span style="font-size:10px;padding:2px 6px;background:#faf5ff;color:#7c3aed;border-radius:4px;margin-left:3px">System Selection (${prodMap[name].selections})</span>`:''
-                ].filter(Boolean).join('')}</td>
-                <td>${escH(getVendor(name))}</td>
-              </tr>`).join('')}
+              ${rows.map(name=>{
+                const vendor = map[name].vendor || (state.products.find(p=>p.product_name===name)?.vendor||'');
+                return `<tr>
+                  <td><a class="tlink" onclick="openCsDetail('${escAttr(name)}')">${escH(name)}</a></td>
+                  <td>
+                    ${map[name].views?`<span style="font-size:10px;padding:2px 6px;background:#eff6ff;color:#1d4ed8;border-radius:4px;margin-right:3px">View ×${map[name].views}</span>`:''}
+                    ${map[name].market?`<span style="font-size:10px;padding:2px 6px;background:#f0fdfa;color:#0f766e;border-radius:4px;margin-right:3px">Market ×${map[name].market}</span>`:''}
+                    ${map[name].selections?`<span style="font-size:10px;padding:2px 6px;background:#faf5ff;color:#7c3aed;border-radius:4px">Selection ×${map[name].selections}</span>`:''}
+                  </td>
+                  <td>${escH(vendor)}</td>
+                </tr>`;
+              }).join('')}
+              ${!rows.length?'<tr><td colspan="3" style="padding:1rem;color:var(--muted);text-align:center">No intel entries found</td></tr>':''}
             </tbody>
           </table>
         </div>
       </div>`;
-
-    // Re-attach msApply for multiselects
-  } catch(e){
-    el.innerHTML = `<div style="color:var(--red)">Error loading data: ${e.message}</div>`;
-  }
+  } catch(e) { el.innerHTML=`<div style="color:var(--red)">Error: ${escH(e.message)}</div>`; }
 }
 
-window._csProdViews = [];
-window._csProdMarket = [];
-window._csProdSelections = [];
-
-async function openCsProdPanel(productName){
-  const el = document.getElementById('cs-prod-main');
+let _cspDetailName = null;
+async function openCsDetail(name) {
+  _cspDetailName = name;
+  const el = document.getElementById('cs-prod-el');
   if(!el) return;
-
-  try{
-    const [views, market, selections, selProds] = await Promise.all([
-      getAll(`cs_product_views?product_name=eq.${encodeURIComponent(productName)}`),
+  try {
+    const [views, market, selProds, sels] = await Promise.all([
+      getAll(`cs_product_views?product_name=eq.${encodeURIComponent(name)}`),
       getAll('cs_market_intel'),
-      getAll('cs_system_selections'),
-      getAll(`cs_system_selection_products?product=eq.${encodeURIComponent(productName)}`)
+      getAll(`cs_system_selection_products?product=eq.${encodeURIComponent(name)}`),
+      getAll('cs_system_selections')
     ]);
-    const prodMarket = market.filter(m=>(m.products_mentioned||'').split(',').map(s=>s.trim()).includes(productName));
-    const selIds = selProds.map(sp=>sp.selection_id);
-    const prodSels = selections.filter(s=>selIds.includes(s.id));
-
-    const stars = n => '★'.repeat(n)+'☆'.repeat(5-n);
-
+    const mkt = market.filter(m=>(m.products_mentioned||'').split(',').map(s=>s.trim()).includes(name));
+    const selIds = new Set(selProds.map(sp=>sp.selection_id));
+    const prodSels = sels.filter(s=>selIds.has(s.id));
+    const stars = n => n?'★'.repeat(n)+'☆'.repeat(5-n):'—';
+    const vendor = views[0]?.vendor || state.products.find(p=>p.product_name===name)?.vendor||'';
     const sideHtml = `
       <div class="sp-head">
-        <h3>${escH(productName)}</h3>
-        <p>${escH((state.products||[]).find(p=>p.product_name===productName)?.vendor||'')}</p>
+        <h3>${escH(name)}</h3>
+        <p>${escH(vendor)}</p>
       </div>
       <div class="sp-body">
-        ${views.length?`<div class="sp-section">
-          <h5>capSpire View of the Product (${views.length})</h5>
-          ${views.map(v=>`<div style="padding:6px 0;border-bottom:1px solid var(--bg3)">
-            <div class="sp-row"><span class="sk">Assessed by</span><span class="sv">${escH(v.assessed_by||'')}</span></div>
-            <div class="sp-row"><span class="sk">Date</span><span class="sv">${escH(v.assessment_date||'')}</span></div>
-            <div class="sp-row"><span class="sk">Rating</span><span class="sv" style="color:#f59e0b">${stars(v.rating||0)}</span></div>
-            ${v.strengths?`<div style="margin-top:4px;font-size:11px"><b>Strengths:</b> ${escH(v.strengths)}</div>`:''}
-            ${v.gaps?`<div style="font-size:11px"><b>Gaps:</b> ${escH(v.gaps)}</div>`:''}
-          </div>`).join('')}
-        </div>`:''}
-        ${prodMarket.length?`<div class="sp-section">
-          <h5>Market Intel (${prodMarket.length})</h5>
-          ${prodMarket.map(m=>`<div style="padding:5px 0;border-bottom:1px solid var(--bg3);font-size:11px">
-            <b>${escH(m.client_company||'')}</b> · ${escH(m.country||'')} · ${escH(m.intel_date||'')}
-            ${m.comments?`<div style="color:var(--muted);margin-top:2px">${escH(m.comments)}</div>`:''}
-          </div>`).join('')}
-        </div>`:''}
-        ${prodSels.length?`<div class="sp-section">
-          <h5>System Selection (${prodSels.length})</h5>
-          ${prodSels.map(s=>`<div style="font-size:11px;padding:5px 0;border-bottom:1px solid var(--bg3)">
-            <b>${escH(s.client_company||'')}</b> · ${s.year||''} · ${escH(s.country||'')}
-            ${s.notes?`<div style="color:var(--muted);margin-top:2px">${escH(s.notes)}</div>`:''}
-          </div>`).join('')}
-        </div>`:''}
-        <button class="btn bs" style="width:100%;margin-top:8px;font-size:12px" onclick="renderCsProducts()">✕ Close panel</button>
+        ${views.length?`<div class="sp-sec"><h5>capSpire View (${views.length})</h5>${views.map(v=>`
+          <div style="padding:6px 0;border-bottom:1px solid var(--bg3);font-size:12px">
+            <div style="color:#f59e0b">${stars(v.rating)}</div>
+            <div style="color:var(--muted);font-size:11px">${escH(v.assessed_by||'')} · ${escH(v.assessment_date||'')}</div>
+            ${v.strengths?`<div style="margin-top:3px"><b>Strengths:</b> ${escH(v.strengths)}</div>`:''}
+            ${v.gaps?`<div><b>Gaps:</b> ${escH(v.gaps)}</div>`:''}
+            ${v.commodities?`<div style="color:var(--muted)">${escH(v.commodities)}</div>`:''}
+          </div>`).join('')}</div>`:''}
+        ${mkt.length?`<div class="sp-sec"><h5>Market Intel (${mkt.length})</h5>${mkt.map(m=>`
+          <div style="padding:5px 0;border-bottom:1px solid var(--bg3);font-size:11px">
+            <b>${escH(m.client_company||'')}</b>${m.country?' · '+escH(m.country):''}${m.intel_date?' · '+escH(m.intel_date):''}
+            ${m.comments?`<div style="color:var(--muted)">${escH(m.comments)}</div>`:''}
+          </div>`).join('')}</div>`:''}
+        ${prodSels.length?`<div class="sp-sec"><h5>System Selection (${prodSels.length})</h5>${prodSels.map(s=>`
+          <div style="font-size:11px;padding:5px 0;border-bottom:1px solid var(--bg3)">
+            <b>${escH(s.client_company||'')}</b>${s.year?' · '+s.year:''}${s.country?' · '+escH(s.country):''}
+          </div>`).join('')}</div>`:''}
+        <button class="btn btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="renderCsProducts()">✕ Close</button>
       </div>`;
-
     // Rebuild with split layout
-    const tableEl = el.querySelector('.card');
-    if(tableEl){
-      // Highlight the clicked row
-      el.querySelectorAll('tr').forEach(tr=>{
-        tr.style.background = tr.querySelector('a')?.textContent?.trim()===productName ? 'var(--bg3)' : '';
-      });
-      // Add side panel
-      const existing = el.querySelector('.split-layout');
-      if(existing){
-        existing.querySelector('.side-panel').innerHTML = sideHtml;
-      } else {
-        const wrap = document.createElement('div');
-        wrap.className = 'split-layout';
-        tableEl.replaceWith(wrap);
-        wrap.appendChild(tableEl);
-        const panel = document.createElement('div');
-        panel.className = 'side-panel';
-        panel.innerHTML = sideHtml;
-        wrap.appendChild(panel);
-      }
-    }
-  }catch(e){ console.error(e); }
+    el.innerHTML = `
+      <div class="pg-title">Products</div>
+      <div class="pg-sub">Products with capSpire intel entries</div>
+      <div class="split">
+        <div id="cs-prod-table"></div>
+        <div class="sp">${sideHtml}</div>
+      </div>`;
+    // Re-render table part
+    await renderCsTable(name);
+  } catch(e) { console.error(e); }
 }
 
-// ── SIGN OUT ─────────────────────────────────────────────────────
-function signOut(){
-  localStorage.removeItem('pa_session');
-  localStorage.removeItem('pa_username');
-  document.getElementById('topnav').style.display='none';
-  document.getElementById('auth-screen').style.display='flex';
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+async function renderCsTable(selectedName) {
+  // minimal table re-render for the split view
+  const el = document.getElementById('cs-prod-table');
+  if(!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading...</div>';
+  try {
+    const [views,market,selProds] = await Promise.all([getAll('cs_product_views'),getAll('cs_market_intel'),getAll('cs_system_selection_products')]);
+    const map = {};
+    const add = (n,t) => { if(!n)return; if(!map[n])map[n]={views:0,market:0,selections:0}; map[n][t]++; };
+    views.forEach(v=>add(v.product_name,'views'));
+    market.forEach(m=>(m.products_mentioned||'').split(',').filter(Boolean).forEach(p=>add(p.trim(),'market')));
+    selProds.forEach(sp=>add(sp.product,'selections'));
+    const names = Object.keys(map).sort();
+    el.innerHTML = `<div class="card"><div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Intel</th></tr></thead><tbody>
+      ${names.map(name=>`<tr style="${name===selectedName?'background:var(--bg3)':''}">
+        <td><a class="tlink" onclick="openCsDetail('${escAttr(name)}')">${escH(name)}</a></td>
+        <td>${map[name].views?`<span style="font-size:10px;padding:2px 5px;background:#eff6ff;color:#1d4ed8;border-radius:3px;margin-right:2px">V×${map[name].views}</span>`:''}${map[name].market?`<span style="font-size:10px;padding:2px 5px;background:#f0fdfa;color:#0f766e;border-radius:3px;margin-right:2px">M×${map[name].market}</span>`:''}${map[name].selections?`<span style="font-size:10px;padding:2px 5px;background:#faf5ff;color:#7c3aed;border-radius:3px">S×${map[name].selections}</span>`:''}</td>
+      </tr>`).join('')}
+    </tbody></table></div></div>`;
+  } catch(e) {}
 }
 
 
 
+// ── MODALS & AUTH ──
 // ── MODALS ──
 function openModal(title,fields,saveFn){
   document.getElementById("modal-title").textContent=title;
@@ -2366,7 +2300,7 @@ function openVendorModal(id){
         const res=await apiFetch("vendors",{method:"POST",body:vals});
         state.vendors=[...state.vendors,res[0]];
       }
-      closeModal();render();
+      closeModal();
     }catch(e){alert("Error: "+e.message);}
   });
 }
@@ -2381,7 +2315,7 @@ function openProductModal(id){
     const vals=getVals(["id","product_name","product_type","vendor","deployment_model","version_info","notes"]);
     if(!vals.id)delete vals.id;
     try{if(p){await apiFetch(`products?id=eq.${p.id}`,{method:"PATCH",body:vals});state.products=state.products.map(x=>x.id===p.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("products",{method:"POST",body:vals});state.products=[...state.products,res[0]];}closeModal();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2393,7 +2327,7 @@ function openCommodityModal(id){
     const vals=getVals(["id","commodity_name"]);
     if(!vals.id)delete vals.id;
     try{if(c){await apiFetch(`commodities?id=eq.${c.id}`,{method:"PATCH",body:vals});state.commodities=state.commodities.map(x=>x.id===c.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("commodities",{method:"POST",body:vals});state.commodities=[...state.commodities,res[0]];}closeModal();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2409,7 +2343,7 @@ function openPCCModal(id){
     const vals=getVals(["id","product","product_type","commodity","coverage_level"]);
     if(!vals.id)delete vals.id;
     try{if(p){await apiFetch(`product_commodities_coverage?id=eq.${p.id}`,{method:"PATCH",body:vals});state.pcc=state.pcc.map(x=>x.id===p.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("product_commodities_coverage",{method:"POST",body:vals});state.pcc=[...state.pcc,res[0]];}closeModal();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2428,7 +2362,7 @@ function openCTRMModal(id){
     const vals=getVals(["id","product","function_name","commodity","coverage_level"]);
     if(!vals.id)delete vals.id;
     try{if(r){await apiFetch(`product_function_ctrm?id=eq.${r.id}`,{method:"PATCH",body:vals});state.ctrm=state.ctrm.map(x=>x.id===r.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("product_function_ctrm",{method:"POST",body:vals});state.ctrm=[...state.ctrm,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("product_function_ctrm",{method:"POST",body:vals});state.ctrm=[...state.ctrm,res[0]];}closeModal();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2447,7 +2381,7 @@ function openRiskModal(id){
     const vals=getVals(["id","product","category","function_name","coverage_level"]);
     if(!vals.id)delete vals.id;
     try{if(r){await apiFetch(`product_function_risk?id=eq.${r.id}`,{method:"PATCH",body:vals});state.risk=state.risk.map(x=>x.id===r.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("product_function_risk",{method:"POST",body:vals});state.risk=[...state.risk,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("product_function_risk",{method:"POST",body:vals});state.risk=[...state.risk,res[0]];}closeModal();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2456,11 +2390,10 @@ async function deleteContact(id){
   if(!confirm('Delete this contact?')) return;
   try{
     await apiFetch(`product_contacts?id=eq.${id}`,{method:'DELETE'});
-    state.contacts = state.contacts.filter(c=>c.id!==id);
+    state.contacts=state.contacts.filter(c=>c.id!==id);
     renderContacts();
-  }catch(e){ alert('Error: '+e.message); }
+  }catch(e){alert('Error: '+e.message);}
 }
-
 function openContactModal(id){
   const ct=id?state.contacts.find(x=>x.id===id):null;
   const prods=state.products.map(p=>p.product_name).filter(Boolean).sort();
@@ -2471,7 +2404,7 @@ function openContactModal(id){
     const vals=getVals(["id","product","vendor","contact_name","role_title","email","phone_number","region"]);
     if(!vals.id)delete vals.id;
     try{if(ct){await apiFetch(`product_contacts?id=eq.${ct.id}`,{method:"PATCH",body:vals});state.contacts=state.contacts.map(x=>x.id===ct.id?{...x,...vals}:x);}
-    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];}closeModal();render();}catch(e){alert("Error: "+e.message);}
+    else{const res=await apiFetch("product_contacts",{method:"POST",body:vals});state.contacts=[...state.contacts,res[0]];}closeModal();}catch(e){alert("Error: "+e.message);}
   });
 }
 
@@ -2644,11 +2577,7 @@ function msApply(id, key){
   const list = document.getElementById('ms-list-'+id);
   if(!list) return;
   const selected = [...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
-  if(key && key.startsWith('_')){
-    state[key] = selected.length ? selected : [];
-  } else {
-    sf(key, selected.length ? selected : []);
-  }
+  sf(key, selected.length ? selected : []);
   document.getElementById('ms-drop-'+id).style.display = 'none';
   // Reset search
   const search = document.getElementById('ms-search-'+id);
@@ -2692,25 +2621,7 @@ function msFilter(data, field, filterKey) {
 }
 
 
-async function init(){
-  // New navigation
-  try{
-    const[v,p,ct_data,g,pcc,risk,ct,com]=await Promise.all([
-      getAll("vendors"),getAll("products"),getAll("product_contacts"),
-      getAll("geographic_coverage"),getAll("product_commodities_coverage"),
-      getAll("product_function_risk"),getAll("customer_type_coverage"),getAll("commodities")
-    ]);
-    state.vendors=v;state.products=p;state.contacts=ct_data;
-    state.geo=g;state.pcc=pcc;state.risk=risk;state.ct=ct;state.commodities=com;state.clients=[];
-    state.ctrmLoading=true;
-    const ctrm=await getAll("product_function_ctrm");
-    state.ctrm=ctrm;state.ctrmLoading=false;
-    showScreen('home');
-  }catch(e){
-    console.error('Init error:', e.message);
-    showScreen('home');
-  }
-}
+
 // ── AUTH (using Supabase REST directly) ──
 const AUTH_URL = SB_URL + "/auth/v1";
 let currentSession = null;
@@ -2739,21 +2650,7 @@ function showAuthTab(tab) {
   document.getElementById("tab-register").style.color = tab === "register" ? "#fff" : "var(--muted)";
 }
 
-async function doLogin() {
-  const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("login-password").value;
-  const errEl = document.getElementById("login-error");
-  errEl.style.display = "none";
-  if (!email || !password) { errEl.textContent = "Please enter email and password."; errEl.style.display = "block"; return; }
-  try {
-    const data = await authFetch("/token?grant_type=password", {body: {email, password}});
-    localStorage.setItem("pa_session", JSON.stringify({access_token: data.access_token, refresh_token: data.refresh_token, user: data.user}));
-    onLogin(data.user);
-  } catch(e) {
-    errEl.textContent = e.message;
-    errEl.style.display = "block";
-  }
-}
+
 
 async function doRegister() {
   const name = document.getElementById("register-name").value.trim();
@@ -2783,16 +2680,6 @@ async function showForgotPassword() {
   } catch(e) { alert("Error: " + e.message); }
 }
 
-function onLogin(user) {
-  currentUser = user;
-  const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-  localStorage.setItem("pa_username", name);
-  document.getElementById("auth-screen").style.display = "none";
-  document.getElementById("topnav").style.display = "flex";
-  const navUserEl = document.getElementById("nav-user");
-  if(navUserEl) navUserEl.textContent = name;
-  init();
-}
 
 function doLogout() {
   localStorage.removeItem("pa_session");
@@ -2829,17 +2716,5 @@ window.addEventListener("load", function() {
 
 
 </script>
-
-<!-- MODAL (for Contacts, Vendors, Products edit) -->
-<div id="modal-overlay" onclick="if(event.target===this)closeModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center;">
-  <div id="modal-box" style="background:#fff;border-radius:12px;padding:1.5rem;width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15);">
-    <h3 id="modal-title" style="font-size:15px;font-weight:600;margin-bottom:1rem;color:#111"></h3>
-    <div id="modal-fields"></div>
-    <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;">
-      <button class="btn bs" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="modal-save-btn">Save</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
