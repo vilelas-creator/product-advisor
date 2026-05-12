@@ -1304,32 +1304,42 @@ function buildMultiSelect(containerId, options, placeholder) {
   if(!container) return;
   const uid = containerId.replace(/[^a-z0-9]/gi,'_');
   container.innerHTML = `
-    <div class="ms-wrap" style="display:flex;flex-direction:column;gap:6px">
-      <button type="button" class="ms-trigger" onclick="toggleMs('${uid}')" data-placeholder="${escAttr(placeholder)}">${escH(placeholder)} <span>▾</span></button>
-      <div class="ms-drop" id="ms_${uid}">
-        <div style="padding:5px 5px 3px">
-          <input class="ms-search" placeholder="Search..." oninput="filterMs('${uid}',this.value)">
+    <div style="position:relative;display:inline-block">
+      <button type="button" onclick="toggleMs('${uid}')" data-placeholder="${escAttr(placeholder)}"
+        style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;background:var(--bg);color:var(--text);display:flex;align-items:center;gap:6px;white-space:nowrap"
+        id="ms-trigger-${uid}">
+        <span id="ms-label-${uid}">${escH(placeholder)}</span> <span style="font-size:10px">▾</span>
+      </button>
+      <div id="ms_${uid}" style="display:none;position:absolute;top:calc(100% + 2px);left:0;z-index:999;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:220px;max-width:300px">
+        <div style="padding:6px 8px;border-bottom:1px solid var(--border)">
+          <input oninput="filterMs('${uid}',this.value)" placeholder="Search..." 
+            style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;color:var(--text);background:#fff">
         </div>
-        <div style="padding:2px 5px 2px;border-bottom:1px solid var(--border)">
-          <label class="ms-item" style="font-weight:600;color:var(--muted)">
-            <input type="checkbox" onchange="toggleAllMs('${uid}',this.checked)"> Select all
+        <div style="padding:4px 8px;border-bottom:1px solid var(--border)">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:2px 0">
+            <input type="checkbox" onchange="toggleAllMs('${uid}',this.checked)" style="cursor:pointer"> <span style="color:var(--muted);font-style:italic">Select all</span>
           </label>
         </div>
-        <div class="ms-list" id="msl_${uid}">
-          ${options.map(o=>`<label class="ms-item"><input type="checkbox" value="${escAttr(o)}"> ${escH(o)}</label>`).join('')}
+        <div id="msl_${uid}" style="max-height:200px;overflow-y:auto;padding:4px 0">
+          ${options.map(o=>`<label class="ms-item" style="display:flex;align-items:center;gap:7px;padding:4px 8px;cursor:pointer;font-size:12px;color:var(--text)">
+            <input type="checkbox" value="${escAttr(o)}" style="cursor:pointer"> ${escH(o)}
+          </label>`).join('')}
         </div>
-        <div class="ms-footer">
-          <button type="button" onclick="clearMs('${uid}')">Clear</button>
-          <button type="button" class="ms-ok" onclick="applyMs('${uid}')">OK</button>
+        <div style="display:flex;gap:5px;padding:6px 8px;border-top:1px solid var(--border)">
+          <button type="button" onclick="clearMs('${uid}')" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:var(--muted)">Clear</button>
+          <button type="button" onclick="applyMs('${uid}')" style="flex:1;padding:4px;border:none;border-radius:5px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;font-weight:600">OK</button>
         </div>
       </div>
-      <div id="ms-pills-${uid}" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <input id="ms-other-${uid}" placeholder="Add other..." style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text)">
-        <button type="button" onclick="addOtherMs('${uid}')" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:var(--accent);font-family:inherit;white-space:nowrap">+ Add</button>
-      </div>
+    </div>
+    <div id="ms-pills-${uid}" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px"></div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+      <input id="ms-other-${uid}" placeholder="Add other commodity..." 
+        style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:#fff">
+      <button type="button" onclick="addOtherMs('${uid}')" 
+        style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:var(--accent);font-family:inherit;white-space:nowrap">+ Add</button>
     </div>`;
 }
+
 
 function toggleAllMs(uid, checked) {
   document.querySelectorAll(`#msl_${uid} input[type=checkbox]`).forEach(cb => cb.checked = checked);
@@ -1337,7 +1347,11 @@ function toggleAllMs(uid, checked) {
 
 function toggleMs(uid) {
   const drop = document.getElementById('ms_'+uid);
-  if(drop) drop.classList.toggle('open');
+  if(!drop) return;
+  const isOpen = drop.style.display !== 'none' && drop.style.display !== '';
+  // Close all other dropdowns first
+  document.querySelectorAll('[id^="ms_"]').forEach(d=>{ if(d!==drop) d.style.display='none'; });
+  drop.style.display = isOpen ? 'none' : 'block';
 }
 
 function filterMs(uid, q) {
@@ -1356,16 +1370,16 @@ function closeMs(uid) { applyMs(uid); }
 
 function applyMs(uid) {
   const drop = document.getElementById('ms_'+uid);
-  if(drop) drop.classList.remove('open');
-  // Update trigger label
-  const checked = [...(document.querySelectorAll(`#msl_${uid} input:checked`)||[])].map(cb=>cb.value);
-  const trigger = drop?.previousElementSibling || document.querySelector(`[onclick="toggleMs('${uid}')"]`);
-  if(trigger) {
-    const ph = trigger.dataset.placeholder || 'Select';
-    trigger.innerHTML = (checked.length ? `<span style="color:var(--accent);font-weight:600">${checked.length} selected</span>` : escH(ph)) + ' <span>▾</span>';
-    trigger.classList.toggle('active', checked.length > 0);
+  if(drop) drop.style.display='none';
+  const checked = [...(document.querySelectorAll(`#msl_${uid} input[type=checkbox]:checked`)||[])].map(cb=>cb.value);
+  const label = document.getElementById('ms-label-'+uid);
+  const trigger = document.getElementById('ms-trigger-'+uid);
+  if(label) {
+    const ph = trigger?.dataset?.placeholder || 'Select';
+    label.textContent = checked.length ? checked.length+' selected' : ph;
+    label.style.color = checked.length ? 'var(--accent)' : '';
+    label.style.fontWeight = checked.length ? '600' : '';
   }
-  // Update pills
   const pillsEl = document.getElementById('ms-pills-'+uid);
   if(pillsEl) {
     pillsEl.innerHTML = checked.map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#eff6ff;color:#1d4ed8;border-radius:20px;font-size:11px;border:1px solid #93c5fd">${escH(v)} <span onclick="removeMsPill('${uid}','${escAttr(v)}')" style="cursor:pointer;font-size:13px;line-height:1">×</span></span>`).join('');
@@ -3036,6 +3050,14 @@ window.addEventListener("load", function() {
 });
 
 
+
+// close dropdown on outside click
+
+document.addEventListener('click', function(e){
+  if(!e.target.closest('[id^="ms-trigger-"]') && !e.target.closest('[id^="ms_"]')) {
+    document.querySelectorAll('[id^="ms_"]').forEach(d=>d.style.display='none');
+  }
+});
 </script>
 </body>
 </html>
