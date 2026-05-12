@@ -1335,6 +1335,25 @@ function toggleAllMs(uid, checked) {
   document.querySelectorAll(`#msl_${uid} input[type=checkbox]`).forEach(cb => cb.checked = checked);
 }
 
+function toggleMs(uid) {
+  const drop = document.getElementById('ms_'+uid);
+  if(drop) drop.classList.toggle('open');
+}
+
+function filterMs(uid, q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll(`#msl_${uid} .ms-item`).forEach(item => {
+    item.style.display = item.textContent.toLowerCase().includes(lq) ? '' : 'none';
+  });
+}
+
+function clearMs(uid) {
+  document.querySelectorAll(`#msl_${uid} input[type=checkbox]`).forEach(cb => cb.checked = false);
+  applyMs(uid);
+}
+
+function closeMs(uid) { applyMs(uid); }
+
 function applyMs(uid) {
   const drop = document.getElementById('ms_'+uid);
   if(drop) drop.classList.remove('open');
