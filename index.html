@@ -215,7 +215,7 @@ tr:hover td{background:var(--bg2);}
 <div id="topnav">
   <span class="tnav-logo">Product Advisor</span>
   <div class="dd">
-    <button class="dd-btn" id="nb-cs">capSpire Intel <span class="dd-arr">▾</span></button>
+    <button class="dd-btn" id="nb-cs" onclick="nav('cs-home','cs')">capSpire Intel <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('addintel','cs')">➕ Add Intel</div>
       <div class="dd-item" onclick="nav('cs-products','cs')">📦 Products</div>
@@ -223,7 +223,7 @@ tr:hover td{background:var(--bg2);}
     </div>
   </div>
   <div class="dd">
-    <button class="dd-btn" id="nb-sb">Sourcebook Intel <span class="dd-arr">▾</span></button>
+    <button class="dd-btn" id="nb-sb" onclick="nav('sb-home','sb')">Sourcebook Intel <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('sb-vendors','sb')">🏢 Vendors</div>
       <div class="dd-item" onclick="nav('sb-products','sb')">📦 Products</div>
@@ -250,7 +250,7 @@ tr:hover td{background:var(--bg2);}
         <h2>capSpire Intel</h2>
         <p>Internal intelligence gathered by capSpire — product views, market signals and system selections.</p>
         <ul>
-          <li><span class="li-dot" style="background:var(--accent)"></span>Add Intel (3 types)</li>
+          <li><span class="li-dot" style="background:var(--accent)"></span>Add Intel</li>
           <li><span class="li-dot" style="background:var(--accent)"></span>Products with capSpire intel</li>
           <li><span class="li-dot" style="background:var(--accent)"></span>Contacts</li>
         </ul>
@@ -308,20 +308,13 @@ tr:hover td{background:var(--bg2);}
       <div class="pg-title">capSpire View of the Product</div>
       <div class="pg-sub">Internal capSpire assessment — strengths, gaps and commodity coverage</div>
       <div class="field"><label>Product <span class="req">*</span></label><select id="f1-product" onchange="f1ProductChange()"><option value="">— Select product —</option></select></div>
-      <div class="frow">
-        <div class="field"><label>Vendor</label><input id="f1-vendor" readonly></div>
-        <div class="field"><label>Assessed by</label><input id="f1-by" readonly></div>
+      <div id="f1-product-other-wrap" style="display:none" class="field">
+        <label>Product name <span class="req">*</span></label>
+        <input id="f1-product-other" placeholder="Type product name...">
       </div>
       <div class="frow">
+        <div class="field"><label>Assessed by</label><input id="f1-by" readonly></div>
         <div class="field"><label>Date</label><input id="f1-date" readonly></div>
-        <div class="field"><label>Source / context</label>
-          <select id="f1-context">
-            <option value="">— Select —</option>
-            <option>Client meeting</option><option>Conference</option>
-            <option>RFP / Tender</option><option>Demo</option>
-            <option>Internal research</option><option>Other</option>
-          </select>
-        </div>
       </div>
       <div class="field">
         <label>Overall rating</label>
@@ -408,6 +401,10 @@ tr:hover td{background:var(--bg2);}
       <div class="frow">
         <div class="field"><label>Client <span class="req">*</span></label><input id="f3-client" placeholder="Company name"></div>
         <div class="field"><label>Year</label><input id="f3-year" type="number" placeholder="2025" min="2000" max="2030"></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Recorded by</label><input id="f3-by" readonly></div>
+        <div class="field"><label>Date</label><input id="f3-date" readonly></div>
       </div>
       <div class="field"><label>Country</label><select id="f3-country"><option value="">— Select country —</option></select></div>
       <div class="field"><label>Products evaluated</label></div>
@@ -1307,91 +1304,121 @@ function buildMultiSelect(containerId, options, placeholder) {
   if(!container) return;
   const uid = containerId.replace(/[^a-z0-9]/gi,'_');
   container.innerHTML = `
-    <div class="ms-wrap">
-      <button type="button" class="ms-trigger" onclick="toggleMs('${uid}')">${placeholder} <span>▾</span></button>
+    <div class="ms-wrap" style="display:flex;flex-direction:column;gap:6px">
+      <button type="button" class="ms-trigger" onclick="toggleMs('${uid}')" data-placeholder="${escAttr(placeholder)}">${escH(placeholder)} <span>▾</span></button>
       <div class="ms-drop" id="ms_${uid}">
-        <input class="ms-search" placeholder="Search..." oninput="filterMs('${uid}',this.value)">
+        <div style="padding:5px 5px 3px">
+          <input class="ms-search" placeholder="Search..." oninput="filterMs('${uid}',this.value)">
+        </div>
+        <div style="padding:2px 5px 2px;border-bottom:1px solid var(--border)">
+          <label class="ms-item" style="font-weight:600;color:var(--muted)">
+            <input type="checkbox" onchange="toggleAllMs('${uid}',this.checked)"> Select all
+          </label>
+        </div>
         <div class="ms-list" id="msl_${uid}">
           ${options.map(o=>`<label class="ms-item"><input type="checkbox" value="${escAttr(o)}"> ${escH(o)}</label>`).join('')}
         </div>
         <div class="ms-footer">
           <button type="button" onclick="clearMs('${uid}')">Clear</button>
-          <button type="button" class="ms-ok" onclick="closeMs('${uid}')">OK</button>
+          <button type="button" class="ms-ok" onclick="applyMs('${uid}')">OK</button>
         </div>
+      </div>
+      <div id="ms-pills-${uid}" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="ms-other-${uid}" placeholder="Add other..." style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text)">
+        <button type="button" onclick="addOtherMs('${uid}')" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:var(--accent);font-family:inherit;white-space:nowrap">+ Add</button>
       </div>
     </div>`;
 }
 
-function toggleMs(uid) {
-  const drop = document.getElementById('ms_'+uid);
-  if(drop) drop.classList.toggle('open');
+function toggleAllMs(uid, checked) {
+  document.querySelectorAll(`#msl_${uid} input[type=checkbox]`).forEach(cb => cb.checked = checked);
 }
-function closeMs(uid) {
+
+function applyMs(uid) {
   const drop = document.getElementById('ms_'+uid);
   if(drop) drop.classList.remove('open');
   // Update trigger label
-  const checked = document.querySelectorAll(`#msl_${uid} input:checked`);
-  const trigger = drop?.previousElementSibling;
+  const checked = [...(document.querySelectorAll(`#msl_${uid} input:checked`)||[])].map(cb=>cb.value);
+  const trigger = drop?.previousElementSibling || document.querySelector(`[onclick="toggleMs('${uid}')"]`);
   if(trigger) {
-    const placeholder = trigger.dataset.placeholder || trigger.textContent.split('▾')[0].trim();
-    if(!trigger.dataset.placeholder) trigger.dataset.placeholder = placeholder;
-    trigger.innerHTML = (checked.length ? `${checked.length} selected` : placeholder) + ' <span>▾</span>';
+    const ph = trigger.dataset.placeholder || 'Select';
+    trigger.innerHTML = (checked.length ? `<span style="color:var(--accent);font-weight:600">${checked.length} selected</span>` : escH(ph)) + ' <span>▾</span>';
     trigger.classList.toggle('active', checked.length > 0);
   }
+  // Update pills
+  const pillsEl = document.getElementById('ms-pills-'+uid);
+  if(pillsEl) {
+    pillsEl.innerHTML = checked.map(v=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#eff6ff;color:#1d4ed8;border-radius:20px;font-size:11px;border:1px solid #93c5fd">${escH(v)} <span onclick="removeMsPill('${uid}','${escAttr(v)}')" style="cursor:pointer;font-size:13px;line-height:1">×</span></span>`).join('');
+  }
 }
-function clearMs(uid) {
-  document.querySelectorAll(`#msl_${uid} input`).forEach(cb => cb.checked=false);
+
+function removeMsPill(uid, val) {
+  const cb = document.querySelector(`#msl_${uid} input[value="${val}"]`);
+  if(cb) { cb.checked = false; applyMs(uid); }
 }
-function filterMs(uid, q) {
-  const lq = q.toLowerCase();
-  document.querySelectorAll(`#msl_${uid} .ms-item`).forEach(item => {
-    item.style.display = item.textContent.toLowerCase().includes(lq) ? '' : 'none';
-  });
+
+function addOtherMs(uid) {
+  const inp = document.getElementById('ms-other-'+uid);
+  if(!inp || !inp.value.trim()) return;
+  const val = inp.value.trim();
+  const list = document.getElementById('msl_'+uid);
+  if(list) {
+    // Check not duplicate
+    const existing = [...list.querySelectorAll('input')].find(cb=>cb.value===val);
+    if(!existing) {
+      const label = document.createElement('label');
+      label.className = 'ms-item';
+      label.innerHTML = `<input type="checkbox" value="${escAttr(val)}" checked> ${escH(val)}`;
+      list.appendChild(label);
+    } else { existing.checked = true; }
+  }
+  inp.value = '';
+  applyMs(uid);
 }
+
+
 function getMsSelected(containerId) {
   const uid = containerId.replace(/[^a-z0-9]/gi,'_');
-  return [...(document.querySelectorAll(`#msl_${uid} input:checked`)||[])].map(cb=>cb.value);
+  return [...(document.querySelectorAll(`#msl_${uid} input[type=checkbox]:checked`)||[])].map(cb=>cb.value);
 }
 
 // ── FORM 1: capSpire View ────────────────────────────────────────
 function initF1() {
-  // Products dropdown
+  // Products dropdown + "Other" option
   const sel = document.getElementById('f1-product');
   if(sel) {
     sel.innerHTML = '<option value="">— Select product —</option>' +
       [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
-        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
+        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('') +
+      '<option value="__other__">+ Add product not in list</option>';
   }
-  // Auto-fill
+  // Assessed by: use full name
   const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
   const byEl = document.getElementById('f1-by');
   const dateEl = document.getElementById('f1-date');
-  if(byEl) byEl.value = sess?.user?.email||'';
+  if(byEl) byEl.value = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
   if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-  // Reset
-  ['f1-vendor','f1-strengths','f1-gaps','f1-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  const ctx=document.getElementById('f1-context'); if(ctx) ctx.value='';
+  // Reset fields
+  ['f1-strengths','f1-gaps','f1-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const err=document.getElementById('f1-err'); if(err) err.textContent='';
+  const otherWrap = document.getElementById('f1-product-other-wrap');
+  if(otherWrap) otherWrap.style.display='none';
   // Stars
   initStars('f1-stars');
-  // Commodities multiselect
+  // Commodities multiselect (Excel-style)
   const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
   buildMultiSelect('f1-coms-wrap', coms, 'Select commodities');
-  // Add "other" input
-  const wrap = document.getElementById('f1-coms-wrap');
-  if(wrap) {
-    const other = document.createElement('div');
-    other.style.cssText = 'margin-top:6px;display:flex;gap:6px;align-items:center';
-    other.innerHTML = '<input id="f1-com-other" placeholder="Add other commodity..." style="flex:1;padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit"> <button type="button" onclick="addOtherCom()" style="padding:5px 10px;border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;color:var(--accent);font-family:inherit">Add</button>';
-    wrap.appendChild(other);
-  }
 }
 
 function f1ProductChange() {
   const sel = document.getElementById('f1-product');
-  const prod = state.products.find(p=>p.product_name===sel?.value);
-  const vEl = document.getElementById('f1-vendor');
-  if(vEl) vEl.value = prod?.vendor||'';
+  const otherWrap = document.getElementById('f1-product-other-wrap');
+  if(sel?.value === '__other__') {
+    if(otherWrap) otherWrap.style.display='block';
+  } else {
+    if(otherWrap) otherWrap.style.display='none';
+  }
 }
 
 function addOtherCom() {
@@ -1411,18 +1438,17 @@ function addOtherCom() {
 }
 
 async function saveF1() {
-  const product = document.getElementById('f1-product')?.value;
+  const sel = document.getElementById('f1-product');
+  let product = sel?.value;
+  if(product === '__other__') product = document.getElementById('f1-product-other')?.value?.trim();
   const err = document.getElementById('f1-err');
-  if(!product) { if(err) err.textContent='Please select a product.'; return; }
+  if(!product) { if(err) err.textContent='Please select or enter a product.'; return; }
   if(err) err.textContent='';
-  const prod = state.products.find(p=>p.product_name===product);
   const coms = getMsSelected('f1-coms-wrap');
   const body = {};
   body.product_name = product;
-  const vendor = document.getElementById('f1-vendor')?.value; if(vendor) body.vendor=vendor;
   const by = document.getElementById('f1-by')?.value; if(by) body.assessed_by=by;
   const date = document.getElementById('f1-date')?.value; if(date) body.assessment_date=date;
-  const ctx = document.getElementById('f1-context')?.value; if(ctx) body.source_context=ctx;
   const rating = getStars('f1-stars'); if(rating) body.rating=rating;
   const str = document.getElementById('f1-strengths')?.value; if(str) body.strengths=str;
   const gaps = document.getElementById('f1-gaps')?.value; if(gaps) body.gaps=gaps;
@@ -1431,7 +1457,7 @@ async function saveF1() {
   try {
     await apiFetch('cs_product_views', {method:'POST', body});
     alert('Saved successfully!');
-    goBack();
+    initF1(); // clear form, stay on page
   } catch(e) { if(err) err.textContent='Error: '+e.message; }
 }
 
@@ -1476,13 +1502,16 @@ async function saveF2() {
 function initF3() {
   buildCountrySelect('f3-country');
   ['f3-client','f3-notes','f3-link'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const sess=JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const byEl=document.getElementById('f3-by'); if(byEl) byEl.value=sess?.user?.user_metadata?.full_name||sess?.user?.email||'';
+  const dateEl=document.getElementById('f3-date'); if(dateEl) dateEl.value=new Date().toISOString().split('T')[0];
   const y=document.getElementById('f3-year'); if(y) y.value='';
   const err=document.getElementById('f3-err'); if(err) err.textContent='';
-  // Build first entry
   const entries = document.getElementById('f3-entries');
   if(entries) { entries.innerHTML=''; }
   addF3Entry();
 }
+
 
 function buildProdOptions() {
   return '<option value="">— Select —</option>'+
@@ -1499,186 +1528,347 @@ function addF3Entry() {
   div.innerHTML = `
     <h5>Product ${n} <button type="button" class="rm-btn" onclick="this.closest('.prod-entry').remove()">✕ Remove</button></h5>
     <div class="frow">
-      <div class="field"><label>Product</label><select class="f3-prod">${buildProdOptions()}</select></div>
-      <div class="field"><label>Outcome</label><select class="f3-outcome"><option value="Selected">Selected</option><option value="Shortlisted">Shortlisted</option><option value="Rejected">Rejected</option></select></div>
+      <div class="field">
+        <label>Product</label>
+        <select class="f3-prod" onchange="f3ProdChange(this)">
+          ${buildProdOptions()}
+          <option value="__other__">+ Add product not in list</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Outcome</label>
+        <select class="f3-outcome">
+          <option value="Selected">Selected</option>
+          <option value="Shortlisted">Shortlisted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="field f3-other-wrap" style="display:none">
+      <label>Product name <span class="req">*</span></label>
+      <input class="f3-prod-other" placeholder="Type product name...">
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="stars f3-stars">
+        <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
+        <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
+        <span class="star" data-n="5">★</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Comments</label>
+      <textarea class="f3-comments" placeholder="Describe findings, differentiators, reasons for outcome..." style="min-height:100px;max-height:400px"></textarea>
     </div>`;
   entries.appendChild(div);
+  // Init stars for this entry
+  div.querySelectorAll('.star').forEach(star => {
+    star.onclick = () => {
+      const n = parseInt(star.dataset.n);
+      div.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i<n));
+    };
+  });
 }
+
+function f3ProdChange(sel) {
+  const entry = sel.closest('.prod-entry');
+  const otherWrap = entry?.querySelector('.f3-other-wrap');
+  if(otherWrap) otherWrap.style.display = sel.value === '__other__' ? 'block' : 'none';
+}
+
+function getF3Stars(entry) {
+  const on = entry.querySelectorAll('.star.on').length;
+  return on > 0 ? on : null;
+}
+
 
 async function saveF3() {
   const client = document.getElementById('f3-client')?.value?.trim();
   const err = document.getElementById('f3-err');
   if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
   if(err) err.textContent='';
-  const entries = [...(document.querySelectorAll('.prod-entry')||[])].map(e=>({
-    product: e.querySelector('.f3-prod')?.value||'',
-    outcome: e.querySelector('.f3-outcome')?.value||'Selected'
-  })).filter(e=>e.product);
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const assessedBy = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
+  const assessedDate = new Date().toISOString().split('T')[0];
+  const entries = [...(document.querySelectorAll('.prod-entry')||[])].map(entry=>{
+    let product = entry.querySelector('.f3-prod')?.value||'';
+    if(product === '__other__') product = entry.querySelector('.f3-prod-other')?.value?.trim()||'';
+    const outcome = entry.querySelector('.f3-outcome')?.value||'Selected';
+    const rating = getF3Stars(entry);
+    const comments = entry.querySelector('.f3-comments')?.value||'';
+    return {product, outcome, rating, comments};
+  }).filter(e=>e.product);
   const body = {client_company:client};
   const year=parseInt(document.getElementById('f3-year')?.value); if(year) body.year=year;
   const country=document.getElementById('f3-country')?.value; if(country) body.country=country;
   const notes=document.getElementById('f3-notes')?.value; if(notes) body.notes=notes;
   const link=document.getElementById('f3-link')?.value; if(link) body.link_ref=link;
+  body.assessed_by = assessedBy;
+  body.assessment_date = assessedDate;
   try {
     const res = await apiFetch('cs_system_selections', {method:'POST', body});
     const selId = res[0]?.id;
     if(selId && entries.length) {
       for(const e of entries) {
-        await apiFetch('cs_system_selection_products', {method:'POST', body:{selection_id:selId, product:e.product, outcome:e.outcome}});
+        const prodBody = {selection_id:selId, product:e.product, outcome:e.outcome};
+        if(e.rating) prodBody.rating = e.rating;
+        if(e.comments) prodBody.comments = e.comments;
+        await apiFetch('cs_system_selection_products', {method:'POST', body:prodBody});
       }
     }
     alert('Saved successfully!');
-    goBack();
+    initF3(); // clear form, stay on page
   } catch(e) { if(err) err.textContent='Error: '+e.message; }
 }
 
-// ── CS PRODUCTS ──────────────────────────────────────────────────
+
 async function renderCsProducts() {
   const el = document.getElementById('cs-prod-el');
   if(!el) return;
   el.innerHTML = '<div style="color:var(--muted);padding:1rem">Loading...</div>';
   try {
-    const [views, market, selProds] = await Promise.all([
+    const [views, market, selProds, sels] = await Promise.all([
       getAll('cs_product_views'),
       getAll('cs_market_intel'),
-      getAll('cs_system_selection_products')
+      getAll('cs_system_selection_products'),
+      getAll('cs_system_selections')
     ]);
-    // Build map: product -> intel counts
+    // Build map: product -> {views, market, selections, avgRating, lastDate, vendor}
     const map = {};
-    const add = (name, type) => {
+    const add = (name, type, rating, date, vendor) => {
       if(!name) return;
-      if(!map[name]) map[name]={views:0,market:0,selections:0,vendor:''};
+      if(!map[name]) map[name]={views:0,market:0,selections:0,ratings:[],lastDate:'',vendor:''};
       map[name][type]++;
+      if(rating) map[name].ratings.push(rating);
+      if(date && date > map[name].lastDate) map[name].lastDate = date;
+      if(vendor && !map[name].vendor) map[name].vendor = vendor;
     };
-    views.forEach(v=>{ add(v.product_name,'views'); if(v.product_name&&v.vendor&&!map[v.product_name].vendor) map[v.product_name].vendor=v.vendor; });
-    market.forEach(m=>(m.products_mentioned||'').split(',').filter(Boolean).forEach(p=>add(p.trim(),'market')));
-    selProds.forEach(sp=>add(sp.product,'selections'));
+    views.forEach(v => add(v.product_name,'views',v.rating,v.assessment_date,v.vendor));
+    market.forEach(m => (m.products_mentioned||'').split(',').filter(Boolean).forEach(p => add(p.trim(),'market',m.rating,m.intel_date,'')));
+    selProds.forEach(sp => {
+      const sel = sels.find(s=>s.id===sp.selection_id);
+      add(sp.product,'selections',sp.rating,sel?.assessment_date||sel?.created_at?.split('T')[0],'');
+    });
+    // Fill vendor from state.products if missing
+    Object.keys(map).forEach(name => {
+      if(!map[name].vendor) map[name].vendor = state.products.find(p=>p.product_name===name)?.vendor||'';
+    });
     const names = Object.keys(map).sort();
+    // Filters
     const q = (state.filters.csp_q||'').toLowerCase();
     const fType = state.filters.csp_type||[];
     const fVendor = state.filters.csp_vendor||[];
-    let rows = names.filter(name=>{
-      if(q && !name.toLowerCase().includes(q)) return false;
-      if(fType.length){
-        const ok = (fType.includes('capSpire View')&&map[name].views>0)||(fType.includes('Market Intel')&&map[name].market>0)||(fType.includes('System Selection')&&map[name].selections>0);
+    let rows = names.filter(name => {
+      if(q && !name.toLowerCase().includes(q) && !map[name].vendor.toLowerCase().includes(q)) return false;
+      if(fType.length) {
+        const ok = (fType.includes('capSpire View')&&map[name].views>0)
+                || (fType.includes('Market Intel')&&map[name].market>0)
+                || (fType.includes('System Selection')&&map[name].selections>0);
         if(!ok) return false;
       }
-      const vendor = map[name].vendor || (state.products.find(p=>p.product_name===name)?.vendor||'');
-      if(fVendor.length && !fVendor.includes(vendor)) return false;
+      if(fVendor.length && !fVendor.includes(map[name].vendor)) return false;
       return true;
     });
-    const allVendors=[...new Set(names.map(n=>map[n].vendor||(state.products.find(p=>p.product_name===n)?.vendor||'')).filter(Boolean))].sort();
+    const allVendors = [...new Set(names.map(n=>map[n].vendor).filter(Boolean))].sort();
+    const starsHtml = (avg) => {
+      if(!avg) return '<span style="color:var(--muted);font-size:11px">—</span>';
+      const full = Math.round(avg);
+      return '★'.repeat(full).split('').map(()=>`<span style="color:#f59e0b">★</span>`).join('')
+           + '★'.repeat(5-full).split('').map(()=>`<span style="color:#d1d5db">★</span>`).join('')
+           + ` <span style="font-size:11px;color:var(--muted)">${avg.toFixed(1)}</span>`;
+    };
     el.innerHTML = `
       <div class="pg-title">Products</div>
-      <div class="pg-sub">Products with capSpire intel entries</div>
+      <div class="pg-sub">Products with capSpire intel entries — click a product to view full detail</div>
       <div class="card">
         <div class="filters">
-          <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;renderCsProducts()" placeholder="Search..." style="min-width:160px">
-          ${createMultiSelect('csp_type',['capSpire View','Market Intel','System Selection'],fType,'All Types','csp_type')}
-          ${createMultiSelect('csp_vendor',allVendors,fVendor,'All Vendors','csp_vendor')}
+          <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;renderCsProducts()" placeholder="Search..." style="min-width:150px">
+          ${createMultiSelect('csp_type',['capSpire View','Market Intel','System Selection'],fType,'All types','csp_type')}
+          ${createMultiSelect('csp_vendor',allVendors,fVendor,'All vendors','csp_vendor')}
           <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_type=[];state.filters.csp_vendor=[];renderCsProducts()">⟳ Reset</button>
-          <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} products</span>
+          <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} product${rows.length!==1?'s':''}</span>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Product</th><th>Intel</th><th>Vendor</th></tr></thead>
+            <thead><tr>
+              <th>Product</th><th>Vendor</th><th>Intel</th>
+              <th>Avg. rating</th><th>Last entry</th><th></th>
+            </tr></thead>
             <tbody>
-              ${rows.map(name=>{
-                const vendor = map[name].vendor || (state.products.find(p=>p.product_name===name)?.vendor||'');
+              ${rows.map(name => {
+                const m = map[name];
+                const avg = m.ratings.length ? m.ratings.reduce((a,b)=>a+b,0)/m.ratings.length : null;
+                const lastDate = m.lastDate ? m.lastDate.substring(0,10) : '—';
                 return `<tr>
-                  <td><a class="tlink" onclick="openCsDetail('${escAttr(name)}')">${escH(name)}</a></td>
+                  <td><a class="tlink" style="font-weight:500" onclick="openCsDetail('${escAttr(name)}')">${escH(name)}</a></td>
+                  <td style="color:var(--muted)">${escH(m.vendor)}</td>
                   <td>
-                    ${map[name].views?`<span style="font-size:10px;padding:2px 6px;background:#eff6ff;color:#1d4ed8;border-radius:4px;margin-right:3px">View ×${map[name].views}</span>`:''}
-                    ${map[name].market?`<span style="font-size:10px;padding:2px 6px;background:#f0fdfa;color:#0f766e;border-radius:4px;margin-right:3px">Market ×${map[name].market}</span>`:''}
-                    ${map[name].selections?`<span style="font-size:10px;padding:2px 6px;background:#faf5ff;color:#7c3aed;border-radius:4px">Selection ×${map[name].selections}</span>`:''}
+                    ${m.views?`<span style="font-size:10px;padding:2px 6px;background:#eff6ff;color:#1d4ed8;border-radius:4px;margin-right:3px">View ×${m.views}</span>`:''}
+                    ${m.market?`<span style="font-size:10px;padding:2px 6px;background:#f0fdfa;color:#0f766e;border-radius:4px;margin-right:3px">Market ×${m.market}</span>`:''}
+                    ${m.selections?`<span style="font-size:10px;padding:2px 6px;background:#faf5ff;color:#7c3aed;border-radius:4px">Selection ×${m.selections}</span>`:''}
                   </td>
-                  <td>${escH(vendor)}</td>
+                  <td>${starsHtml(avg)}</td>
+                  <td style="color:var(--muted);font-size:12px">${lastDate}</td>
+                  <td><button class="btn btn-reset" style="font-size:11px;white-space:nowrap" onclick="openCsDetail('${escAttr(name)}')">View all intel</button></td>
                 </tr>`;
               }).join('')}
-              ${!rows.length?'<tr><td colspan="3" style="padding:1rem;color:var(--muted);text-align:center">No intel entries found</td></tr>':''}
+              ${!rows.length?'<tr><td colspan="6" style="padding:1.5rem;text-align:center;color:var(--muted)">No intel entries found</td></tr>':''}
             </tbody>
           </table>
         </div>
       </div>`;
-  } catch(e) { el.innerHTML=`<div style="color:var(--red)">Error: ${escH(e.message)}</div>`; }
+  } catch(e) { el.innerHTML = `<div style="color:var(--red)">Error: ${escH(e.message)}</div>`; }
 }
 
+
 let _cspDetailName = null;
+
 async function openCsDetail(name) {
   _cspDetailName = name;
   const el = document.getElementById('cs-prod-el');
   if(!el) return;
+
   try {
-    const [views, market, selProds, sels] = await Promise.all([
+    const [views, market, selProds, sels, sbProds] = await Promise.all([
       getAll(`cs_product_views?product_name=eq.${encodeURIComponent(name)}`),
       getAll('cs_market_intel'),
       getAll(`cs_system_selection_products?product=eq.${encodeURIComponent(name)}`),
-      getAll('cs_system_selections')
+      getAll('cs_system_selections'),
+      getAll('products')
     ]);
+
     const mkt = market.filter(m=>(m.products_mentioned||'').split(',').map(s=>s.trim()).includes(name));
     const selIds = new Set(selProds.map(sp=>sp.selection_id));
-    const prodSels = sels.filter(s=>selIds.has(s.id));
-    const stars = n => n?'★'.repeat(n)+'☆'.repeat(5-n):'—';
-    const vendor = views[0]?.vendor || state.products.find(p=>p.product_name===name)?.vendor||'';
-    const sideHtml = `
-      <div class="sp-head">
-        <h3>${escH(name)}</h3>
-        <p>${escH(vendor)}</p>
-      </div>
-      <div class="sp-body">
-        ${views.length?`<div class="sp-sec"><h5>capSpire View (${views.length})</h5>${views.map(v=>`
-          <div style="padding:6px 0;border-bottom:1px solid var(--bg3);font-size:12px">
-            <div style="color:#f59e0b">${stars(v.rating)}</div>
-            <div style="color:var(--muted);font-size:11px">${escH(v.assessed_by||'')} · ${escH(v.assessment_date||'')}</div>
-            ${v.strengths?`<div style="margin-top:3px"><b>Strengths:</b> ${escH(v.strengths)}</div>`:''}
-            ${v.gaps?`<div><b>Gaps:</b> ${escH(v.gaps)}</div>`:''}
-            ${v.commodities?`<div style="color:var(--muted)">${escH(v.commodities)}</div>`:''}
-          </div>`).join('')}</div>`:''}
-        ${mkt.length?`<div class="sp-sec"><h5>Market Intel (${mkt.length})</h5>${mkt.map(m=>`
-          <div style="padding:5px 0;border-bottom:1px solid var(--bg3);font-size:11px">
-            <b>${escH(m.client_company||'')}</b>${m.country?' · '+escH(m.country):''}${m.intel_date?' · '+escH(m.intel_date):''}
-            ${m.comments?`<div style="color:var(--muted)">${escH(m.comments)}</div>`:''}
-          </div>`).join('')}</div>`:''}
-        ${prodSels.length?`<div class="sp-sec"><h5>System Selection (${prodSels.length})</h5>${prodSels.map(s=>`
-          <div style="font-size:11px;padding:5px 0;border-bottom:1px solid var(--bg3)">
-            <b>${escH(s.client_company||'')}</b>${s.year?' · '+s.year:''}${s.country?' · '+escH(s.country):''}
-          </div>`).join('')}</div>`:''}
-        <button class="btn btn-secondary" style="width:100%;margin-top:8px;font-size:12px" onclick="renderCsProducts()">✕ Close</button>
-      </div>`;
-    // Rebuild with split layout
+    const prodSels = sels.filter(s=>selIds.has(s.id)).map(sel=>({
+      ...sel,
+      products: selProds.filter(sp=>sp.selection_id===sel.id)
+    }));
+    const sbProd = sbProds.find(p=>p.product_name===name);
+    const vendor = views[0]?.vendor || sbProd?.vendor || state.products.find(p=>p.product_name===name)?.vendor||'';
+
+    const stars = n => n ? '<span style="color:#f59e0b">'+('★'.repeat(n))+'</span>'+'<span style="color:#d1d5db">'+('★'.repeat(5-n))+'</span>' : '—';
+
+    // ── TAB CONTENT BUILDERS ─────────────────────────────────────
+    const buildViewTab = () => {
+      if(!views.length) return '<div style="color:var(--muted);padding:1rem;text-align:center">No capSpire View entries yet</div>';
+      return views.map((v,i)=>`
+        <div style="border:0.5px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--muted)">${escH(v.assessed_by||'')} · ${escH(v.assessment_date||'')}</div>
+            <div style="font-size:14px">${stars(v.rating)}</div>
+          </div>
+          ${v.strengths?`<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Strengths</div><div style="font-size:12px;line-height:1.5">${escH(v.strengths)}</div></div>`:''}
+          ${v.gaps?`<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Gaps</div><div style="font-size:12px;line-height:1.5">${escH(v.gaps)}</div></div>`:''}
+          ${v.commodities?`<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Commodities</div><div style="display:flex;flex-wrap:wrap;gap:4px">${v.commodities.split(',').map(c=>`<span style="font-size:10px;padding:2px 7px;background:#eff6ff;color:#1d4ed8;border-radius:20px;border:1px solid #93c5fd">${escH(c.trim())}</span>`).join('')}</div></div>`:''}
+          ${v.notes?`<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">${escH(v.notes)}</div>`:''}
+        </div>`).join('');
+    };
+
+    const buildMarketTab = () => {
+      if(!mkt.length) return '<div style="color:var(--muted);padding:1rem;text-align:center">No Market Intel entries for this product</div>';
+      return mkt.map(m=>`
+        <div style="border:0.5px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-weight:500;font-size:13px">${escH(m.client_company||'')}</div>
+            <div style="font-size:14px">${stars(m.rating)}</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${[m.country,m.sector,m.intel_date].filter(Boolean).map(escH).join(' · ')}</div>
+          ${m.comments?`<div style="font-size:12px;line-height:1.5;margin-bottom:6px">${escH(m.comments)}</div>`:''}
+          ${m.link_ref?`<a href="${escAttr(m.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference link</a>`:''}
+        </div>`).join('');
+    };
+
+    const buildSelectionTab = () => {
+      if(!prodSels.length) return '<div style="color:var(--muted);padding:1rem;text-align:center">No System Selection entries for this product</div>';
+      return prodSels.map(sel=>{
+        const myProd = sel.products.find(sp=>sp.product===name);
+        return `
+        <div style="border:0.5px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-weight:500;font-size:13px">${escH(sel.client_company||'')}</div>
+            <span style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;background:${myProd?.outcome==='Selected'?'#f0fdf4':myProd?.outcome==='Rejected'?'#fef2f2':'#fefce8'};color:${myProd?.outcome==='Selected'?'#15803d':myProd?.outcome==='Rejected'?'#dc2626':'#b45309'}">${escH(myProd?.outcome||'')}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${[sel.country,sel.year,sel.assessed_by].filter(Boolean).map(escH).join(' · ')}</div>
+          ${myProd?.rating?`<div style="font-size:14px;margin-bottom:6px">${stars(myProd.rating)}</div>`:''}
+          ${myProd?.comments?`<div style="font-size:12px;line-height:1.5;margin-bottom:6px">${escH(myProd.comments)}</div>`:''}
+          ${sel.notes?`<div style="font-size:12px;color:var(--muted);font-style:italic">${escH(sel.notes)}</div>`:''}
+          ${sel.link_ref?`<a href="${escAttr(sel.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference</a>`:''}
+        </div>`;
+      }).join('');
+    };
+
+    const buildSbTab = () => {
+      if(!sbProd) return '<div style="color:var(--muted);padding:1rem;text-align:center">This product is not in the Sourcebook</div>';
+      const rows = [
+        ['Product type', sbProd.product_type],
+        ['Deployment', sbProd.deployment_model],
+        ['Version', sbProd.version_info],
+        ['Licensing', sbProd.licensing_model],
+      ].filter(r=>r[1]);
+      return `
+        <div style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px">
+          ${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:0.5px solid var(--bg3);font-size:12px"><span style="color:var(--muted)">${escH(k)}</span><span style="font-weight:500">${escH(v)}</span></div>`).join('')}
+        </div>
+        ${sbProd.notes?`<div style="font-size:12px;line-height:1.5;color:var(--muted)">${escH(sbProd.notes)}</div>`:''}`;
+    };
+
+    // ── RENDER PANEL ─────────────────────────────────────────────
     el.innerHTML = `
-      <div class="pg-title">Products</div>
-      <div class="pg-sub">Products with capSpire intel entries</div>
-      <div class="split">
-        <div id="cs-prod-table"></div>
-        <div class="sp">${sideHtml}</div>
+      <button class="back-btn" onclick="renderCsProducts()" style="margin-bottom:12px">← Back to Products</button>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;background:var(--bg2);border-bottom:1px solid var(--border)">
+          <div style="font-size:18px;font-weight:600;margin-bottom:2px">${escH(name)}</div>
+          <div style="font-size:12px;color:var(--muted)">${escH(vendor)}${sbProd?.product_type?' · '+escH(sbProd.product_type):''}${sbProd?.version_info?' · v'+escH(sbProd.version_info):''}</div>
+        </div>
+        <div style="display:flex;border-bottom:1px solid var(--border)" id="csd-tabs-l1">
+          <div class="csd-tab-l1 active" onclick="csdSwitchL1('cs')" style="padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;color:var(--accent);border-bottom:2.5px solid var(--accent);margin-bottom:-1px">capSpire Intel</div>
+          <div class="csd-tab-l1" onclick="csdSwitchL1('sb')" style="padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px">Sourcebook Intel</div>
+        </div>
+        <div id="csd-cs-section">
+          <div style="display:flex;gap:4px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap" id="csd-tabs-l2">
+            <button class="csd-tab-l2 active" onclick="csdSwitchL2('view')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:var(--bg);border:1px solid var(--border);font-family:inherit">capSpire View (${views.length})</button>
+            <button class="csd-tab-l2" onclick="csdSwitchL2('market')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">Market Intel (${mkt.length})</button>
+            <button class="csd-tab-l2" onclick="csdSwitchL2('selection')" style="padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;border:1px solid transparent;font-family:inherit;color:var(--muted)">System Selection (${prodSels.length})</button>
+          </div>
+          <div style="padding:14px 16px" id="csd-l2-body">
+            ${buildViewTab()}
+          </div>
+        </div>
+        <div id="csd-sb-section" style="display:none;padding:14px 16px">
+          ${buildSbTab()}
+        </div>
       </div>`;
-    // Re-render table part
-    await renderCsTable(name);
+
+    // Store builders for tab switching
+    window._csdBuilders = {view: buildViewTab, market: buildMarketTab, selection: buildSelectionTab, sb: buildSbTab};
+
   } catch(e) { console.error(e); }
 }
 
-async function renderCsTable(selectedName) {
-  // minimal table re-render for the split view
-  const el = document.getElementById('cs-prod-table');
-  if(!el) return;
-  el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading...</div>';
-  try {
-    const [views,market,selProds] = await Promise.all([getAll('cs_product_views'),getAll('cs_market_intel'),getAll('cs_system_selection_products')]);
-    const map = {};
-    const add = (n,t) => { if(!n)return; if(!map[n])map[n]={views:0,market:0,selections:0}; map[n][t]++; };
-    views.forEach(v=>add(v.product_name,'views'));
-    market.forEach(m=>(m.products_mentioned||'').split(',').filter(Boolean).forEach(p=>add(p.trim(),'market')));
-    selProds.forEach(sp=>add(sp.product,'selections'));
-    const names = Object.keys(map).sort();
-    el.innerHTML = `<div class="card"><div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Intel</th></tr></thead><tbody>
-      ${names.map(name=>`<tr style="${name===selectedName?'background:var(--bg3)':''}">
-        <td><a class="tlink" onclick="openCsDetail('${escAttr(name)}')">${escH(name)}</a></td>
-        <td>${map[name].views?`<span style="font-size:10px;padding:2px 5px;background:#eff6ff;color:#1d4ed8;border-radius:3px;margin-right:2px">V×${map[name].views}</span>`:''}${map[name].market?`<span style="font-size:10px;padding:2px 5px;background:#f0fdfa;color:#0f766e;border-radius:3px;margin-right:2px">M×${map[name].market}</span>`:''}${map[name].selections?`<span style="font-size:10px;padding:2px 5px;background:#faf5ff;color:#7c3aed;border-radius:3px">S×${map[name].selections}</span>`:''}</td>
-      </tr>`).join('')}
-    </tbody></table></div></div>`;
-  } catch(e) {}
+function csdSwitchL1(tab) {
+  const cs = document.getElementById('csd-cs-section');
+  const sb = document.getElementById('csd-sb-section');
+  if(cs) cs.style.display = tab==='cs' ? 'block' : 'none';
+  if(sb) sb.style.display = tab==='sb' ? 'block' : 'none';
+  document.querySelectorAll('.csd-tab-l1').forEach((t,i)=>{
+    const isActive = (i===0&&tab==='cs')||(i===1&&tab==='sb');
+    t.style.color = isActive ? 'var(--accent)' : 'var(--muted)';
+    t.style.borderBottomColor = isActive ? 'var(--accent)' : 'transparent';
+  });
 }
+
+function csdSwitchL2(tab) {
+  const body = document.getElementById('csd-l2-body');
+  if(body && window._csdBuilders) body.innerHTML = window._csdBuilders[tab]?.() || '';
+  document.querySelectorAll('.csd-tab-l2').forEach(t=>{
+    const isActive = t.getAttribute('onclick').includes(`'${tab}'`);
+    t.style.background = isActive ? 'var(--bg)' : 'transparent';
+    t.style.borderColor = isActive ? 'var(--border)' : 'transparent';
+    t.style.color = isActive ? 'var(--text)' : 'var(--muted)';
+  });
+}
+
+
 
 
 
