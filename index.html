@@ -598,7 +598,7 @@ const SB_KEY="sb_publishable_qT84fC6EBYcMndu0IW4log_ksZnx5cP";
 const GROQ_MODEL="llama-3.3-70b-versatile";
 const COV_COLOR={D:"#22c55e",C:"#f59e0b",N:"#ef4444",X:"#64748b"};
 const COV_LABEL={D:"Deployed",C:"Capable",N:"Not Capable",X:"N/A"};
-const getCode=l=>{if(!l)return"X";if(l.includes("deployed"))return"D";if(l.includes("capable"))return"C";if(l.includes("not currently"))return"N";return"X";};
+const getCode=l=>{if(!l)return"X";const ll=l.toLowerCase();if(ll.includes("not capable")||ll.includes("not currently"))return"N";if(ll.includes("deployed"))return"D";if(ll.includes("capable")||ll.includes("can be"))return"C";return"X";};
 let isDark=true;
 let currentUser="User";
 
@@ -690,7 +690,7 @@ function renderCurrentScreen(){
   const id=active.id.replace('s-','');
   if(id==='sb-vendors') renderVendors();
   else if(id==='sb-products') renderProducts();
-  else if(id==='sb-commodities') renderCommodities();
+  else if(id==='sb-commodities') renderCommCoverage();
   else if(id==='sb-ctrm') renderCTRM();
   else if(id==='sb-risk') renderRisk();
   else if(id==='sb-geo') renderGeo();
@@ -1257,7 +1257,7 @@ function nav(id, section) {
   else if(id==='cs-contacts') renderContacts();
   else if(id==='sb-vendors') renderVendors();
   else if(id==='sb-products') renderProducts();
-  else if(id==='sb-commodities') renderCommodities();
+  else if(id==='sb-commodities') renderCommCoverage();
   else if(id==='sb-ctrm') renderCTRM();
   else if(id==='sb-risk') renderRisk();
   else if(id==='sb-geo') renderGeo();
