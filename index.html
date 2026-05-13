@@ -1179,12 +1179,13 @@ const navHist = [];
 
 function nav(id, section) {
   if(id==='home') { id='cs-home'; section='cs'; }
+  if(id==='addintel'||id==='form-market'||id==='form-selection') { id='form-view'; }
   const cur = document.querySelector('.screen.active');
   if(cur) navHist.push(cur.id);
   showScreen(id);
   setNavActive(section);
   // Init forms/pages on navigate
-  if(id==='addintel'||id==='form-view'||id==='form-market'||id==='form-selection') { id='form-view'; initFi(); }
+  if(id==='form-view') { initFi(); }
   else if(id==='cs-products') renderCsProducts();
   else if(id==='cs-contacts') renderContacts();
   else if(id==='sb-vendors') renderVendors();
