@@ -720,7 +720,7 @@ function addComment(table,id,currentComments){
       if(table==="vendors")state.vendors=state.vendors.map(v=>v.id===id?{...v,capspire_comments:JSON.stringify(updated)}:v);
       else if(table==="products")state.products=state.products.map(p=>p.id===id?{...p,capspire_comments:JSON.stringify(updated)}:p);
       else if(table==="commodities")state.commodities=state.commodities.map(c=>c.id===id?{...c,capspire_comments:JSON.stringify(updated)}:c);
-      render();
+      renderCurrentScreen();
     }).catch(e=>alert("Error saving comment: "+e.message));
 }
 function parseComments(v){try{return v?JSON.parse(v):[];}catch{return[];}}
@@ -789,13 +789,13 @@ function editCmt(idx){
   cb.onclick=()=>ov.remove();row.appendChild(sb);row.appendChild(cb);bx.appendChild(t);bx.appendChild(ta);bx.appendChild(row);ov.appendChild(bx);
   document.body.appendChild(ov);ov.onclick=e=>{if(e.target===ov)ov.remove();};setTimeout(()=>ta.focus(),100);
   sb.onclick=async()=>{const txt=ta.value.trim();if(!txt)return;cmtList[idx]={...c,text:txt};ov.remove();
-    try{await apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}});saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();render();}catch(e){alert("Error: "+e.message);}};
+    try{await apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}});saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();renderCurrentScreen();}catch(e){alert("Error: "+e.message);}};
 }
 function delCmt(idx){
   if(!confirm("Delete this comment?"))return;
   cmtList.splice(idx,1);
   apiFetch(cmtTable+"?id=eq."+cmtId,{method:"PATCH",body:{capspire_comments:JSON.stringify(cmtList)}})
-    .then(()=>{saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();render();})
+    .then(()=>{saveCommentsToState(cmtTable,cmtId,cmtList);refreshCmtModal();renderCurrentScreen();})
     .catch(e=>alert("Error: "+e.message));
 }
 function openAddComment(table,id){
@@ -819,7 +819,7 @@ function openAddComment(table,id){
       const txt=ta.value.trim();if(!txt){alert("Please write a comment first.");return;}
       const now=new Date();const ds=now.toLocaleDateString("en-GB")+", "+now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
       const updated=[...existing,{user,date:ds,text:txt}];ov.remove();
-      try{await apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}});saveCommentsToState(table,id,updated);render();}
+      try{await apiFetch(table+"?id=eq."+id,{method:"PATCH",body:{capspire_comments:JSON.stringify(updated)}});saveCommentsToState(table,id,updated);renderCurrentScreen();}
       catch(e){alert("Error: "+e.message);}
     };
   });
@@ -900,7 +900,7 @@ const TABS=[
 ];
 let activeTab="overview";
 function initNav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="tab ${t.id===activeTab?"active":""}" onclick="setTab('${t.id}')">${t.label}</button>`).join("");}
-function setTab(id){activeTab=id;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById("section-"+id).classList.add("active");initNav();render();}
+function setTab(id){activeTab=id;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById("section-"+id).classList.add("active");renderCurrentScreen();}
 
 // ── OVERVIEW ──
 function renderOverview(){
