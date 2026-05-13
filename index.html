@@ -227,8 +227,8 @@ tr:hover td{background:var(--bg2);}
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('sb-vendors','sb')">🏢 Vendors</div>
       <div class="dd-item" onclick="nav('sb-products','sb')">📦 Products</div>
-      <div class="dd-item" onclick="nav('sb-commodities','sb')">🌾 Commodities</div>
-      <div class="dd-item" onclick="nav('sb-ctrm','sb')">⚡ CTRM Coverage</div>
+      <div class="dd-item" onclick="nav('sb-commodities','sb')">🌾 Commodity Coverage</div>
+      <div class="dd-item" onclick="nav('sb-ctrm','sb')">⚡ Functional Footprint</div>
       <div class="dd-item" onclick="nav('sb-risk','sb')">🛡 Functional Footprint (Risk)</div>
       <div class="dd-item" onclick="nav('sb-geo','sb')">🌍 Geographic Coverage</div>
       <div class="dd-item" onclick="nav('sb-ct','sb')">👤 Customer Types</div>
@@ -354,7 +354,7 @@ tr:hover td{background:var(--bg2);}
           <select id="f2-sector">
             <option value="">— Select —</option>
             <option>Energy Trading</option><option>Utilities</option>
-            <option>Oil & Gas</option><option>Commodities</option>
+            <option>Oil & Gas</option><option>Commodity Coverage</option>
             <option>Finance</option><option>Other</option>
           </select>
         </div>
@@ -449,8 +449,8 @@ tr:hover td{background:var(--bg2);}
     <div class="g4">
       <div class="sb-item" onclick="nav('sb-vendors','sb')"><div class="si">🏢</div><span>Vendors</span></div>
       <div class="sb-item" onclick="nav('sb-products','sb')"><div class="si">📦</div><span>Products</span></div>
-      <div class="sb-item" onclick="nav('sb-commodities','sb')"><div class="si">🌾</div><span>Commodities</span></div>
-      <div class="sb-item" onclick="nav('sb-ctrm','sb')"><div class="si">⚡</div><span>CTRM Coverage</span></div>
+      <div class="sb-item" onclick="nav('sb-commodities','sb')"><div class="si">🌾</div><span>Commodity Coverage</span></div>
+      <div class="sb-item" onclick="nav('sb-ctrm','sb')"><div class="si">⚡</div><span>Functional Footprint</span></div>
       <div class="sb-item" onclick="nav('sb-risk','sb')"><div class="si">🛡</div><span>Functional Footprint (Risk)</span></div>
       <div class="sb-item" onclick="nav('sb-geo','sb')"><div class="si">🌍</div><span>Geographic Coverage</span></div>
       <div class="sb-item" onclick="nav('sb-ct','sb')"><div class="si">👤</div><span>Customer Types</span></div>
@@ -462,8 +462,8 @@ tr:hover td{background:var(--bg2);}
 <!-- SB SECTIONS -->
 <div class="screen" id="s-sb-vendors"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Vendors</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-vendors"></div></div></div>
 <div class="screen" id="s-sb-products"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Products</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-products"></div></div></div>
-<div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Commodities</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
-<div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">CTRM Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
+<div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Commodity Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
+<div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Functional Footprint</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
 <div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Functional Footprint (Risk)</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
 <div class="screen" id="s-sb-geo"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Geographic Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-geo"></div></div></div>
 <div class="screen" id="s-sb-ct"><div class="bc">Sourcebook Intel <span class="sep">›</span> <span class="bcs">Customer Types</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-customertype"></div></div></div>
@@ -481,7 +481,11 @@ tr:hover td{background:var(--bg2);}
   </div>
 </div>
 
-<script>function showAuthTab(tab) {
+<script>function navToIntelligence(productName){
+  nav('cs-products','cs');
+  setTimeout(()=>openCsDetail(productName),100);
+}
+function showAuthTab(tab) {
   document.getElementById("auth-login").style.display = tab === "login" ? "block" : "none";
   document.getElementById("auth-register").style.display = tab === "register" ? "block" : "none";
   document.getElementById("tab-login").style.background = tab === "login" ? "var(--accent)" : "var(--bg3)";
@@ -659,7 +663,14 @@ function navToIntelligence(productName){
   state._intFRiskCat=''; state._intFRiskFn=''; state._intFRiskCov='';
   setTab('reporting');
 }
-function navToTab(tab,filterKey,filterVal){if(filterKey)state.filters[filterKey]=filterVal;state.pages={};setTab(tab);}
+function navToTab(tab,filterKey,filterVal){
+  if(filterKey) state.filters[filterKey]=filterVal;
+  state.pages={};
+  // Map old tab names to new screen ids
+  const tabMap={'vendors':'sb-vendors','products':'sb-products','commodities':'sb-commodities','ctrm':'sb-ctrm','risk':'sb-risk','geo':'sb-geo','ct':'sb-ct','contacts':'cs-contacts','import':'sb-import'};
+  const screenId = tabMap[tab] || ('sb-'+tab);
+  nav(screenId, 'sb');
+}
 function sf(key,val){
   state.filters[key]=val;state.pages={};
   const aid=document.activeElement?.id;
@@ -684,7 +695,7 @@ function renderCurrentScreen(){
   else if(id==='cs-contacts') renderContacts();
   else if(id==='cs-products') renderCsProducts();
 }
-function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};render();}
+function resetFilters(prefix){Object.keys(state.filters).forEach(k=>{if(k.startsWith(prefix))delete state.filters[k];});state.pages={};renderCurrentScreen();}
 function resetBtn(prefix){return`<button class="btn btn-reset" onclick="resetFilters('${prefix}')">↺ Reset</button>`;}
 function selOpts(options,current,allLabel="All"){return`<option value="">${allLabel}</option>`+options.map(o=>`<option ${o===current?"selected":""}>${o}</option>`).join("");}
 
