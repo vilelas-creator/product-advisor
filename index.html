@@ -146,6 +146,10 @@ tr:hover td{background:var(--bg2);}
 .fg textarea{min-height:80px;resize:vertical;}
 .modal-btns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
 
+.btn-danger{background:#fff;color:var(--red);border:1px solid var(--red);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
+.btn-danger:hover{background:#fef2f2;}
+.btn-edit{background:#fff;color:var(--muted);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
+.btn-edit:hover{background:var(--bg2);color:var(--text);}
 /* MULTISELECT */
 .ms-wrap{position:relative;display:inline-block;}
 .ms-trigger{padding:5px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
@@ -925,6 +929,8 @@ async function deleteSbRecord(table, id) {
     else if(table==='products') state.products=state.products.filter(r=>r.id!==id);
     else if(table==='commodities') state.commodities=state.commodities.filter(r=>r.id!==id);
     else if(table==='product_contacts') state.contacts=state.contacts.filter(r=>r.id!==id);
+    else if(table==='product_function_ctrm') state.ctrm=state.ctrm.filter(r=>r.id!==id);
+    else if(table==='product_function_risk') state.risk=state.risk.filter(r=>r.id!==id);
     renderCurrentScreen();
   } catch(e) { alert('Error: '+e.message); }
 }
@@ -964,7 +970,7 @@ function renderProducts(){
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn" onclick="openProductModal(${p.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border:1px solid var(--red)" onclick="deleteSbRecord('products',${p.id})">Delete</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn" class="btn-edit" onclick="openProductModal(${p.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border:1px solid var(--red)" class="btn-danger" onclick="deleteSbRecord('products',${p.id})">Delete</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
@@ -978,7 +984,7 @@ function renderCommodities(){
     <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
     <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th></th></tr></thead><tbody>
-    ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td><td><button class="btn" onclick="openCommodityModal(${c.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border:1px solid var(--red)" onclick="deleteSbRecord('commodities',${c.id})">Delete</button></td></tr>`).join("")}
+    ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td><td><button class="btn" class="btn-edit" onclick="openCommodityModal(${c.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border:1px solid var(--red)" class="btn-danger" onclick="deleteSbRecord('commodities',${c.id})">Delete</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
 }
 
@@ -1029,7 +1035,7 @@ function renderCTRM(){
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openCTRMModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openCTRMModal(${r.id})">Edit</button> <button class="btn" class="btn-danger" onclick="deleteSbRecord('product_function_ctrm',${r.id})">Delete</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -1053,7 +1059,7 @@ function renderRisk(){
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn" style="font-size:11px;padding:3px 8px" onclick="openRiskModal(${r.id})">Edit</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openRiskModal(${r.id})">Edit</button> <button class="btn" class="btn-danger" onclick="deleteSbRecord('product_function_risk',${r.id})">Delete</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
