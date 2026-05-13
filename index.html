@@ -615,7 +615,7 @@ async function apiFetch(table,opts={}){
   const{method="GET",body,params={}}=opts;
   let url=SB_URL+"/rest/v1/"+table;
   const qp=new URLSearchParams(params);
-  if([...qp].length)url+="?"+qp;
+  if([...qp].length)url+=(url.includes("?")?"&":"?")+qp;
   let token=await getAuthToken();
   let res=await fetch(url,{method,headers:{"apikey":SB_KEY,"Authorization":"Bearer "+token,"Content-Type":"application/json","Prefer":"return=representation"},body:body?JSON.stringify(body):undefined});
   // If 401, try to refresh token and retry once
