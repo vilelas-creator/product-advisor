@@ -219,7 +219,7 @@ tr:hover td{background:var(--bg2);}
 <div id="topnav">
   <span class="tnav-logo">Product Advisor</span>
   <div class="dd">
-    <button class="dd-btn" id="nb-cs" onclick="nav('cs-home','cs')">capSpire Intel <span class="dd-arr">▾</span></button>
+    <button class="dd-btn" id="nb-cs">capSpire Intel <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('addintel','cs')">➕ Add Intel</div>
       <div class="dd-item" onclick="nav('cs-products','cs')">📦 Products</div>
@@ -227,7 +227,7 @@ tr:hover td{background:var(--bg2);}
     </div>
   </div>
   <div class="dd">
-    <button class="dd-btn" id="nb-sb" onclick="nav('sb-home','sb')">Sourcebook Intel <span class="dd-arr">▾</span></button>
+    <button class="dd-btn" id="nb-sb">Sourcebook Intel <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
       <div class="dd-item" onclick="nav('sb-vendors','sb')">🏢 Vendors</div>
       <div class="dd-item" onclick="nav('sb-products','sb')">📦 Products</div>
@@ -946,8 +946,7 @@ function renderVendors(){
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
     ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn\" onclick=\"openVendorModal(${v.id})\\">Edit</button> <button class=\\"btn\\" style=\\"font-size:11px;color:var(--red);border:1px solid var(--red)\\" onclick=\\"deleteSbRecord('vendors',${v.id})\\">Delete</button></td></tr>`).join("")}
-    </tbody>
-    </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
+    </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
 
 
@@ -1035,7 +1034,7 @@ function renderCTRM(){
       ${resetBtn('ctrm_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Function</th><th>Commodity</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openCTRMModal(${r.id})">Edit</button> <button class="btn" class="btn-danger" onclick="deleteSbRecord('product_function_ctrm',${r.id})">Delete</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${r.function_name||""}</td><td>${bdg(r.commodity,"var(--accent)")}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openCTRMModal(${r.id})">Edit</button> <button class="btn-danger" onclick="deleteSbRecord('product_function_ctrm',${r.id})">Delete</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("ctrm",page,rows.length,PER)}`}
   </div>`;
 }
@@ -1059,7 +1058,7 @@ function renderRisk(){
       ${resetBtn('risk_')}<span style="margin-left:auto;font-size:11px;color:var(--muted)">${rows.length.toLocaleString()} results</span>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>Product</th><th>Category</th><th>Function</th><th>Coverage</th></tr></thead><tbody>
-    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openRiskModal(${r.id})">Edit</button> <button class="btn" class="btn-danger" onclick="deleteSbRecord('product_function_risk',${r.id})">Delete</button></td></tr>`;}).join("")}
+    ${paged.map(r=>{const code=getCode(r.coverage_level);return`<tr><td><a onclick="navToIntelligence('${escAttr(r.product)}');return false;" href="#">${r.product||""}</a></td><td>${bdg(r.category,"var(--purple)")}</td><td>${r.function_name||""}</td><td>${bdg(COV_LABEL[code],COV_COLOR[code])}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openRiskModal(${r.id})">Edit</button> <button class="btn-danger" onclick="deleteSbRecord('product_function_risk',${r.id})">Delete</button></td></tr>`;}).join("")}
     </tbody></table></div>${pagerHtml("risk",page,rows.length,PER)}
   </div>`;
 }
