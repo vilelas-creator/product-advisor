@@ -303,12 +303,11 @@ tr:hover td{background:var(--bg2);}
       <!-- Type selector -->
       <div class="field">
         <label>Type <span class="req">*</span></label>
-        <select id="fi-type-select" onchange="fiSetType(this.value)" style="max-width:320px">
-          <option value="">— Select type —</option>
-          <option value="view">🔍 capSpire View of the Product</option>
-          <option value="market">📊 Market Insight</option>
-          <option value="selection">⚖️ System Selection Insight</option>
-        </select>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <button type="button" id="fi-btn-view" class="fi-type-btn" onclick="fiSetType('view')" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">🔍 capSpire View</button>
+          <button type="button" id="fi-btn-market" class="fi-type-btn" onclick="fiSetType('market')" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">📊 Market Insight</button>
+          <button type="button" id="fi-btn-selection" class="fi-type-btn" onclick="fiSetType('selection')" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">⚖️ System Selection</button>
+        </div>
       </div>
 
       <!-- Hidden auto-fill -->
@@ -317,7 +316,7 @@ tr:hover td{background:var(--bg2);}
       <input type="hidden" id="fi-type-val">
 
       <!-- PRODUCT (all types) -->
-      <div class="field fi-field fi-all" style="display:none">
+      <div class="field fi-field fi-view fi-market" style="display:none">
         <label>Product <span class="req">*</span></label>
         <select id="fi-product" onchange="fiProductChange()" style="margin-bottom:6px">
           <option value="">— Select product —</option>
@@ -1416,7 +1415,6 @@ function initFi() {
   const errEl=document.getElementById('fi-err'); if(errEl) errEl.textContent='';
   // Reset type
   document.getElementById('fi-type-val').value='';
-  const typeSel=document.getElementById('fi-type-select'); if(typeSel) typeSel.value='';
   document.querySelectorAll('.fi-type-btn').forEach(b=>{ b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color=''; });
   document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
   // Reset title
@@ -1431,9 +1429,12 @@ function initFi() {
 function fiSetType(type) {
   if(!type) return;
   document.getElementById('fi-type-val').value = type;
-  // Sync select if called programmatically
-  const sel = document.getElementById('fi-type-select');
-  if(sel && sel.value !== type) sel.value = type;
+  // Highlight active button
+  document.querySelectorAll('.fi-type-btn').forEach(b=>{
+    b.style.borderColor='var(--border)';b.style.background='#fff';b.style.color='';b.style.fontWeight='500';
+  });
+  const activeBtn=document.getElementById('fi-btn-'+type);
+  if(activeBtn){activeBtn.style.borderColor='var(--accent)';activeBtn.style.background='#eff6ff';activeBtn.style.color='var(--accent)';activeBtn.style.fontWeight='700';}
   // Show relevant fields
   document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
   document.querySelectorAll(`.fi-all, .fi-${type}`).forEach(f=>f.style.display='');
