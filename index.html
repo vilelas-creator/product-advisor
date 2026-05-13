@@ -979,7 +979,7 @@ function renderCommodities(){
   const page=state.pages.commodities||0;const PER=20;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
+    <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredCommodities(),'commodities','Commodities')">⬇ Excel</button></div>
     <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th></th></tr></thead><tbody>
     ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td><td><button class="btn-edit" onclick="openCommodityModal(${c.id})">Edit</button> <button class="btn-danger" onclick="deleteSbRecord('commodities',${c.id})">Delete</button></td></tr>`).join("")}
@@ -2871,7 +2871,7 @@ function renderCommoditiesView(){
   const page=state.pages.pcc||0;const PER=30;
   const paged=rows.slice(page*PER,(page+1)*PER);
   document.getElementById("section-commodities").innerHTML=`<div class="card">
-    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredPcc(),'commodity_coverage','Commodity Coverage')">⬇ Excel</button></div>
+    <div class="card-head"><span class="card-title">🌾 Commodity Coverage</span><span class="card-meta">${rows.length} results</span></div>
     <div class="filters">
       <input id="search-pcc_q" value="${q}" oninput="sf('pcc_q',this.value)" placeholder="Search all columns...">
       <select onchange="sf('pcc_type',this.value)">${selOpts(types,typeF,"All Types")}</select>
@@ -3157,6 +3157,20 @@ async function checkAuth() {
   ["register-name","register-email","register-password"].forEach(id => {
     document.getElementById(id)?.addEventListener("keydown", e => { if(e.key==="Enter") doRegister(); });
   });
+}
+
+
+function getFilteredCommodities() {
+  const q=(state.filters.com_q||"").toLowerCase();
+  return state.commodities.filter(c=>!q||Object.values(c).some(val=>(val||"").toString().toLowerCase().includes(q)));
+}
+function getFilteredCTRM() {
+  const q=(state.filters.ctrm_q||"").toLowerCase();
+  return state.ctrm.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
+}
+function getFilteredCT() {
+  const q=(state.filters.ct_q||"").toLowerCase();
+  return state.ct.filter(r=>!q||Object.values(r).some(val=>(val||"").toString().toLowerCase().includes(q)));
 }
 
 
