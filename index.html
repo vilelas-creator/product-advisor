@@ -296,190 +296,139 @@ tr:hover td{background:var(--bg2);}
     <div class="pg-title">Add Insight</div>
     <div class="pg-sub">Select the type of insight to record</div>
     <div class="g3">
-      <div class="opt-card" onclick="nav('form-view','cs')"><div class="oi">🔍</div><h4>capSpire View of the Product</h4><p>Internal assessment of a specific product</p></div>
-      <div class="opt-card" onclick="nav('form-market','cs')"><div class="oi">📊</div><h4>Market Insight</h4><p>Market information from clients or events</p></div>
-      <div class="opt-card" onclick="nav('form-selection','cs')"><div class="oi">⚖️</div><h4>System Selection Insight</h4><p>Insight from system selection processes</p></div>
+      <div class="opt-card" onclick="nav('form-view','cs'); setTimeout(()=>fiSetType('view'),100)"><div class="oi">🔍</div><h4>capSpire View of the Product</h4><p>Internal assessment of a specific product</p></div>
+      <div class="opt-card" onclick="nav('form-view','cs'); setTimeout(()=>fiSetType('market'),100)"><div class="oi">📊</div><h4>Market Insight</h4><p>Market information from clients or events</p></div>
+      <div class="opt-card" onclick="nav('form-view','cs'); setTimeout(()=>fiSetType('selection'),100)"><div class="oi">⚖️</div><h4>System Selection Insight</h4><p>Insight from system selection processes</p></div>
     </div>
   </div>
 </div>
 
-<!-- FORM 1: capSpire View -->
+<!-- UNIFIED ADD INSIGHT FORM -->
 <div class="screen" id="s-form-view">
-  <div class="bc">capSpire Insights <span class="sep">›</span> Add Insight <span class="sep">›</span> <span class="bcs">capSpire View of the Product</span></div>
+  <div class="bc">capSpire Insights <span class="sep">›</span> Add Insight <span class="sep">›</span> <span class="bcs" id="fi-bc-title">Add Insight</span></div>
   <div class="pg-content">
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="fw">
-      <div class="pg-title">capSpire View of the Product</div>
-      <div class="pg-sub">Internal capSpire assessment — strengths, gaps and commodity coverage</div>
-      <div class="field"><label>Product <span class="req">*</span></label><select id="f1-product" onchange="f1ProductChange()"><option value="">— Select product —</option></select></div>
-      <div id="f1-product-other-wrap" style="display:none" class="field">
-        <label>Product name <span class="req">*</span></label>
-        <input id="f1-product-other" placeholder="Type product name...">
-      </div>
-      <input type="hidden" id="f1-by">
-      <input type="hidden" id="f1-date">
-      <div class="field">
-        <label>Overall rating</label>
-        <div class="stars" id="f1-stars">
-          <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
-          <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
-          <span class="star" data-n="5">★</span>
-        </div>
-      </div>
-      <div class="field"><label>Strengths</label><textarea id="f1-strengths" placeholder="Describe the product's main strengths..."></textarea></div>
-      <div class="field"><label>Gaps / weaknesses</label><textarea id="f1-gaps" placeholder="Describe identified gaps or limitations..."></textarea></div>
-      <div class="field">
-        <label>Relevant commodities</label>
-        <div id="f1-coms-wrap"></div>
-      </div>
-      <div class="field"><label>Additional notes</label><textarea id="f1-notes" placeholder="Any other relevant information..."></textarea></div>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveF1()">Save</button>
-        <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
-      </div>
-      <div id="f1-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
-    </div>
-  </div>
-</div>
+      <div class="pg-title" id="fi-title">Add Insight</div>
+      <div class="pg-sub" id="fi-sub">Select the type of insight to record</div>
 
-<!-- FORM 2: Market Insight -->
-<div class="screen" id="s-form-market">
-  <div class="bc">capSpire Insights <span class="sep">›</span> Add Insight <span class="sep">›</span> <span class="bcs">Market Insight</span></div>
-  <div class="pg-content">
-    <button class="back-btn" onclick="goBack()">← Back</button>
-    <div class="fw">
-      <div class="pg-title">Market Insight</div>
-      <div class="pg-sub">Market insights gathered from clients, events or public sources</div>
-      <div class="frow">
-        <div class="field"><label>Client / Company <span class="req">*</span></label><input id="f2-client" placeholder="Company name"></div>
-        <div class="field"><label>Sector</label>
-          <select id="f2-sector">
-            <option value="">— Select —</option>
-            <option>Energy Trading</option><option>Utilities</option>
-            <option>Oil & Gas</option><option>Commodity Coverage</option>
-            <option>Finance</option><option>Other</option>
-          </select>
+      <!-- Type selector -->
+      <div class="field">
+        <label>Type <span class="req">*</span></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <button type="button" class="fi-type-btn" onclick="fiSetType('view')"   style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px">🔍 capSpire View</button>
+          <button type="button" class="fi-type-btn" onclick="fiSetType('market')" style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px">📊 Market Insight</button>
+          <button type="button" class="fi-type-btn" onclick="fiSetType('selection')" style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px">⚖️ System Selection</button>
         </div>
       </div>
-      <div class="field"><label>Products mentioned <span class="req">*</span></label>
-        <select id="f2-product-select" onchange="f2ProductChange()" style="margin-bottom:6px">
+
+      <!-- Hidden auto-fill -->
+      <input type="hidden" id="fi-by">
+      <input type="hidden" id="fi-date">
+      <input type="hidden" id="fi-type-val">
+
+      <!-- PRODUCT (all types) -->
+      <div class="field fi-field fi-all" style="display:none">
+        <label>Product <span class="req">*</span></label>
+        <select id="fi-product" onchange="fiProductChange()" style="margin-bottom:6px">
           <option value="">— Select product —</option>
         </select>
-        <div id="f2-product-other-wrap" style="display:none">
-          <input id="f2-product-other" placeholder="Type product name..." style="margin-top:6px">
+        <div id="fi-product-other-wrap" style="display:none;margin-top:6px">
+          <input id="fi-product-other" placeholder="Type product name...">
         </div>
       </div>
-      <div class="field"><label>Country</label><select id="f2-country"><option value="">— Select country —</option></select></div>
-      <input type="hidden" id="f2-date">
-      <input type="hidden" id="f2-by">
-      <div class="field">
+
+      <!-- CLIENT (market + selection) -->
+      <div class="field fi-field fi-market fi-selection" style="display:none">
+        <label>Client / Company <span class="req">*</span></label>
+        <input id="fi-client" placeholder="Company name">
+      </div>
+
+      <!-- SECTOR (market only) -->
+      <div class="field fi-field fi-market" style="display:none">
+        <label>Sector</label>
+        <select id="fi-sector">
+          <option value="">— Select —</option>
+          <option>Energy Trading</option><option>Utilities</option>
+          <option>Oil &amp; Gas</option><option>Finance</option><option>Other</option>
+        </select>
+      </div>
+
+      <!-- YEAR (selection only) -->
+      <div class="field fi-field fi-selection" style="display:none">
+        <label>Year</label>
+        <input id="fi-year" type="number" placeholder="2025" min="2000" max="2030">
+      </div>
+
+      <!-- COUNTRY (market + selection) -->
+      <div class="field fi-field fi-market fi-selection" style="display:none">
+        <label>Country</label>
+        <select id="fi-country"><option value="">— Select country —</option></select>
+      </div>
+
+      <!-- RATING (view + market) -->
+      <div class="field fi-field fi-view fi-market" style="display:none">
         <label>Overall rating</label>
-        <div class="stars" id="f2-stars">
+        <div class="stars" id="fi-stars">
           <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
           <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
           <span class="star" data-n="5">★</span>
         </div>
       </div>
-      <div class="field"><label>Relevant commodities</label><div id="f2-coms-wrap"></div></div>
-      <div class="field"><label>Comments</label><textarea id="f2-comments" placeholder="Describe the information gathered..."></textarea></div>
-      <div class="field"><label>Link / Reference</label><input id="f2-link" type="url" placeholder="https://..."></div>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveF2()">Save</button>
+
+      <!-- STRENGTHS (view only) -->
+      <div class="field fi-field fi-view" style="display:none">
+        <label>Strengths</label>
+        <textarea id="fi-strengths" placeholder="Describe the product's main strengths..."></textarea>
+      </div>
+
+      <!-- GAPS (view only) -->
+      <div class="field fi-field fi-view" style="display:none">
+        <label>Gaps / weaknesses</label>
+        <textarea id="fi-gaps" placeholder="Describe identified gaps or limitations..."></textarea>
+      </div>
+
+      <!-- COMMODITIES (view + market) -->
+      <div class="field fi-field fi-view fi-market" style="display:none">
+        <label>Relevant commodities</label>
+        <div id="fi-coms-wrap"></div>
+      </div>
+
+      <!-- PRODUCTS EVALUATED (selection only) -->
+      <div class="fi-field fi-selection" style="display:none">
+        <label class="field-label">Products evaluated</label>
+        <div id="fi-entries"></div>
+        <button type="button" class="add-entry-btn" onclick="fiAddEntry()" style="margin-top:8px">+ Add another product</button>
+      </div>
+
+      <!-- COMMENTS (market + selection) -->
+      <div class="field fi-field fi-market fi-selection" style="display:none">
+        <label>Comments</label>
+        <textarea id="fi-comments" placeholder="Describe the information gathered..."></textarea>
+      </div>
+
+      <!-- NOTES (view + selection) -->
+      <div class="field fi-field fi-view fi-selection" style="display:none">
+        <label>Additional notes</label>
+        <textarea id="fi-notes" placeholder="Any other relevant information..."></textarea>
+      </div>
+
+      <!-- LINK (market + selection) -->
+      <div class="field fi-field fi-market fi-selection" style="display:none">
+        <label>Link / Reference</label>
+        <input id="fi-link" type="url" placeholder="https://...">
+      </div>
+
+      <!-- SAVE (hidden until type selected) -->
+      <div class="btn-row fi-field fi-all" style="display:none">
+        <button class="btn btn-primary" onclick="saveFi()">Save</button>
         <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
       </div>
-      <div id="f2-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
+      <div id="fi-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
     </div>
   </div>
 </div>
 
-<!-- FORM 3: System Selection -->
-<div class="screen" id="s-form-selection">
-  <div class="bc">capSpire Insights <span class="sep">›</span> Add Insight <span class="sep">›</span> <span class="bcs">System Selection Insight</span></div>
-  <div class="pg-content">
-    <button class="back-btn" onclick="goBack()">← Back</button>
-    <div class="fw">
-      <div class="pg-title">System Selection Insight</div>
-      <div class="pg-sub">Insight from system selection processes</div>
-      <div class="frow">
-        <div class="field"><label>Client <span class="req">*</span></label><input id="f3-client" placeholder="Company name"></div>
-        <div class="field"><label>Year</label><input id="f3-year" type="number" placeholder="2025" min="2000" max="2030"></div>
-      </div>
-      <input type="hidden" id="f3-by">
-      <input type="hidden" id="f3-date">
-      <div class="field"><label>Country</label><select id="f3-country"><option value="">— Select country —</option></select></div>
-      <div class="field"><label>Products evaluated</label></div>
-      <div id="f3-entries"></div>
-      <button class="add-entry-btn" onclick="addF3Entry()">+ Add another product</button>
-      <div class="field"><label>Notes</label><textarea id="f3-notes" placeholder="Additional information about the process..."></textarea></div>
-      <div class="field"><label>Link / Reference</label><input id="f3-link" type="url" placeholder="https://..."></div>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveF3()">Save</button>
-        <button class="btn btn-secondary" onclick="goBack()">Cancel</button>
-      </div>
-      <div id="f3-err" style="color:var(--red);font-size:12px;margin-top:8px;"></div>
-    </div>
-  </div>
-</div>
-
-<!-- CS PRODUCTS -->
-<div class="screen" id="s-cs-products">
-  <div class="bc">capSpire Insights <span class="sep">›</span> <span class="bcs">Products</span></div>
-  <div class="pg-content">
-    <button class="back-btn" onclick="goBack()">← Back</button>
-    <div id="cs-prod-el"></div>
-  </div>
-</div>
-
-<!-- CS CONTACTS -->
-<div class="screen" id="s-cs-contacts">
-  <div class="bc">capSpire Insights <span class="sep">›</span> <span class="bcs">Contacts</span></div>
-  <div class="pg-content">
-    <button class="back-btn" onclick="goBack()">← Back</button>
-    <div id="section-contacts"></div>
-  </div>
-</div>
-
-<!-- SB HOME -->
-<div class="screen" id="s-sb-home">
-  <div class="bc">Sourcebook Data</div>
-  <div class="pg-content">
-    <button class="back-btn" onclick="goBack()">← Back</button>
-    <div class="pg-title">Sourcebook Data</div>
-    <div class="pg-sub">Official Sourcebook data</div>
-    <div class="g4">
-      <div class="sb-item" onclick="nav('sb-vendors','sb')"><div class="si">🏢</div><span>Vendors</span></div>
-      <div class="sb-item" onclick="nav('sb-products','sb')"><div class="si">📦</div><span>Products</span></div>
-      <div class="sb-item" onclick="nav('sb-commodities','sb')"><div class="si">🌾</div><span>Commodity Coverage</span></div>
-      <div class="sb-item" onclick="nav('sb-ctrm','sb')"><div class="si">⚡</div><span>Functional Footprint</span></div>
-      <div class="sb-item" onclick="nav('sb-risk','sb')"><div class="si">🛡</div><span>Functional Footprint (Risk)</span></div>
-      <div class="sb-item" onclick="nav('sb-geo','sb')"><div class="si">🌍</div><span>Geographic Coverage</span></div>
-      <div class="sb-item" onclick="nav('sb-ct','sb')"><div class="si">👤</div><span>Customer Types</span></div>
-      <div class="sb-item" onclick="nav('sb-import','sb')"><div class="si">📥</div><span>Import Data</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- SB SECTIONS -->
-<div class="screen" id="s-sb-vendors"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Vendors</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-vendors"></div></div></div>
-<div class="screen" id="s-sb-products"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Products</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-products"></div></div></div>
-<div class="screen" id="s-sb-commodities"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Commodity Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-commodities"></div></div></div>
-<div class="screen" id="s-sb-ctrm"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Functional Footprint</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-ctrm"></div></div></div>
-<div class="screen" id="s-sb-risk"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Functional Footprint (Risk)</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-risk"></div></div></div>
-<div class="screen" id="s-sb-geo"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Geographic Coverage</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-geo"></div></div></div>
-<div class="screen" id="s-sb-ct"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Customer Types</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-customertype"></div></div></div>
-<div class="screen" id="s-sb-import"><div class="bc">Sourcebook Data <span class="sep">›</span> <span class="bcs">Import Data</span></div><div class="pg-content"><button class="back-btn" onclick="goBack()">← Back</button><div id="section-import"></div></div></div>
-
-<!-- MODAL -->
-<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
-  <div id="modal-box">
-    <div id="modal-title"></div>
-    <div id="modal-fields"></div>
-    <div class="modal-btns">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="modal-save-btn">Save</button>
-    </div>
-  </div>
-</div>
 
 <script>function navToIntelligence(productName){
   nav('cs-products','cs');
@@ -1247,9 +1196,9 @@ function nav(id, section) {
   showScreen(id);
   setNavActive(section);
   // Init forms/pages on navigate
-  if(id==='form-view') initF1();
-  else if(id==='form-market') initF2();
-  else if(id==='form-selection') initF3();
+  if(id==='form-view') { initFi(); }
+  else if(id==='form-market') { initFi(); setTimeout(()=>fiSetType('market'),50); }
+  else if(id==='form-selection') { initFi(); setTimeout(()=>fiSetType('selection'),50); }
   else if(id==='cs-products') renderCsProducts();
   else if(id==='cs-contacts') renderContacts();
   else if(id==='sb-vendors') renderVendors();
@@ -1443,6 +1392,215 @@ function getMsSelected(containerId) {
 }
 
 // ── FORM 1: capSpire View ────────────────────────────────────────
+
+// ── UNIFIED INSIGHT FORM ──────────────────────────────────────────
+
+function initFi() {
+  // Auto-fill hidden fields
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const byEl = document.getElementById('fi-by');
+  const dateEl = document.getElementById('fi-date');
+  if(byEl) byEl.value = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
+  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  // Product dropdown
+  const prodSel = document.getElementById('fi-product');
+  if(prodSel) {
+    prodSel.innerHTML = '<option value="">— Select product —</option>' +
+      [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
+        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('') +
+      '<option value="__other__">+ Add product not in list</option>';
+  }
+  // Commodities
+  const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
+  buildMultiSelect('fi-coms-wrap', coms, 'Select commodities');
+  // Country
+  buildCountrySelect('fi-country');
+  // Stars
+  initStars('fi-stars');
+  // Reset all fields
+  ['fi-client','fi-comments','fi-notes','fi-link','fi-strengths','fi-gaps'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+  const yEl=document.getElementById('fi-year'); if(yEl) yEl.value='';
+  const secEl=document.getElementById('fi-sector'); if(secEl) secEl.value='';
+  const otherWrap=document.getElementById('fi-product-other-wrap');
+  if(otherWrap) otherWrap.style.display='none';
+  const entries=document.getElementById('fi-entries'); if(entries) entries.innerHTML='';
+  const errEl=document.getElementById('fi-err'); if(errEl) errEl.textContent='';
+  // Reset type
+  document.getElementById('fi-type-val').value='';
+  document.querySelectorAll('.fi-type-btn').forEach(b=>{ b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color=''; });
+  document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
+  // Reset title
+  const title = document.getElementById('fi-title');
+  const sub = document.getElementById('fi-sub');
+  const bc = document.getElementById('fi-bc-title');
+  if(title) title.textContent='Add Insight';
+  if(sub) sub.textContent='Select the type of insight to record';
+  if(bc) bc.textContent='Add Insight';
+}
+
+function fiSetType(type) {
+  document.getElementById('fi-type-val').value = type;
+  // Highlight selected button
+  document.querySelectorAll('.fi-type-btn').forEach(b=>{
+    const isActive = b.getAttribute('onclick').includes(`'${type}'`);
+    b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+    b.style.background = isActive ? '#eff6ff' : '#fff';
+    b.style.color = isActive ? 'var(--accent)' : '';
+    b.style.fontWeight = isActive ? '600' : '';
+  });
+  // Show relevant fields
+  document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
+  document.querySelectorAll(`.fi-all, .fi-${type}`).forEach(f=>f.style.display='');
+  // Update title
+  const titles = {view:'capSpire View of the Product', market:'Market Insight', selection:'System Selection Insight'};
+  const subs = {view:'Internal capSpire assessment — strengths, gaps and commodity coverage', market:'Market insights gathered from clients, events or public sources', selection:'Insight from system selection processes'};
+  const title = document.getElementById('fi-title');
+  const sub = document.getElementById('fi-sub');
+  const bc = document.getElementById('fi-bc-title');
+  if(title) title.textContent = titles[type];
+  if(sub) sub.textContent = subs[type];
+  if(bc) bc.textContent = titles[type];
+  // Add first entry for selection
+  if(type==='selection') {
+    const entries = document.getElementById('fi-entries');
+    if(entries && !entries.children.length) fiAddEntry();
+  }
+}
+
+function fiProductChange() {
+  const sel = document.getElementById('fi-product');
+  const otherWrap = document.getElementById('fi-product-other-wrap');
+  if(otherWrap) otherWrap.style.display = sel?.value === '__other__' ? 'block' : 'none';
+}
+
+function fiAddEntry() {
+  const entries = document.getElementById('fi-entries');
+  if(!entries) return;
+  const n = entries.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'prod-entry';
+  div.innerHTML = `
+    <h5>Product ${n} <button type="button" class="rm-btn" onclick="this.closest('.prod-entry').remove()">✕ Remove</button></h5>
+    <div class="frow">
+      <div class="field">
+        <label>Product</label>
+        <select class="fi-entry-prod" onchange="fiEntryProdChange(this)">
+          <option value="">— Select —</option>
+          ${[...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name)).map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('')}
+          <option value="__other__">+ Add product not in list</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Outcome</label>
+        <select class="fi-entry-outcome">
+          <option value="Selected">Selected</option>
+          <option value="Shortlisted">Shortlisted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="field fi-entry-other-wrap" style="display:none">
+      <input class="fi-entry-prod-other" placeholder="Type product name...">
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="stars fi-entry-stars">
+        <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
+        <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
+        <span class="star" data-n="5">★</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Comments</label>
+      <textarea class="fi-entry-comments" placeholder="Findings, differentiators, reasons for outcome..." style="min-height:80px"></textarea>
+    </div>`;
+  entries.appendChild(div);
+  div.querySelectorAll('.star').forEach(star => {
+    star.onclick = () => {
+      const n = parseInt(star.dataset.n);
+      div.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i<n));
+    };
+  });
+}
+
+function fiEntryProdChange(sel) {
+  const entry = sel.closest('.prod-entry');
+  const wrap = entry?.querySelector('.fi-entry-other-wrap');
+  if(wrap) wrap.style.display = sel.value === '__other__' ? 'block' : 'none';
+}
+
+async function saveFi() {
+  const type = document.getElementById('fi-type-val')?.value;
+  const err = document.getElementById('fi-err');
+  if(!type) { if(err) err.textContent='Please select a type.'; return; }
+  if(err) err.textContent='';
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const by = document.getElementById('fi-by')?.value || sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
+  const date = document.getElementById('fi-date')?.value || new Date().toISOString().split('T')[0];
+  // Product
+  const prodSel = document.getElementById('fi-product');
+  let product = prodSel?.value || '';
+  if(product === '__other__') product = document.getElementById('fi-product-other')?.value?.trim()||'';
+  // Commodities
+  const coms = getMsSelected('fi-coms-wrap');
+
+  try {
+    if(type === 'view') {
+      if(!product) { if(err) err.textContent='Please select a product.'; return; }
+      const body = {product_name: product, assessed_by: by, assessment_date: date};
+      const rating = getStars('fi-stars'); if(rating) body.rating=rating;
+      const str = document.getElementById('fi-strengths')?.value; if(str) body.strengths=str;
+      const gaps = document.getElementById('fi-gaps')?.value; if(gaps) body.gaps=gaps;
+      if(coms.length) body.commodities=coms.join(',');
+      const notes = document.getElementById('fi-notes')?.value; if(notes) body.notes=notes;
+      await apiFetch('cs_product_views', {method:'POST', body});
+
+    } else if(type === 'market') {
+      const client = document.getElementById('fi-client')?.value?.trim();
+      if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
+      const body = {client_company: client, assessed_by: by, intel_date: date};
+      const sector = document.getElementById('fi-sector')?.value; if(sector) body.sector=sector;
+      const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
+      const rating = getStars('fi-stars'); if(rating) body.rating=rating;
+      if(product) body.products_mentioned=product;
+      if(coms.length) body.commodities_mentioned=coms.join(',');
+      const comments = document.getElementById('fi-comments')?.value; if(comments) body.comments=comments;
+      const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
+      await apiFetch('cs_market_intel', {method:'POST', body});
+
+    } else if(type === 'selection') {
+      const client = document.getElementById('fi-client')?.value?.trim();
+      if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
+      const body = {client_company: client, assessed_by: by, assessment_date: date};
+      const year = parseInt(document.getElementById('fi-year')?.value); if(year) body.year=year;
+      const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
+      const notes = document.getElementById('fi-notes')?.value; if(notes) body.notes=notes;
+      const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
+      const res = await apiFetch('cs_system_selections', {method:'POST', body});
+      const selId = res[0]?.id;
+      if(selId) {
+        const entries = [...(document.querySelectorAll('#fi-entries .prod-entry')||[])];
+        for(const entry of entries) {
+          let prod = entry.querySelector('.fi-entry-prod')?.value||'';
+          if(prod==='__other__') prod=entry.querySelector('.fi-entry-prod-other')?.value?.trim()||'';
+          if(!prod) continue;
+          const outcome = entry.querySelector('.fi-entry-outcome')?.value||'Selected';
+          const rating = [...entry.querySelectorAll('.star.on')].length||null;
+          const comments = entry.querySelector('.fi-entry-comments')?.value||'';
+          const prodBody = {selection_id:selId, product:prod, outcome};
+          if(rating) prodBody.rating=rating;
+          if(comments) prodBody.comments=comments;
+          await apiFetch('cs_system_selection_products', {method:'POST', body:prodBody});
+        }
+      }
+    }
+    alert('Saved successfully!');
+    initFi();
+  } catch(e) { if(err) err.textContent='Error: '+e.message; }
+}
+
 function initF1() {
   const sel = document.getElementById('f1-product');
   if(sel) {
