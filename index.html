@@ -146,10 +146,10 @@ tr:hover td{background:var(--bg2);}
 .fg textarea{min-height:80px;resize:vertical;}
 .modal-btns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
 
-.btn-danger{background:#fff;color:var(--red);border:1px solid var(--red);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
-.btn-danger:hover{background:#fef2f2;}
-.btn-edit{background:#fff;color:var(--muted);border:1px solid var(--border);padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
-.btn-edit:hover{background:var(--bg2);color:var(--text);}
+.btn-edit{display:inline-flex;align-items:center;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:#fff;color:#374151;transition:all .12s;}
+.btn-edit:hover{background:var(--bg2);border-color:#9ca3af;color:var(--text);}
+.btn-danger{display:inline-flex;align-items:center;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;border:1px solid #fca5a5;background:#fff5f5;color:var(--red);transition:all .12s;}
+.btn-danger:hover{background:#fee2e2;border-color:var(--red);}
 /* MULTISELECT */
 .ms-wrap{position:relative;display:inline-block;}
 .ms-trigger{padding:5px 9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
@@ -945,10 +945,9 @@ function renderVendors(){
     <div class="card-head"><span class="card-title">🏢 Vendors</span><span class="card-meta">${state.vendors.length} vendors</span><button class="btn btn-success" style="font-size:11px;padding:4px 10px;margin-left:8px" onclick="exportToExcel(getFilteredVendors(),'vendors','Vendors')">⬇ Excel</button></div>
     <div class="filters"><input id="search-v_q" value="${state.filters.v_q||""}" oninput="sf('v_q',this.value)" placeholder="Search all columns...">${resetBtn('v_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openVendorModal(null)">+ Add Vendor</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Vendor Name</th><th>Headquarters</th><th>Website</th><th>Industry</th><th></th></tr></thead><tbody>
-    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn\" onclick=\"openVendorModal(${v.id})\\">Edit</button> <button class=\\"btn\\" style=\\"font-size:11px;color:var(--red);border:1px solid var(--red)\\" onclick=\\"deleteSbRecord('vendors',${v.id})\\">Delete</button></td></tr>`).join("")}
+    ${paged.map(v=>`<tr><td style="color:var(--accent);width:40px">${v.id}</td><td><a onclick="navToTab('products','p_vendor','${(v.vendor_name||"").replace(/'/g,"\\'")}')" href="#">${v.vendor_name||""}</a></td><td style="color:var(--muted);max-width:180px">${(v.headquarters||"").replace(/\n/g," ")}</td><td><a href="https://${v.website}" target="_blank">${v.website||""}</a></td><td>${bdg(v.industries_served,v.industries_served?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td style=\"white-space:nowrap\"><button class=\"btn\" onclick=\"openVendorModal(${v.id})\" class=\"btn-edit\">Edit</button> <button class=\"btn-danger\" onclick=\"deleteSbRecord('vendors',${v.id})\">Delete</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("vendors",page,rows.length,PER)}</div>`;
 }
-
 
 // ── PRODUCTS
 function renderProducts(){
@@ -969,7 +968,7 @@ function renderProducts(){
       ${resetBtn('p_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openProductModal(null)">+ Add Product</button>
     </div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Product Name</th><th>Type</th><th>Vendor</th><th>Deployment</th><th>Version</th><th>Notes</th><th></th></tr></thead><tbody>
-    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn" class="btn-edit" onclick="openProductModal(${p.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border:1px solid var(--red)" class="btn-danger" onclick="deleteSbRecord('products',${p.id})">Delete</button></td></tr>`).join("")}
+    ${paged.map(p=>`<tr><td style="color:var(--accent);width:40px">${p.id}</td><td style="font-weight:600"><a onclick="navToIntelligence('${escAttr(p.product_name)}');return false;" href="#">${p.product_name||""}</a></td><td>${bdg(p.product_type?.includes("Risk")?"Risk":"CTRM",p.product_type?.includes("Risk")?"var(--purple)":"var(--accent)")}</td><td><a onclick="navToTab('vendors','v_q','${(p.vendor||"").replace(/'/g,"\\'")}')" href="#">${p.vendor||""}</a></td><td style="color:var(--muted);max-width:140px;font-size:11px">${p.deployment_model||""}</td><td style="color:var(--yellow);font-weight:600">${p.version_info||""}</td><td style="color:var(--muted);max-width:160px;font-size:11px">${(p.notes||"").slice(0,50)}${(p.notes||"").length>50?"…":""}</td><td style="white-space:nowrap"><button class="btn-edit" onclick="openProductModal(${p.id})">Edit</button> <button class="btn-danger" onclick="deleteSbRecord('products',${p.id})">Delete</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("products",page,rows.length,PER)}</div>`;
 }
 
@@ -983,7 +982,7 @@ function renderCommodities(){
     <div class="card-head"><span class="card-title">🌾 Commodities</span><span class="card-meta">${state.commodities.length} commodities</span></div>
     <div class="filters"><input id="search-com_q" value="${q}" oninput="sf('com_q',this.value)" placeholder="Search all columns...">${resetBtn('com_')}<button class="btn btn-primary" style="margin-left:auto" onclick="openCommodityModal(null)">+ Add Commodity</button></div>
     <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Commodity Name</th><th></th></tr></thead><tbody>
-    ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td><td><button class="btn" class="btn-edit" onclick="openCommodityModal(${c.id})">Edit</button> <button class="btn" style="font-size:11px;color:var(--red);border:1px solid var(--red)" class="btn-danger" onclick="deleteSbRecord('commodities',${c.id})">Delete</button></td></tr>`).join("")}
+    ${paged.map(c=>`<tr><td style="color:var(--accent);width:40px">${c.id}</td><td style="font-weight:600">${c.commodity_name||""}</td><td><button class="btn-edit" onclick="openCommodityModal(${c.id})">Edit</button> <button class="btn-danger" onclick="deleteSbRecord('commodities',${c.id})">Delete</button></td></tr>`).join("")}
     </tbody></table></div>${pagerHtml("commodities",page,rows.length,PER)}</div>`;
 }
 
@@ -1133,7 +1132,7 @@ function renderContacts(){
       <td><a href="mailto:${c.email}">${c.email||""}</a></td>
       <td style="color:var(--muted)">${c.phone_number||""}</td>
       <td style="color:var(--muted)">${c.region||""}</td>
-      <td><button class="btn" onclick="openContactModal(${c.id})">Edit</button></td>
+      <td><button class="btn" class="btn-edit" onclick="openContactModal(${c.id})">Edit</button> <button class="btn-danger" onclick="deleteContact(${c.id})">Delete</button></td>
     </tr>`).join("")}
     </tbody></table></div>`}
   </div>`;
