@@ -316,10 +316,8 @@ tr:hover td{background:var(--bg2);}
         <label>Product name <span class="req">*</span></label>
         <input id="f1-product-other" placeholder="Type product name...">
       </div>
-      <div class="frow">
-        <div class="field"><label>Assessed by</label><input id="f1-by" readonly></div>
-        <div class="field"><label>Date</label><input id="f1-date" readonly></div>
-      </div>
+      <input type="hidden" id="f1-by">
+      <input type="hidden" id="f1-date">
       <div class="field">
         <label>Overall rating</label>
         <div class="stars" id="f1-stars">
@@ -351,7 +349,7 @@ tr:hover td{background:var(--bg2);}
     <button class="back-btn" onclick="goBack()">← Back</button>
     <div class="fw">
       <div class="pg-title">Market Insight</div>
-      <div class="pg-sub">Market insightligence gathered from clients, events or public sources</div>
+      <div class="pg-sub">Market insights gathered from clients, events or public sources</div>
       <div class="frow">
         <div class="field"><label>Client / Company <span class="req">*</span></label><input id="f2-client" placeholder="Company name"></div>
         <div class="field"><label>Sector</label>
@@ -363,17 +361,17 @@ tr:hover td{background:var(--bg2);}
           </select>
         </div>
       </div>
-      <div class="field"><label>Country</label><select id="f2-country"><option value="">— Select country —</option></select></div>
-      <div class="frow">
-        <div class="field"><label>Date</label><input id="f2-date" type="date"></div>
-        <div class="field"><label>Source / context</label>
-          <select id="f2-context">
-            <option value="">— Select —</option>
-            <option>Client meeting</option><option>Conference</option>
-            <option>RFP / Tender</option><option>LinkedIn / News</option><option>Other</option>
-          </select>
+      <div class="field"><label>Products mentioned <span class="req">*</span></label>
+        <select id="f2-product-select" onchange="f2ProductChange()" style="margin-bottom:6px">
+          <option value="">— Select product —</option>
+        </select>
+        <div id="f2-product-other-wrap" style="display:none">
+          <input id="f2-product-other" placeholder="Type product name..." style="margin-top:6px">
         </div>
       </div>
+      <div class="field"><label>Country</label><select id="f2-country"><option value="">— Select country —</option></select></div>
+      <input type="hidden" id="f2-date">
+      <input type="hidden" id="f2-by">
       <div class="field">
         <label>Overall rating</label>
         <div class="stars" id="f2-stars">
@@ -382,7 +380,7 @@ tr:hover td{background:var(--bg2);}
           <span class="star" data-n="5">★</span>
         </div>
       </div>
-      <div class="field"><label>Products mentioned</label><div id="f2-prods-wrap"></div></div>
+      <div class="field"><label>Relevant commodities</label><div id="f2-coms-wrap"></div></div>
       <div class="field"><label>Comments</label><textarea id="f2-comments" placeholder="Describe the information gathered..."></textarea></div>
       <div class="field"><label>Link / Reference</label><input id="f2-link" type="url" placeholder="https://..."></div>
       <div class="btn-row">
@@ -406,10 +404,8 @@ tr:hover td{background:var(--bg2);}
         <div class="field"><label>Client <span class="req">*</span></label><input id="f3-client" placeholder="Company name"></div>
         <div class="field"><label>Year</label><input id="f3-year" type="number" placeholder="2025" min="2000" max="2030"></div>
       </div>
-      <div class="frow">
-        <div class="field"><label>Recorded by</label><input id="f3-by" readonly></div>
-        <div class="field"><label>Date</label><input id="f3-date" readonly></div>
-      </div>
+      <input type="hidden" id="f3-by">
+      <input type="hidden" id="f3-date">
       <div class="field"><label>Country</label><select id="f3-country"><option value="">— Select country —</option></select></div>
       <div class="field"><label>Products evaluated</label></div>
       <div id="f3-entries"></div>
@@ -1448,7 +1444,6 @@ function getMsSelected(containerId) {
 
 // ── FORM 1: capSpire View ────────────────────────────────────────
 function initF1() {
-  // Products dropdown + "Other" option
   const sel = document.getElementById('f1-product');
   if(sel) {
     sel.innerHTML = '<option value="">— Select product —</option>' +
@@ -1456,23 +1451,22 @@ function initF1() {
         .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('') +
       '<option value="__other__">+ Add product not in list</option>';
   }
-  // Assessed by: use full name
+  // Auto-fill hidden fields
   const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
   const byEl = document.getElementById('f1-by');
   const dateEl = document.getElementById('f1-date');
   if(byEl) byEl.value = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
   if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-  // Reset fields
+  // Reset visible fields
   ['f1-strengths','f1-gaps','f1-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const err=document.getElementById('f1-err'); if(err) err.textContent='';
   const otherWrap = document.getElementById('f1-product-other-wrap');
   if(otherWrap) otherWrap.style.display='none';
-  // Stars
   initStars('f1-stars');
-  // Commodities multiselect (Excel-style)
   const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
   buildMultiSelect('f1-coms-wrap', coms, 'Select commodities');
 }
+
 
 function f1ProductChange() {
   const sel = document.getElementById('f1-product');
@@ -1527,121 +1521,65 @@ async function saveF1() {
 // ── FORM 2: Market Insight ─────────────────────────────────────────
 function initF2() {
   buildCountrySelect('f2-country');
-  // Products multiselect
-  const prods = [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name)).map(p=>p.product_name);
-  buildMultiSelect('f2-prods-wrap', prods, 'Select products');
-  // Reset fields
+  // Product dropdown
+  const prodSel = document.getElementById('f2-product-select');
+  if(prodSel) {
+    prodSel.innerHTML = '<option value="">— Select product —</option>' +
+      [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
+        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('') +
+      '<option value="__other__">+ Add product not in list</option>';
+  }
+  // Commodities multiselect
+  const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
+  buildMultiSelect('f2-coms-wrap', coms, 'Select commodities');
+  // Auto-fill hidden fields
+  const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const byEl = document.getElementById('f2-by');
+  const dateEl = document.getElementById('f2-date');
+  if(byEl) byEl.value = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
+  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  // Reset visible fields
   ['f2-client','f2-comments','f2-link'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  ['f2-sector','f2-context'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  const d=document.getElementById('f2-date'); if(d) d.value=new Date().toISOString().split('T')[0];
+  const secEl=document.getElementById('f2-sector'); if(secEl) secEl.value='';
+  const otherWrap=document.getElementById('f2-product-other-wrap');
+  if(otherWrap) otherWrap.style.display='none';
   const err=document.getElementById('f2-err'); if(err) err.textContent='';
   initStars('f2-stars');
 }
 
+function f2ProductChange() {
+  const sel = document.getElementById('f2-product-select');
+  const otherWrap = document.getElementById('f2-product-other-wrap');
+  if(otherWrap) otherWrap.style.display = sel?.value === '__other__' ? 'block' : 'none';
+}
+
+
 async function saveF2() {
   const client = document.getElementById('f2-client')?.value?.trim();
   const err = document.getElementById('f2-err');
-  if(!client) { if(err) err.textContent='Please enter a client / company name.'; return; }
+  if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
   if(err) err.textContent='';
-  const prods = getMsSelected('f2-prods-wrap');
-  const body = {};
-  body.client_company = client;
-  const sector=document.getElementById('f2-sector')?.value; if(sector) body.sector=sector;
-  const country=document.getElementById('f2-country')?.value; if(country) body.country=country;
-  const date=document.getElementById('f2-date')?.value; if(date) body.intel_date=date;
-  const ctx=document.getElementById('f2-context')?.value; if(ctx) body.source_context=ctx;
-  const rating=getStars('f2-stars'); if(rating) body.rating=rating;
-  if(prods.length) body.products_mentioned=prods.join(',');
-  const comments=document.getElementById('f2-comments')?.value; if(comments) body.comments=comments;
-  const link=document.getElementById('f2-link')?.value; if(link) body.link_ref=link;
+  // Product
+  const prodSel = document.getElementById('f2-product-select');
+  let product = prodSel?.value || '';
+  if(product === '__other__') product = document.getElementById('f2-product-other')?.value?.trim()||'';
+  // Commodities
+  const coms = getMsSelected('f2-coms-wrap');
+  const body = {client_company: client};
+  const sector = document.getElementById('f2-sector')?.value; if(sector) body.sector=sector;
+  const country = document.getElementById('f2-country')?.value; if(country) body.country=country;
+  const by = document.getElementById('f2-by')?.value; if(by) body.assessed_by=by;
+  const date = document.getElementById('f2-date')?.value; if(date) body.intel_date=date;
+  const rating = getStars('f2-stars'); if(rating) body.rating=rating;
+  if(product) body.products_mentioned=product;
+  if(coms.length) body.commodities_mentioned=coms.join(',');
+  const comments = document.getElementById('f2-comments')?.value; if(comments) body.comments=comments;
+  const link = document.getElementById('f2-link')?.value; if(link) body.link_ref=link;
   try {
     await apiFetch('cs_market_intel', {method:'POST', body});
     alert('Saved successfully!');
-    goBack();
+    initF2();
   } catch(e) { if(err) err.textContent='Error: '+e.message; }
-}
-
-// ── FORM 3: System Selection ─────────────────────────────────────
-function initF3() {
-  buildCountrySelect('f3-country');
-  ['f3-client','f3-notes','f3-link'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  const sess=JSON.parse(localStorage.getItem('pa_session')||'{}');
-  const byEl=document.getElementById('f3-by'); if(byEl) byEl.value=sess?.user?.user_metadata?.full_name||sess?.user?.email||'';
-  const dateEl=document.getElementById('f3-date'); if(dateEl) dateEl.value=new Date().toISOString().split('T')[0];
-  const y=document.getElementById('f3-year'); if(y) y.value='';
-  const err=document.getElementById('f3-err'); if(err) err.textContent='';
-  const entries = document.getElementById('f3-entries');
-  if(entries) { entries.innerHTML=''; }
-  addF3Entry();
-}
-
-
-function buildProdOptions() {
-  return '<option value="">— Select —</option>'+
-    [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
-      .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
-}
-
-function addF3Entry() {
-  const entries = document.getElementById('f3-entries');
-  if(!entries) return;
-  const n = (entries?.children?.length||0)+1;
-  const div = document.createElement('div');
-  div.className = 'prod-entry';
-  div.innerHTML = `
-    <h5>Product ${n} <button type="button" class="rm-btn" onclick="this.closest('.prod-entry').remove()">✕ Remove</button></h5>
-    <div class="frow">
-      <div class="field">
-        <label>Product</label>
-        <select class="f3-prod" onchange="f3ProdChange(this)">
-          ${buildProdOptions()}
-          <option value="__other__">+ Add product not in list</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Outcome</label>
-        <select class="f3-outcome">
-          <option value="Selected">Selected</option>
-          <option value="Shortlisted">Shortlisted</option>
-          <option value="Rejected">Rejected</option>
-        </select>
-      </div>
-    </div>
-    <div class="field f3-other-wrap" style="display:none">
-      <label>Product name <span class="req">*</span></label>
-      <input class="f3-prod-other" placeholder="Type product name...">
-    </div>
-    <div class="field">
-      <label>Rating</label>
-      <div class="stars f3-stars">
-        <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
-        <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
-        <span class="star" data-n="5">★</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>Comments</label>
-      <textarea class="f3-comments" placeholder="Describe findings, differentiators, reasons for outcome..." style="min-height:100px;max-height:400px"></textarea>
-    </div>`;
-  entries.appendChild(div);
-  // Init stars for this entry
-  div.querySelectorAll('.star').forEach(star => {
-    star.onclick = () => {
-      const n = parseInt(star.dataset.n);
-      div.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i<n));
-    };
-  });
-}
-
-function f3ProdChange(sel) {
-  const entry = sel.closest('.prod-entry');
-  const otherWrap = entry?.querySelector('.f3-other-wrap');
-  if(otherWrap) otherWrap.style.display = sel.value === '__other__' ? 'block' : 'none';
-}
-
-function getF3Stars(entry) {
-  const on = entry.querySelectorAll('.star.on').length;
-  return on > 0 ? on : null;
 }
 
 
@@ -3197,6 +3135,82 @@ document.addEventListener('click', function(e){
     document.querySelectorAll('[id^="ms_"]').forEach(d=>d.style.display='none');
   }
 });
+function addF3Entry() {
+  const entries = document.getElementById('f3-entries');
+  if(!entries) return;
+  const n = (entries?.children?.length||0)+1;
+  const div = document.createElement('div');
+  div.className = 'prod-entry';
+  div.innerHTML = `
+    <h5>Product ${n} <button type="button" class="rm-btn" onclick="this.closest('.prod-entry').remove()">✕ Remove</button></h5>
+    <div class="frow">
+      <div class="field">
+        <label>Product</label>
+        <select class="f3-prod" onchange="f3ProdChange(this)">
+          ${buildProdOptions()}
+          <option value="__other__">+ Add product not in list</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Outcome</label>
+        <select class="f3-outcome">
+          <option value="Selected">Selected</option>
+          <option value="Shortlisted">Shortlisted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+    </div>
+    <div class="field f3-other-wrap" style="display:none">
+      <label>Product name <span class="req">*</span></label>
+      <input class="f3-prod-other" placeholder="Type product name...">
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="stars f3-stars">
+        <span class="star" data-n="1">★</span><span class="star" data-n="2">★</span>
+        <span class="star" data-n="3">★</span><span class="star" data-n="4">★</span>
+        <span class="star" data-n="5">★</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Comments</label>
+      <textarea class="f3-comments" placeholder="Describe findings, differentiators, reasons for outcome..." style="min-height:80px"></textarea>
+    </div>`;
+  entries.appendChild(div);
+  div.querySelectorAll('.star').forEach(star => {
+    star.onclick = () => {
+      const n = parseInt(star.dataset.n);
+      div.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i<n));
+    };
+  });
+}
+
+function f3ProdChange(sel) {
+  const entry = sel.closest('.prod-entry');
+  const otherWrap = entry?.querySelector('.f3-other-wrap');
+  if(otherWrap) otherWrap.style.display = sel.value === '__other__' ? 'block' : 'none';
+}
+
+function buildProdOptions() {
+  return '<option value="">— Select —</option>'+
+    [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
+      .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('');
+}
+
+function initF3() {
+  buildCountrySelect('f3-country');
+  ['f3-client','f3-notes','f3-link'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const yEl=document.getElementById('f3-year'); if(yEl) yEl.value='';
+  // Auto-fill hidden fields
+  const sess=JSON.parse(localStorage.getItem('pa_session')||'{}');
+  const byEl=document.getElementById('f3-by'); if(byEl) byEl.value=sess?.user?.user_metadata?.full_name||sess?.user?.email||'';
+  const dateEl=document.getElementById('f3-date'); if(dateEl) dateEl.value=new Date().toISOString().split('T')[0];
+  const err=document.getElementById('f3-err'); if(err) err.textContent='';
+  const entries=document.getElementById('f3-entries'); if(entries) entries.innerHTML='';
+  addF3Entry();
+}
+
+
 </script>
 </body>
 </html>
