@@ -221,7 +221,7 @@ tr:hover td{background:var(--bg2);}
   <div class="dd">
     <button class="dd-btn" id="nb-cs">capSpire Insights <span class="dd-arr">▾</span></button>
     <div class="dd-menu">
-      <div class="dd-item" onclick="nav('addintel','cs')">➕ Add Insight</div>
+      <div class="dd-item" onclick="nav('form-view','cs')">➕ Add Insight</div>
       <div class="dd-item" onclick="nav('cs-products','cs')">📦 Products</div>
       <div class="dd-item" onclick="nav('cs-contacts','cs')">👥 Contacts</div>
     </div>
@@ -281,7 +281,7 @@ tr:hover td{background:var(--bg2);}
     <div class="pg-title">capSpire Insights</div>
     <div class="pg-sub">Internal insights gathered by capSpire consultants</div>
     <div class="g3">
-      <div class="opt-card" onclick="nav('addintel','cs')"><div class="oi">➕</div><h4>Add Insight</h4><p>Record a new product view, market signal or system selection</p></div>
+      <div class="opt-card" onclick="nav('form-view','cs')"><div class="oi">➕</div><h4>Add Insight</h4><p>Record a new product view, market signal or system selection</p></div>
       <div class="opt-card" onclick="nav('cs-products','cs')"><div class="oi">📦</div><h4>Products</h4><p>Products with capSpire insights entries</p></div>
       <div class="opt-card" onclick="nav('cs-contacts','cs')"><div class="oi">👥</div><h4>Contacts</h4><p>Market contacts and references</p></div>
     </div>
@@ -289,18 +289,6 @@ tr:hover td{background:var(--bg2);}
 </div>
 
 <!-- ADD INTEL -->
-<div class="screen" id="s-addintel">
-  <div class="bc">capSpire Insights <span class="sep">›</span> <span class="bcs">Add Insight</span></div>
-  <div class="pg-content">
-    <button class="back-btn" onclick="goBack()">← Back</button>
-    <div class="pg-title">Add Insight</div>
-    <div class="pg-sub">Select the type of insight to record</div>
-    <div class="g3">
-      <div class="opt-card" onclick="nav('form-view','cs'); setTimeout(()=>fiSetType('view'),100)"><div class="oi">🔍</div><h4>capSpire View of the Product</h4><p>Internal assessment of a specific product</p></div>
-      <div class="opt-card" onclick="nav('form-view','cs'); setTimeout(()=>fiSetType('market'),100)"><div class="oi">📊</div><h4>Market Insight</h4><p>Market information from clients or events</p></div>
-      <div class="opt-card" onclick="nav('form-view','cs'); setTimeout(()=>fiSetType('selection'),100)"><div class="oi">⚖️</div><h4>System Selection Insight</h4><p>Insight from system selection processes</p></div>
-    </div>
-  </div>
 </div>
 
 <!-- UNIFIED ADD INSIGHT FORM -->
@@ -315,11 +303,12 @@ tr:hover td{background:var(--bg2);}
       <!-- Type selector -->
       <div class="field">
         <label>Type <span class="req">*</span></label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-          <button type="button" class="fi-type-btn" onclick="fiSetType('view')"   style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px">🔍 capSpire View</button>
-          <button type="button" class="fi-type-btn" onclick="fiSetType('market')" style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px">📊 Market Insight</button>
-          <button type="button" class="fi-type-btn" onclick="fiSetType('selection')" style="padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px">⚖️ System Selection</button>
-        </div>
+        <select id="fi-type-select" onchange="fiSetType(this.value)" style="max-width:320px">
+          <option value="">— Select type —</option>
+          <option value="view">🔍 capSpire View of the Product</option>
+          <option value="market">📊 Market Insight</option>
+          <option value="selection">⚖️ System Selection Insight</option>
+        </select>
       </div>
 
       <!-- Hidden auto-fill -->
@@ -1196,9 +1185,7 @@ function nav(id, section) {
   showScreen(id);
   setNavActive(section);
   // Init forms/pages on navigate
-  if(id==='form-view') { initFi(); }
-  else if(id==='form-market') { initFi(); setTimeout(()=>fiSetType('market'),50); }
-  else if(id==='form-selection') { initFi(); setTimeout(()=>fiSetType('selection'),50); }
+  if(id==='addintel'||id==='form-view'||id==='form-market'||id==='form-selection') { id='form-view'; initFi(); }
   else if(id==='cs-products') renderCsProducts();
   else if(id==='cs-contacts') renderContacts();
   else if(id==='sb-vendors') renderVendors();
@@ -1429,6 +1416,7 @@ function initFi() {
   const errEl=document.getElementById('fi-err'); if(errEl) errEl.textContent='';
   // Reset type
   document.getElementById('fi-type-val').value='';
+  const typeSel=document.getElementById('fi-type-select'); if(typeSel) typeSel.value='';
   document.querySelectorAll('.fi-type-btn').forEach(b=>{ b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color=''; });
   document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
   // Reset title
@@ -1441,15 +1429,11 @@ function initFi() {
 }
 
 function fiSetType(type) {
+  if(!type) return;
   document.getElementById('fi-type-val').value = type;
-  // Highlight selected button
-  document.querySelectorAll('.fi-type-btn').forEach(b=>{
-    const isActive = b.getAttribute('onclick').includes(`'${type}'`);
-    b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
-    b.style.background = isActive ? '#eff6ff' : '#fff';
-    b.style.color = isActive ? 'var(--accent)' : '';
-    b.style.fontWeight = isActive ? '600' : '';
-  });
+  // Sync select if called programmatically
+  const sel = document.getElementById('fi-type-select');
+  if(sel && sel.value !== type) sel.value = type;
   // Show relevant fields
   document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
   document.querySelectorAll(`.fi-all, .fi-${type}`).forEach(f=>f.style.display='');
@@ -1468,6 +1452,7 @@ function fiSetType(type) {
     if(entries && !entries.children.length) fiAddEntry();
   }
 }
+
 
 function fiProductChange() {
   const sel = document.getElementById('fi-product');
