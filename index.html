@@ -1157,6 +1157,9 @@ function doLogout() {
 
 // ── INIT ─────────────────────────────────────────────────────────
 async function init() {
+  // Show home immediately
+  showScreen('home');
+  // Load data in background
   try {
     const [v,p,ct,g,pcc,risk,ctypes,com,ctrm] = await Promise.all([
       getAll('vendors'), getAll('products'), getAll('product_contacts'),
@@ -1167,10 +1170,8 @@ async function init() {
     state.vendors=v; state.products=p; state.contacts=ct;
     state.geo=g; state.pcc=pcc; state.risk=risk; state.ct=ctypes;
     state.commodities=com; state.ctrm=ctrm;
-    showScreen('home');
   } catch(e) {
     console.error('Init error:', e);
-    showScreen('home');
   }
 }
 
@@ -1883,6 +1884,16 @@ async function renderCsProducts() {
 }
 
 
+async function deleteInsightRecord(table, id) {
+  if(!confirm('Delete this record?')) return;
+  try {
+    await apiFetch(table+'?id=eq.'+id, {method:'DELETE'});
+    // Refresh detail panel
+    if(_cspDetailName) await openCsDetail(_cspDetailName);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+
 let _cspDetailName = null;
 
 async function openCsDetail(name) {
@@ -1923,6 +1934,10 @@ async function openCsDetail(name) {
           ${v.gaps?`<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Gaps</div><div style="font-size:12px;line-height:1.5">${escH(v.gaps)}</div></div>`:''}
           ${v.commodities?`<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Commodities</div><div style="display:flex;flex-wrap:wrap;gap:4px">${v.commodities.split(',').map(c=>`<span style="font-size:10px;padding:2px 7px;background:#eff6ff;color:#1d4ed8;border-radius:20px;border:1px solid #93c5fd">${escH(c.trim())}</span>`).join('')}</div></div>`:''}
           ${v.notes?`<div style="font-size:12px;color:var(--muted);margin-top:4px;font-style:italic">${escH(v.notes)}</div>`:''}
+          <div style="display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <button class="btn-edit" onclick="editInsightView(${v.id})">Edit</button>
+            <button class="btn-danger" onclick="deleteInsightRecord('cs_product_views',${v.id})">Delete</button>
+          </div>
         </div>`).join('');
     };
 
@@ -1937,6 +1952,9 @@ async function openCsDetail(name) {
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${[m.country,m.sector,m.intel_date].filter(Boolean).map(escH).join(' · ')}</div>
           ${m.comments?`<div style="font-size:12px;line-height:1.5;margin-bottom:6px">${escH(m.comments)}</div>`:''}
           ${m.link_ref?`<a href="${escAttr(m.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference link</a>`:''}
+          <div style="display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <button class="btn-danger" onclick="deleteInsightRecord('cs_market_intel',${m.id})">Delete</button>
+          </div>
         </div>`).join('');
     };
 
@@ -1955,6 +1973,9 @@ async function openCsDetail(name) {
           ${myProd?.comments?`<div style="font-size:12px;line-height:1.5;margin-bottom:6px">${escH(myProd.comments)}</div>`:''}
           ${sel.notes?`<div style="font-size:12px;color:var(--muted);font-style:italic">${escH(sel.notes)}</div>`:''}
           ${sel.link_ref?`<a href="${escAttr(sel.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference</a>`:''}
+          <div style="display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <button class="btn-danger" onclick="deleteInsightRecord('cs_system_selections',${sel.id})">Delete</button>
+          </div>
         </div>`;
       }).join('');
     };
