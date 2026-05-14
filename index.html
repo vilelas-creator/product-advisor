@@ -1179,7 +1179,7 @@ async function init() {
 const navHist = [];
 
 function nav(id, section) {
-  if(id==='home') { id='cs-home'; section='cs'; }
+  if(id==='home') { showScreen('home'); setNavActive(''); return; }
   if(id==='addintel'||id==='form-market'||id==='form-selection') { id='form-view'; }
   const cur = document.querySelector('.screen.active');
   if(cur) navHist.push(cur.id);
@@ -1584,7 +1584,13 @@ async function saveFi() {
         }
       }
     }
-    alert('Saved successfully!');
+    // Show success and offer to view in Products
+    if(err) {
+      err.style.color='var(--green,#16a34a)';
+      err.textContent='✓ Saved! Go to Products to see the report.';
+    } else {
+      alert('Saved successfully!');
+    }
     initFi();
   } catch(e) { if(err) err.textContent='Error: '+e.message; }
 }
