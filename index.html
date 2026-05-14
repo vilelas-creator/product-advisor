@@ -1553,7 +1553,7 @@ async function saveFi() {
       const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
       const rating = getStars('fi-stars'); if(rating) body.rating=rating;
       if(product) body.products_mentioned=product;
-      if(coms.length) body.commodities_mentioned=coms.join(',');
+      // commodities field not in schema
       const comments = document.getElementById('fi-comments')?.value; if(comments) body.comments=comments;
       const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
       await apiFetch('cs_market_intel', {method:'POST', body});
@@ -1718,7 +1718,7 @@ async function saveF2() {
   const date = document.getElementById('f2-date')?.value; if(date) body.intel_date=date;
   const rating = getStars('f2-stars'); if(rating) body.rating=rating;
   if(product) body.products_mentioned=product;
-  if(coms.length) body.commodities_mentioned=coms.join(',');
+  // commodities field not in schema
   const comments = document.getElementById('f2-comments')?.value; if(comments) body.comments=comments;
   const link = document.getElementById('f2-link')?.value; if(link) body.link_ref=link;
   try {
