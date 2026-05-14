@@ -1940,6 +1940,114 @@ async function renderCsProducts() {
 }
 
 
+async function deleteInsightRecord(table, id) {
+  if(!confirm('Delete this record?')) return;
+  try {
+    await apiFetch(table+'?id=eq.'+id, {method:'DELETE'});
+    if(typeof _cspDetailName !== 'undefined' && _cspDetailName) await openCsDetail(_cspDetailName);
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+async function editInsightView(id) {
+  nav('form-view','cs');
+  await new Promise(r=>setTimeout(r,200));
+  fiSetType('view');
+  try {
+    const recs = await getAll('cs_product_views?id=eq.'+id);
+    const v = recs[0]; if(!v) return;
+    const prodSel = document.getElementById('fi-product');
+    if(prodSel) {
+      const opt = [...prodSel.options].find(o=>o.value===v.product_name);
+      if(opt) { prodSel.value=v.product_name; fiProductChange(); }
+      else { prodSel.value='__other__'; fiProductChange(); const other=document.getElementById('fi-product-other'); if(other) other.value=v.product_name||''; }
+    }
+    const str=document.getElementById('fi-strengths'); if(str) str.value=v.strengths||'';
+    const gaps=document.getElementById('fi-gaps'); if(gaps) gaps.value=v.gaps||'';
+    const notes=document.getElementById('fi-notes'); if(notes) notes.value=v.notes||'';
+    if(v.rating) document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<v.rating));
+    const tv=document.getElementById('fi-type-val');
+    if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_product_views'; }
+  } catch(e) { console.error(e); }
+}
+
+async function editInsightMarket(id) {
+  nav('form-view','cs');
+  await new Promise(r=>setTimeout(r,200));
+  fiSetType('market');
+  try {
+    const recs = await getAll('cs_market_intel?id=eq.'+id);
+    const m = recs[0]; if(!m) return;
+    const prodSel = document.getElementById('fi-product');
+    if(prodSel && m.products_mentioned) {
+      const opt = [...prodSel.options].find(o=>o.value===m.products_mentioned);
+      if(opt) { prodSel.value=m.products_mentioned; }
+      else { prodSel.value='__other__'; fiProductChange(); const other=document.getElementById('fi-product-other'); if(other) other.value=m.products_mentioned; }
+    }
+    const client=document.getElementById('fi-client'); if(client) client.value=m.client_company||'';
+    const sector=document.getElementById('fi-sector'); if(sector) sector.value=m.sector||'';
+    const country=document.getElementById('fi-country'); if(country) country.value=m.country||'';
+    const comments=document.getElementById('fi-comments'); if(comments) comments.value=m.comments||'';
+    const link=document.getElementById('fi-link'); if(link) link.value=m.link_ref||'';
+    if(m.rating) document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<m.rating));
+    if(m.commodities_mentioned) {
+      setTimeout(()=>{
+        const allComs=[...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
+        buildMultiSelect('fi-coms-wrap',allComs,'Select commodities');
+        const uid='fi_coms_wrap';
+        m.commodities_mentioned.split(',').map(c=>c.trim()).filter(Boolean).forEach(com=>{
+          const list=document.getElementById('msl_'+uid);
+          if(!list) return;
+          const existing=[...list.querySelectorAll('input')].find(cb=>cb.value===com);
+          if(existing) existing.checked=true;
+          else { const lbl=document.createElement('label'); lbl.className='ms-item'; lbl.style.cssText='display:flex;flex-direction:row;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;'; lbl.innerHTML=`<input type="checkbox" value="${escAttr(com)}" checked> ${escH(com)}`; list.appendChild(lbl); }
+        });
+        applyMs(uid);
+      },300);
+    }
+    const tv=document.getElementById('fi-type-val');
+    if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_market_intel'; }
+  } catch(e) { console.error(e); }
+}
+
+async function editInsightSelection(id) {
+  nav('form-view','cs');
+  await new Promise(r=>setTimeout(r,200));
+  fiSetType('selection');
+  try {
+    const [selRecs, prodRecs] = await Promise.all([
+      getAll('cs_system_selections?id=eq.'+id),
+      getAll('cs_system_selection_products?selection_id=eq.'+id)
+    ]);
+    const sel = selRecs[0]; if(!sel) return;
+    const client=document.getElementById('fi-client'); if(client) client.value=sel.client_company||'';
+    const year=document.getElementById('fi-year'); if(year) year.value=sel.year||'';
+    const country=document.getElementById('fi-country'); if(country) country.value=sel.country||'';
+    const notes=document.getElementById('fi-notes'); if(notes) notes.value=sel.notes||'';
+    const link=document.getElementById('fi-link'); if(link) link.value=sel.link_ref||'';
+    const comments=document.getElementById('fi-comments'); if(comments) comments.value=sel.comments||'';
+    const entriesEl=document.getElementById('fi-entries');
+    if(entriesEl) {
+      entriesEl.innerHTML='';
+      prodRecs.forEach(pr=>{
+        fiAddEntry();
+        const entry=entriesEl.lastElementChild; if(!entry) return;
+        const prodSel=entry.querySelector('.fi-entry-prod');
+        if(prodSel) {
+          const opt=[...prodSel.options].find(o=>o.value===pr.product);
+          if(opt) prodSel.value=pr.product;
+          else { prodSel.value='__other__'; fiEntryProdChange(prodSel); const other=entry.querySelector('.fi-entry-prod-other'); if(other) other.value=pr.product||''; }
+        }
+        const outcome=entry.querySelector('.fi-entry-outcome'); if(outcome) outcome.value=pr.outcome||'Selected';
+        const comEl=entry.querySelector('.fi-entry-comments'); if(comEl) comEl.value=pr.comments||'';
+        if(pr.rating) entry.querySelectorAll('.star').forEach((star,i)=>star.classList.toggle('on',i<pr.rating));
+      });
+    }
+    const tv=document.getElementById('fi-type-val');
+    if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_system_selections'; }
+  } catch(e) { console.error(e); }
+}
+
+
 let _cspDetailName = null;
 
 async function openCsDetail(name) {
