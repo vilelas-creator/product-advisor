@@ -1388,18 +1388,25 @@ function getMsSelected(containerId) {
 
 // ── UNIFIED INSIGHT FORM ──────────────────────────────────────────
 
-function initFi() {
+async function initFi() {
   // Auto-fill hidden fields
   const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
   const byEl = document.getElementById('fi-by');
   const dateEl = document.getElementById('fi-date');
   if(byEl) byEl.value = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
   if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  // Load products + commodities fresh from Supabase if state empty
+  if(!(state.products||[]).length) {
+    try { const fp = await getAll('products'); if(fp?.length) state.products=fp; } catch(e){}
+  }
+  if(!(state.commodities||[]).length) {
+    try { const fc = await getAll('commodities'); if(fc?.length) state.commodities=fc; } catch(e){}
+  }
   // Product multiselect
-  const prods = [...state.products].map(p=>p.product_name||'').filter(Boolean).sort();
+  const prods = [...(state.products||[])].map(p=>p.product_name||'').filter(Boolean).sort();
   buildMultiSelect('fi-prod-wrap', prods, 'Select product(s)');
   // Commodities
-  const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
+  const coms = [...(state.commodities||[])].map(c=>c.commodity_name||'').filter(Boolean).sort();
   buildMultiSelect('fi-coms-wrap', coms, 'Select commodities');
   // Country
   buildCountrySelect('fi-country');
