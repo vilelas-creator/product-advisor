@@ -1807,12 +1807,17 @@ async function renderCsProducts() {
   if(!el) return;
   el.innerHTML = '<div style="color:var(--muted);padding:1rem">Loading...</div>';
   try {
-    const [views, market, selProds, sels] = await Promise.all([
+    // Load everything fresh - don't rely on state for products
+    const [sbProds, views, market, selProds, sels] = await Promise.all([
+      getAll('products'),
       getAll('cs_product_views'),
       getAll('cs_market_intel'),
       getAll('cs_system_selection_products'),
       getAll('cs_system_selections')
     ]);
+
+    // Update state with fresh products
+    if(sbProds.length) state.products = sbProds;
 
     // Build capSpire intel map
     const csMap = {};
@@ -1832,14 +1837,14 @@ async function renderCsProducts() {
     });
 
     // All products: sourcebook + capSpire-only
-    const sbNames = new Set((state.products||[]).map(p=>p.product_name).filter(Boolean));
+    const sbNames = new Set(sbProds.map(p=>p.product_name).filter(Boolean));
     const csNames = new Set(Object.keys(csMap));
     const allNames = [...new Set([...sbNames,...csNames])].sort();
 
-    // Fill vendor from state.products if missing
+    // Fill vendor from sbProds if missing in csMap
     allNames.forEach(name => {
       if(csMap[name] && !csMap[name].vendor)
-        csMap[name].vendor = (state.products||[]).find(p=>p.product_name===name)?.vendor||'';
+        csMap[name].vendor = sbProds.find(p=>p.product_name===name)?.vendor||'';
     });
 
     // Filters
@@ -1856,10 +1861,9 @@ async function renderCsProducts() {
     };
 
     let rows = allNames.filter(name => {
-      const vendor = csMap[name]?.vendor || (state.products||[]).find(p=>p.product_name===name)?.vendor||'';
+      const vendor = csMap[name]?.vendor || sbProds.find(p=>p.product_name===name)?.vendor||'';
       const intel = getIntelType(name);
       const avg = csMap[name]?.ratings?.length ? (csMap[name].ratings.reduce((a,b)=>a+b,0)/csMap[name].ratings.length).toFixed(1) : '';
-      // Text search across all fields
       if(q) {
         const searchable = [name, vendor, intel, avg].join(' ').toLowerCase();
         if(!searchable.includes(q)) return false;
@@ -1885,8 +1889,6 @@ async function renderCsProducts() {
            + ` <span style="font-size:11px;color:var(--muted)">${avg.toFixed(1)}</span>`;
     };
 
-    // Build filter options
-    const allProductNames = allNames;
     const intelTypes = ['capSpire','Sourcebook','capSpire & Sourcebook'];
 
     el.innerHTML = `
@@ -1895,7 +1897,7 @@ async function renderCsProducts() {
       <div class="card">
         <div class="filters" style="flex-wrap:wrap;gap:8px">
           <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;debounceCsProducts()" placeholder="Search all fields..." style="min-width:160px">
-          ${createMultiSelect('csp_products', allProductNames, fProducts, 'All products', 'csp_products')}
+          ${createMultiSelect('csp_products', allNames, fProducts, 'All products', 'csp_products')}
           ${createMultiSelect('csp_intel', intelTypes, fIntel, 'All insights', 'csp_intel')}
           <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_products=[];state.filters.csp_intel=[];renderCsProducts()">⟳ Reset</button>
           <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} product${rows.length!==1?'s':''}</span>
@@ -1908,7 +1910,7 @@ async function renderCsProducts() {
             <tbody>
               ${rows.map(name => {
                 const cs = csMap[name];
-                const sbProd = (state.products||[]).find(p=>p.product_name===name);
+                const sbProd = sbProds.find(p=>p.product_name===name);
                 const vendor = cs?.vendor || sbProd?.vendor || '';
                 const avg = cs?.ratings?.length ? cs.ratings.reduce((a,b)=>a+b,0)/cs.ratings.length : null;
                 return `<tr>
