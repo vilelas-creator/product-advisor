@@ -1543,7 +1543,13 @@ async function saveFi() {
       const gaps = document.getElementById('fi-gaps')?.value; if(gaps) body.gaps=gaps;
       if(coms.length) body.commodities=coms.join(',');
       const notes = document.getElementById('fi-notes')?.value; if(notes) body.notes=notes;
-      await apiFetch('cs_product_views', {method:'POST', body});
+      const editId_v = document.getElementById('fi-type-val')?.dataset?.editId;
+      if(editId_v) {
+        await apiFetch('cs_product_views?id=eq.'+editId_v, {method:'PATCH', body});
+        delete document.getElementById('fi-type-val').dataset.editId;
+      } else {
+        await apiFetch('cs_product_views', {method:'POST', body});
+      }
 
     } else if(type === 'market') {
       const client = document.getElementById('fi-client')?.value?.trim();
@@ -1556,7 +1562,13 @@ async function saveFi() {
       // commodities field not in schema
       const comments = document.getElementById('fi-comments')?.value; if(comments) body.comments=comments;
       const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
-      await apiFetch('cs_market_intel', {method:'POST', body});
+      const editId_m = document.getElementById('fi-type-val')?.dataset?.editId;
+      if(editId_m) {
+        await apiFetch('cs_market_intel?id=eq.'+editId_m, {method:'PATCH', body});
+        delete document.getElementById('fi-type-val').dataset.editId;
+      } else {
+        await apiFetch('cs_market_intel', {method:'POST', body});
+      }
 
     } else if(type === 'selection') {
       const client = document.getElementById('fi-client')?.value?.trim();
@@ -1566,7 +1578,15 @@ async function saveFi() {
       const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
       const notes = document.getElementById('fi-notes')?.value; if(notes) body.notes=notes;
       const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
-      const res = await apiFetch('cs_system_selections', {method:'POST', body});
+      const editId_s = document.getElementById('fi-type-val')?.dataset?.editId;
+      let res;
+      if(editId_s) {
+        await apiFetch('cs_system_selections?id=eq.'+editId_s, {method:'PATCH', body});
+        delete document.getElementById('fi-type-val').dataset.editId;
+        res = [{id: parseInt(editId_s)}];
+      } else {
+        res = await apiFetch('cs_system_selections', {method:'POST', body});
+      }
       const selId = res[0]?.id;
       if(selId) {
         const entries = [...(document.querySelectorAll('#fi-entries .prod-entry')||[])];
@@ -1890,6 +1910,74 @@ async function renderCsProducts() {
 }
 
 
+async function editInsightView(id) {
+  // Navigate to form, pre-fill with existing record
+  nav('form-view','cs');
+  await new Promise(r=>setTimeout(r,100));
+  fiSetType('view');
+  try {
+    const recs = await getAll('cs_product_views?id=eq.'+id);
+    const v = recs[0]; if(!v) return;
+    const prodSel = document.getElementById('fi-product');
+    if(prodSel) {
+      // Check if product is in list
+      const opt = [...prodSel.options].find(o=>o.value===v.product_name);
+      if(opt) { prodSel.value=v.product_name; }
+      else { prodSel.value='__other__'; document.getElementById('fi-product-other-wrap').style.display='block'; document.getElementById('fi-product-other').value=v.product_name||''; }
+    }
+    const str=document.getElementById('fi-strengths'); if(str) str.value=v.strengths||'';
+    const gaps=document.getElementById('fi-gaps'); if(gaps) gaps.value=v.gaps||'';
+    const notes=document.getElementById('fi-notes'); if(notes) notes.value=v.notes||'';
+    // Set rating
+    if(v.rating) {
+      document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<v.rating));
+    }
+    // Store id for update
+    document.getElementById('fi-type-val').dataset.editId=id;
+    document.getElementById('fi-type-val').dataset.editTable='cs_product_views';
+  } catch(e) { console.error(e); }
+}
+
+async function editInsightMarket(id) {
+  nav('form-view','cs');
+  await new Promise(r=>setTimeout(r,100));
+  fiSetType('market');
+  try {
+    const recs = await getAll('cs_market_intel?id=eq.'+id);
+    const m = recs[0]; if(!m) return;
+    const client=document.getElementById('fi-client'); if(client) client.value=m.client_company||'';
+    const sector=document.getElementById('fi-sector'); if(sector) sector.value=m.sector||'';
+    const comments=document.getElementById('fi-comments'); if(comments) comments.value=m.comments||'';
+    const link=document.getElementById('fi-link'); if(link) link.value=m.link_ref||'';
+    if(m.products_mentioned) {
+      const prodSel=document.getElementById('fi-product');
+      if(prodSel) prodSel.value=m.products_mentioned;
+    }
+    if(m.rating) {
+      document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<m.rating));
+    }
+    document.getElementById('fi-type-val').dataset.editId=id;
+    document.getElementById('fi-type-val').dataset.editTable='cs_market_intel';
+  } catch(e) { console.error(e); }
+}
+
+async function editInsightSelection(id) {
+  nav('form-view','cs');
+  await new Promise(r=>setTimeout(r,100));
+  fiSetType('selection');
+  try {
+    const recs = await getAll('cs_system_selections?id=eq.'+id);
+    const sel = recs[0]; if(!sel) return;
+    const client=document.getElementById('fi-client'); if(client) client.value=sel.client_company||'';
+    const year=document.getElementById('fi-year'); if(year) year.value=sel.year||'';
+    const notes=document.getElementById('fi-notes'); if(notes) notes.value=sel.notes||'';
+    const link=document.getElementById('fi-link'); if(link) link.value=sel.link_ref||'';
+    document.getElementById('fi-type-val').dataset.editId=id;
+    document.getElementById('fi-type-val').dataset.editTable='cs_system_selections';
+  } catch(e) { console.error(e); }
+}
+
+
 async function deleteInsightRecord(table, id) {
   if(!confirm('Delete this record?')) return;
   try {
@@ -1959,6 +2047,7 @@ async function openCsDetail(name) {
           ${m.comments?`<div style="font-size:12px;line-height:1.5;margin-bottom:6px">${escH(m.comments)}</div>`:''}
           ${m.link_ref?`<a href="${escAttr(m.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference link</a>`:''}
           <div style="display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <button class="btn-edit" onclick="editInsightMarket(${m.id})">Edit</button>
             <button class="btn-danger" onclick="deleteInsightRecord('cs_market_intel',${m.id})">Delete</button>
           </div>
         </div>`).join('');
@@ -1980,6 +2069,7 @@ async function openCsDetail(name) {
           ${sel.notes?`<div style="font-size:12px;color:var(--muted);font-style:italic">${escH(sel.notes)}</div>`:''}
           ${sel.link_ref?`<a href="${escAttr(sel.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference</a>`:''}
           <div style="display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <button class="btn-edit" onclick="editInsightSelection(${sel.id})">Edit</button>
             <button class="btn-danger" onclick="deleteInsightRecord('cs_system_selections',${sel.id})">Delete</button>
           </div>
         </div>`;
