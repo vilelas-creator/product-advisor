@@ -3299,12 +3299,10 @@ function msApply(id, key){
   const list = document.getElementById('ms-list-'+id);
   if(!list) return;
   const selected = [...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
+  // Hide drop BEFORE sf() which may rebuild DOM
+  const drop = document.getElementById('ms-drop-'+id);
+  if(drop) drop.style.display = 'none';
   sf(key, selected.length ? selected : []);
-  document.getElementById('ms-drop-'+id).style.display = 'none';
-  // Reset search
-  const search = document.getElementById('ms-search-'+id);
-  if(search) search.value = '';
-  msSearch(id);
 }
 
 function msCancel(id){
