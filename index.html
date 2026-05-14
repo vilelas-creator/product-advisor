@@ -1807,7 +1807,6 @@ async function renderCsProducts() {
   if(!el) return;
   el.innerHTML = '<div style="color:var(--muted);padding:1rem">Loading...</div>';
   try {
-    // Load everything fresh - don't rely on state for products
     const [sbProds, views, market, selProds, sels] = await Promise.all([
       getAll('products'),
       getAll('cs_product_views'),
@@ -1816,41 +1815,50 @@ async function renderCsProducts() {
       getAll('cs_system_selections')
     ]);
 
-    // Update state with fresh products
     if(sbProds.length) state.products = sbProds;
 
-    // Build capSpire intel map
+    // Build capSpire intel map per product
     const csMap = {};
-    const addCs = (name, type, rating, date, vendor) => {
+    const addCs = (name, type, rating, date, vendor, country, coms) => {
       if(!name) return;
-      if(!csMap[name]) csMap[name]={views:0,market:0,selections:0,ratings:[],lastDate:'',vendor:''};
+      if(!csMap[name]) csMap[name]={views:0,market:0,selections:0,ratings:[],lastDate:'',vendor:'',countries:new Set(),commodities:new Set()};
       csMap[name][type]++;
       if(rating) csMap[name].ratings.push(rating);
       if(date && date > csMap[name].lastDate) csMap[name].lastDate = date;
       if(vendor && !csMap[name].vendor) csMap[name].vendor = vendor;
+      if(country) csMap[name].countries.add(country);
+      if(coms) coms.split(',').map(c=>c.trim()).filter(Boolean).forEach(c=>csMap[name].commodities.add(c));
     };
-    views.forEach(v => addCs(v.product_name,'views',v.rating,v.assessment_date,v.vendor));
-    market.forEach(m => (m.products_mentioned||'').split(',').filter(Boolean).forEach(p => addCs(p.trim(),'market',m.rating,m.intel_date,'')));
+
+    views.forEach(v => addCs(v.product_name,'views',v.rating,v.assessment_date,v.vendor,'',v.commodities||''));
+    market.forEach(m => (m.products_mentioned||'').split(',').filter(Boolean).forEach(p =>
+      addCs(p.trim(),'market',m.rating,m.intel_date,'',m.country||'',m.commodities_mentioned||'')
+    ));
     selProds.forEach(sp => {
       const sel = sels.find(s=>s.id===sp.selection_id);
-      addCs(sp.product,'selections',sp.rating,sel?.assessment_date||'','');
+      addCs(sp.product,'selections',sp.rating,sel?.assessment_date||'','',sel?.country||'','');
     });
 
-    // All products: sourcebook + capSpire-only
     const sbNames = new Set(sbProds.map(p=>p.product_name).filter(Boolean));
     const csNames = new Set(Object.keys(csMap));
     const allNames = [...new Set([...sbNames,...csNames])].sort();
 
-    // Fill vendor from sbProds if missing in csMap
     allNames.forEach(name => {
       if(csMap[name] && !csMap[name].vendor)
         csMap[name].vendor = sbProds.find(p=>p.product_name===name)?.vendor||'';
     });
 
-    // Filters
+    // Build filter option lists
+    const allCountries = [...new Set(Object.values(csMap).flatMap(m=>[...m.countries]))].filter(Boolean).sort();
+    const allCommodities = [...new Set(Object.values(csMap).flatMap(m=>[...m.commodities]))].filter(Boolean).sort();
+    const intelTypes = ['capSpire','Sourcebook','capSpire & Sourcebook'];
+
+    // Get active filters
     const q = (state.filters.csp_q||'').toLowerCase();
     const fProducts = state.filters.csp_products||[];
     const fIntel = state.filters.csp_intel||[];
+    const fCountry = state.filters.csp_country||[];
+    const fCommodity = state.filters.csp_commodity||[];
 
     const getIntelType = (name) => {
       const hasSb = sbNames.has(name);
@@ -1870,6 +1878,8 @@ async function renderCsProducts() {
       }
       if(fProducts.length && !fProducts.includes(name)) return false;
       if(fIntel.length && !fIntel.includes(intel)) return false;
+      if(fCountry.length && !fCountry.some(c=>csMap[name]?.countries?.has(c))) return false;
+      if(fCommodity.length && !fCommodity.some(c=>csMap[name]?.commodities?.has(c))) return false;
       return true;
     });
 
@@ -1889,17 +1899,17 @@ async function renderCsProducts() {
            + ` <span style="font-size:11px;color:var(--muted)">${avg.toFixed(1)}</span>`;
     };
 
-    const intelTypes = ['capSpire','Sourcebook','capSpire & Sourcebook'];
-
     el.innerHTML = `
       <div class="pg-title">Products</div>
       <div class="pg-sub">All products — click to view full detail</div>
       <div class="card">
         <div class="filters" style="flex-wrap:wrap;gap:8px">
-          <input id="csp-q" value="${escAttr(state.filters.csp_q||'')}" oninput="state.filters.csp_q=this.value;debounceCsProducts()" placeholder="Search all fields..." style="min-width:160px">
+          <input id="csp-q" value="${escAttr(q)}" oninput="state.filters.csp_q=this.value;debounceCsProducts()" placeholder="Search all fields..." style="min-width:150px">
           ${createMultiSelect('csp_products', allNames, fProducts, 'All products', 'csp_products')}
           ${createMultiSelect('csp_intel', intelTypes, fIntel, 'All insights', 'csp_intel')}
-          <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_products=[];state.filters.csp_intel=[];renderCsProducts()">⟳ Reset</button>
+          ${createMultiSelect('csp_country', allCountries, fCountry, 'All locations', 'csp_country')}
+          ${createMultiSelect('csp_commodity', allCommodities, fCommodity, 'All commodities', 'csp_commodity')}
+          <button class="btn btn-reset" onclick="state.filters.csp_q='';state.filters.csp_products=[];state.filters.csp_intel=[];state.filters.csp_country=[];state.filters.csp_commodity=[];renderCsProducts()">⟳ Reset</button>
           <span style="margin-left:auto;font-size:12px;color:var(--muted)">${rows.length} product${rows.length!==1?'s':''}</span>
         </div>
         <div style="overflow-x:auto">
@@ -1927,137 +1937,6 @@ async function renderCsProducts() {
         </div>
       </div>`;
   } catch(e) { el.innerHTML = `<div style="color:var(--red)">Error: ${escH(e.message)}</div>`; }
-}
-
-
-
-async function deleteInsightRecord(table, id) {
-  if(!confirm('Delete this record?')) return;
-  try {
-    await apiFetch(table+'?id=eq.'+id, {method:'DELETE'});
-    if(_cspDetailName) await openCsDetail(_cspDetailName);
-  } catch(e) { alert('Error: '+e.message); }
-}
-
-async function editInsightView(id) {
-  nav('form-view','cs');
-  await new Promise(r=>setTimeout(r,150));
-  fiSetType('view');
-  try {
-    const recs = await getAll('cs_product_views?id=eq.'+id);
-    const v = recs[0]; if(!v) return;
-    // Set product
-    const prodSel = document.getElementById('fi-product');
-    if(prodSel) {
-      const opt = [...prodSel.options].find(o=>o.value===v.product_name);
-      if(opt) { prodSel.value=v.product_name; fiProductChange(); }
-      else {
-        prodSel.value='__other__'; fiProductChange();
-        const other=document.getElementById('fi-product-other');
-        if(other) other.value=v.product_name||'';
-      }
-    }
-    // Set text fields
-    const str=document.getElementById('fi-strengths'); if(str) str.value=v.strengths||'';
-    const gaps=document.getElementById('fi-gaps'); if(gaps) gaps.value=v.gaps||'';
-    const notes=document.getElementById('fi-notes'); if(notes) notes.value=v.notes||'';
-    // Set rating
-    if(v.rating) {
-      document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<v.rating));
-    }
-    // Store edit id
-    const tv=document.getElementById('fi-type-val');
-    if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_product_views'; }
-  } catch(e) { console.error(e); }
-}
-
-async function editInsightMarket(id) {
-  nav('form-view','cs');
-  await new Promise(r=>setTimeout(r,150));
-  fiSetType('market');
-  try {
-    const recs = await getAll('cs_market_intel?id=eq.'+id);
-    const m = recs[0]; if(!m) return;
-    // Set product
-    const prodSel = document.getElementById('fi-product');
-    if(prodSel && m.products_mentioned) {
-      const opt = [...prodSel.options].find(o=>o.value===m.products_mentioned);
-      if(opt) { prodSel.value=m.products_mentioned; }
-      else { prodSel.value='__other__'; fiProductChange(); const other=document.getElementById('fi-product-other'); if(other) other.value=m.products_mentioned; }
-    }
-    // Set fields
-    const client=document.getElementById('fi-client'); if(client) client.value=m.client_company||'';
-    const sector=document.getElementById('fi-sector'); if(sector) sector.value=m.sector||'';
-    const country=document.getElementById('fi-country'); if(country) country.value=m.country||'';
-    const comments=document.getElementById('fi-comments'); if(comments) comments.value=m.comments||'';
-    const link=document.getElementById('fi-link'); if(link) link.value=m.link_ref||'';
-    // Set rating
-    if(m.rating) {
-      document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<m.rating));
-    }
-    // Prefill commodities
-    if(m.commodities_mentioned) {
-      const coms = m.commodities_mentioned.split(',').map(c=>c.trim()).filter(Boolean);
-      // Re-init commodities with pre-selected values
-      setTimeout(()=>{
-        const allComs = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
-        buildMultiSelect('fi-coms-wrap', allComs, 'Select commodities');
-        const uid = 'fi_coms_wrap';
-        coms.forEach(com=>{
-          const list = document.getElementById('msl_'+uid);
-          if(list){
-            const existing=[...list.querySelectorAll('input')].find(cb=>cb.value===com);
-            if(existing) existing.checked=true;
-            else { const lbl=document.createElement('label'); lbl.className='ms-item'; lbl.style.cssText='display:flex;flex-direction:row;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text)'; lbl.innerHTML=`<input type="checkbox" value="${com}" checked> ${com}`; list.appendChild(lbl); }
-          }
-        });
-        applyMs(uid);
-      }, 200);
-    }
-    const tv=document.getElementById('fi-type-val');
-    if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_market_intel'; }
-  } catch(e) { console.error(e); }
-}
-
-async function editInsightSelection(id) {
-  nav('form-view','cs');
-  await new Promise(r=>setTimeout(r,150));
-  fiSetType('selection');
-  try {
-    const [selRecs, prodRecs] = await Promise.all([
-      getAll('cs_system_selections?id=eq.'+id),
-      getAll('cs_system_selection_products?selection_id=eq.'+id)
-    ]);
-    const sel = selRecs[0]; if(!sel) return;
-    // Set fields
-    const client=document.getElementById('fi-client'); if(client) client.value=sel.client_company||'';
-    const year=document.getElementById('fi-year'); if(year) year.value=sel.year||'';
-    const country=document.getElementById('fi-country'); if(country) country.value=sel.country||'';
-    const notes=document.getElementById('fi-notes'); if(notes) notes.value=sel.notes||'';
-    const link=document.getElementById('fi-link'); if(link) link.value=sel.link_ref||'';
-    const comments=document.getElementById('fi-comments'); if(comments) comments.value=sel.comments||'';
-    // Fill product entries
-    const entriesEl=document.getElementById('fi-entries');
-    if(entriesEl) {
-      entriesEl.innerHTML='';
-      prodRecs.forEach(pr=>{
-        fiAddEntry();
-        const entry=entriesEl.lastElementChild;
-        if(!entry) return;
-        const prodSel=entry.querySelector('.fi-entry-prod');
-        if(prodSel) {
-          const opt=[...prodSel.options].find(o=>o.value===pr.product);
-          if(opt) prodSel.value=pr.product;
-          else { prodSel.value='__other__'; fiEntryProdChange(prodSel); const other=entry.querySelector('.fi-entry-prod-other'); if(other) other.value=pr.product||''; }
-        }
-        const outcome=entry.querySelector('.fi-entry-outcome'); if(outcome) outcome.value=pr.outcome||'Selected';
-        const comEl=entry.querySelector('.fi-entry-comments'); if(comEl) comEl.value=pr.comments||'';
-        if(pr.rating) entry.querySelectorAll('.star').forEach((star,i)=>star.classList.toggle('on',i<pr.rating));
-      });
-    }
-    const tv=document.getElementById('fi-type-val');
-    if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_system_selections'; }
-  } catch(e) { console.error(e); }
 }
 
 
