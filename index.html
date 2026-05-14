@@ -315,31 +315,31 @@ tr:hover td{background:var(--bg2);}
       <input type="hidden" id="fi-date">
       <input type="hidden" id="fi-type-val">
 
-      <!-- PRODUCT (all types) -->
+      <!-- PRODUCT (view + market) -->
       <div class="field fi-field fi-view fi-market" style="display:none">
         <label>Product <span class="req">*</span></label>
-        <select id="fi-product" onchange="fiProductChange()" style="margin-bottom:6px">
-          <option value="">— Select product —</option>
-        </select>
-        <div id="fi-product-other-wrap" style="display:none;margin-top:6px">
-          <input id="fi-product-other" placeholder="Type product name...">
+        <div id="fi-prod-wrap"></div>
+      </div>
+
+      <!-- CLIENT + SECTOR row (market) -->
+      <div class="frow fi-field fi-market" style="display:none">
+        <div class="field" style="flex:2">
+          <label>Client / Company <span class="req">*</span></label>
+          <input id="fi-client" placeholder="Company name">
+        </div>
+        <div class="field" style="flex:1">
+          <label>Sector</label>
+          <select id="fi-sector">
+            <option value="">— Select —</option>
+            <option>Energy Trading</option><option>Utilities</option>
+            <option>Oil &amp; Gas</option><option>Finance</option><option>Other</option>
+          </select>
         </div>
       </div>
-
-      <!-- CLIENT (market + selection) -->
-      <div class="field fi-field fi-market fi-selection" style="display:none">
+      <!-- CLIENT (selection only, full width) -->
+      <div class="field fi-field fi-selection" style="display:none">
         <label>Client / Company <span class="req">*</span></label>
-        <input id="fi-client" placeholder="Company name">
-      </div>
-
-      <!-- SECTOR (market only) -->
-      <div class="field fi-field fi-market" style="display:none">
-        <label>Sector</label>
-        <select id="fi-sector">
-          <option value="">— Select —</option>
-          <option>Energy Trading</option><option>Utilities</option>
-          <option>Oil &amp; Gas</option><option>Finance</option><option>Other</option>
-        </select>
+        <input id="fi-client-sel" placeholder="Company name">
       </div>
 
       <!-- YEAR (selection only) -->
@@ -354,6 +354,11 @@ tr:hover td{background:var(--bg2);}
         <select id="fi-country"><option value="">— Select country —</option></select>
       </div>
 
+      <!-- COUNTRY (view only) -->
+      <div class="field fi-field fi-view" style="display:none">
+        <label>Country</label>
+        <select id="fi-country-view"><option value="">— Select country —</option></select>
+      </div>
       <!-- RATING (view + market) -->
       <div class="field fi-field fi-view fi-market" style="display:none">
         <label>Overall rating</label>
@@ -1390,23 +1395,20 @@ function initFi() {
   const dateEl = document.getElementById('fi-date');
   if(byEl) byEl.value = sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
   if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
-  // Product dropdown
-  const prodSel = document.getElementById('fi-product');
-  if(prodSel) {
-    prodSel.innerHTML = '<option value="">— Select product —</option>' +
-      [...state.products].sort((a,b)=>a.product_name.localeCompare(b.product_name))
-        .map(p=>`<option value="${escAttr(p.product_name)}">${escH(p.product_name)}</option>`).join('') +
-      '<option value="__other__">+ Add product not in list</option>';
-  }
+  // Product multiselect
+  const prods = [...state.products].map(p=>p.product_name||'').filter(Boolean).sort();
+  buildMultiSelect('fi-prod-wrap', prods, 'Select product(s)');
   // Commodities
   const coms = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
   buildMultiSelect('fi-coms-wrap', coms, 'Select commodities');
   // Country
   buildCountrySelect('fi-country');
+  buildCountrySelect('fi-country-view');
+  buildCountrySelect('fi-country-sel');
   // Stars
   initStars('fi-stars');
   // Reset all fields
-  ['fi-client','fi-comments','fi-notes','fi-link','fi-strengths','fi-gaps'].forEach(id=>{
+  ['fi-client','fi-client-sel','fi-comments','fi-notes','fi-link','fi-strengths','fi-gaps'].forEach(id=>{
     const e=document.getElementById(id); if(e) e.value='';
   });
   const yEl=document.getElementById('fi-year'); if(yEl) yEl.value='';
@@ -1457,11 +1459,7 @@ function fiSetType(type) {
 }
 
 
-function fiProductChange() {
-  const sel = document.getElementById('fi-product');
-  const otherWrap = document.getElementById('fi-product-other-wrap');
-  if(otherWrap) otherWrap.style.display = sel?.value === '__other__' ? 'block' : 'none';
-}
+function fiProductChange() {}
 
 function fiAddEntry() {
   const entries = document.getElementById('fi-entries');
@@ -1527,17 +1525,18 @@ async function saveFi() {
   const sess = JSON.parse(localStorage.getItem('pa_session')||'{}');
   const by = document.getElementById('fi-by')?.value || sess?.user?.user_metadata?.full_name || sess?.user?.email || '';
   const date = document.getElementById('fi-date')?.value || new Date().toISOString().split('T')[0];
-  // Product
-  const prodSel = document.getElementById('fi-product');
-  let product = prodSel?.value || '';
-  if(product === '__other__') product = document.getElementById('fi-product-other')?.value?.trim()||'';
+  // Product(s) from multiselect
+  const selectedProds = getMsSelected('fi-prod-wrap');
+  const product = selectedProds[0] || '';  // primary product (first selected)
+  const allProducts = selectedProds.join(',');
   // Commodities
   const coms = getMsSelected('fi-coms-wrap');
 
   try {
     if(type === 'view') {
-      if(!product) { if(err) err.textContent='Please select a product.'; return; }
+      if(!product) { if(err) err.textContent='Please select at least one product.'; return; }
       const body = {product_name: product, assessed_by: by, assessment_date: date};
+      const countryView = document.getElementById('fi-country-view')?.value; if(countryView) body.country=countryView;
       const rating = getStars('fi-stars'); if(rating) body.rating=rating;
       const str = document.getElementById('fi-strengths')?.value; if(str) body.strengths=str;
       const gaps = document.getElementById('fi-gaps')?.value; if(gaps) body.gaps=gaps;
@@ -1558,7 +1557,7 @@ async function saveFi() {
       const sector = document.getElementById('fi-sector')?.value; if(sector) body.sector=sector;
       const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
       const rating = getStars('fi-stars'); if(rating) body.rating=rating;
-      if(product) body.products_mentioned=product;
+      if(allProducts) body.products_mentioned=allProducts;
       if(coms.length) body.commodities_mentioned=coms.join(',');
       const comments = document.getElementById('fi-comments')?.value; if(comments) body.comments=comments;
       const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
@@ -1571,7 +1570,7 @@ async function saveFi() {
       }
 
     } else if(type === 'selection') {
-      const client = document.getElementById('fi-client')?.value?.trim();
+      const client = (document.getElementById('fi-client-sel')||document.getElementById('fi-client'))?.value?.trim();
       if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
       const body = {client_company: client, assessed_by: by, assessment_date: date};
       const year = parseInt(document.getElementById('fi-year')?.value); if(year) body.year=year;
@@ -1955,16 +1954,23 @@ async function editInsightView(id) {
   try {
     const recs = await getAll('cs_product_views?id=eq.'+id);
     const v = recs[0]; if(!v) return;
-    const prodSel = document.getElementById('fi-product');
-    if(prodSel) {
-      const opt = [...prodSel.options].find(o=>o.value===v.product_name);
-      if(opt) { prodSel.value=v.product_name; fiProductChange(); }
-      else { prodSel.value='__other__'; fiProductChange(); const other=document.getElementById('fi-product-other'); if(other) other.value=v.product_name||''; }
+    // Prefill product multiselect
+    if(v.product_name) {
+      setTimeout(()=>{
+        const uid='fi_prod_wrap';
+        const list=document.getElementById('msl_'+uid);
+        if(!list) return;
+        const existing=[...list.querySelectorAll('input')].find(cb=>cb.value===v.product_name);
+        if(existing) { existing.checked=true; }
+        else { const lbl=document.createElement('label'); lbl.className='ms-item'; lbl.style.cssText='display:flex;flex-direction:row;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;'; lbl.innerHTML=`<input type="checkbox" value="${escAttr(v.product_name)}" checked> ${escH(v.product_name)}`; list.appendChild(lbl); }
+        applyMs(uid);
+      },250);
     }
     const str=document.getElementById('fi-strengths'); if(str) str.value=v.strengths||'';
     const gaps=document.getElementById('fi-gaps'); if(gaps) gaps.value=v.gaps||'';
     const notes=document.getElementById('fi-notes'); if(notes) notes.value=v.notes||'';
     if(v.rating) document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<v.rating));
+    const cvEl=document.getElementById('fi-country-view'); if(cvEl && v.country) cvEl.value=v.country;
     const tv=document.getElementById('fi-type-val');
     if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_product_views'; }
   } catch(e) { console.error(e); }
@@ -1977,11 +1983,19 @@ async function editInsightMarket(id) {
   try {
     const recs = await getAll('cs_market_intel?id=eq.'+id);
     const m = recs[0]; if(!m) return;
-    const prodSel = document.getElementById('fi-product');
-    if(prodSel && m.products_mentioned) {
-      const opt = [...prodSel.options].find(o=>o.value===m.products_mentioned);
-      if(opt) { prodSel.value=m.products_mentioned; }
-      else { prodSel.value='__other__'; fiProductChange(); const other=document.getElementById('fi-product-other'); if(other) other.value=m.products_mentioned; }
+    // Prefill product multiselect
+    if(m.products_mentioned) {
+      setTimeout(()=>{
+        const uid='fi_prod_wrap';
+        const list=document.getElementById('msl_'+uid);
+        if(!list) return;
+        m.products_mentioned.split(',').map(p=>p.trim()).filter(Boolean).forEach(pname=>{
+          const existing=[...list.querySelectorAll('input')].find(cb=>cb.value===pname);
+          if(existing) { existing.checked=true; }
+          else { const lbl=document.createElement('label'); lbl.className='ms-item'; lbl.style.cssText='display:flex;flex-direction:row;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;'; lbl.innerHTML=`<input type="checkbox" value="${escAttr(pname)}" checked> ${escH(pname)}`; list.appendChild(lbl); }
+        });
+        applyMs(uid);
+      },250);
     }
     const client=document.getElementById('fi-client'); if(client) client.value=m.client_company||'';
     const sector=document.getElementById('fi-sector'); if(sector) sector.value=m.sector||'';
