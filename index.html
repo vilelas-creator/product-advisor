@@ -1559,7 +1559,7 @@ async function saveFi() {
       const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
       const rating = getStars('fi-stars'); if(rating) body.rating=rating;
       if(product) body.products_mentioned=product;
-      // commodities field not in schema
+      if(coms.length) body.commodities_mentioned=coms.join(',');
       const comments = document.getElementById('fi-comments')?.value; if(comments) body.comments=comments;
       const link = document.getElementById('fi-link')?.value; if(link) body.link_ref=link;
       const editId_m = document.getElementById('fi-type-val')?.dataset?.editId;
@@ -1995,6 +1995,25 @@ async function editInsightMarket(id) {
     if(m.rating) {
       document.querySelectorAll('#fi-stars .star').forEach((star,i)=>star.classList.toggle('on',i<m.rating));
     }
+    // Prefill commodities
+    if(m.commodities_mentioned) {
+      const coms = m.commodities_mentioned.split(',').map(c=>c.trim()).filter(Boolean);
+      // Re-init commodities with pre-selected values
+      setTimeout(()=>{
+        const allComs = [...state.commodities].map(c=>c.commodity_name||'').filter(Boolean).sort();
+        buildMultiSelect('fi-coms-wrap', allComs, 'Select commodities');
+        const uid = 'fi_coms_wrap';
+        coms.forEach(com=>{
+          const list = document.getElementById('msl_'+uid);
+          if(list){
+            const existing=[...list.querySelectorAll('input')].find(cb=>cb.value===com);
+            if(existing) existing.checked=true;
+            else { const lbl=document.createElement('label'); lbl.className='ms-item'; lbl.style.cssText='display:flex;flex-direction:row;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--text)'; lbl.innerHTML=`<input type="checkbox" value="${com}" checked> ${com}`; list.appendChild(lbl); }
+          }
+        });
+        applyMs(uid);
+      }, 200);
+    }
     const tv=document.getElementById('fi-type-val');
     if(tv) { tv.dataset.editId=id; tv.dataset.editTable='cs_market_intel'; }
   } catch(e) { console.error(e); }
@@ -2100,6 +2119,7 @@ async function openCsDetail(name) {
           <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${[m.country,m.sector,m.intel_date].filter(Boolean).map(escH).join(' · ')}</div>
           ${m.products_mentioned?`<div style="font-size:12px;margin-bottom:6px"><b style="font-size:10px;color:var(--muted)">PRODUCT: </b>${escH(m.products_mentioned)}</div>`:''}
           ${m.comments?`<div style="font-size:12px;line-height:1.5;margin-bottom:6px">${escH(m.comments)}</div>`:''}
+          ${m.commodities_mentioned?`<div style="margin-bottom:5px"><span style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase">Commodities: </span><span style="font-size:12px">${escH(m.commodities_mentioned)}</span></div>`:''}
           ${m.link_ref?`<a href="${escAttr(m.link_ref)}" target="_blank" style="font-size:11px;color:var(--accent)">🔗 Reference link</a>`:''}
           <div style="display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border)">
             <button class="btn-edit" onclick="editInsightMarket(${m.id})">Edit</button>
