@@ -1547,7 +1547,7 @@ async function saveFi() {
     } else if(type === 'market') {
       const client = document.getElementById('fi-client')?.value?.trim();
       if(!client) { if(err) err.textContent='Please enter a client name.'; return; }
-      const body = {client_company: client, assessed_by: by, intel_date: date};
+      const body = {client_company: client, intel_date: date};
       const sector = document.getElementById('fi-sector')?.value; if(sector) body.sector=sector;
       const country = document.getElementById('fi-country')?.value; if(country) body.country=country;
       const rating = getStars('fi-stars'); if(rating) body.rating=rating;
