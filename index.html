@@ -2118,7 +2118,7 @@ async function openCsDetail(name) {
       return views.map((v,i)=>`
         <div style="border:0.5px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg2)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-size:11px;color:var(--muted)">${escH(v.assessed_by||'')} · ${escH(v.assessment_date||'')}</div>
+            <div style="font-size:11px;color:var(--muted)">${escH(v.assessed_by||'')} · ${escH(v.assessment_date||'')}${v.country?' · '+escH(v.country):''}</div>
             <div style="font-size:14px">${stars(v.rating)}</div>
           </div>
           ${v.strengths?`<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Strengths</div><div style="font-size:12px;line-height:1.5">${escH(v.strengths)}</div></div>`:''}
