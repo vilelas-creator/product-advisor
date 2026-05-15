@@ -303,10 +303,28 @@ tr:hover td{background:var(--bg2);}
       <!-- Type selector -->
       <div class="field">
         <label>Type <span class="req">*</span></label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-          <button type="button" id="fi-btn-view" class="fi-type-btn" onclick="fiSetType('view')" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">🔍 capSpire View</button>
-          <button type="button" id="fi-btn-market" class="fi-type-btn" onclick="fiSetType('market')" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">📊 Market Insight</button>
-          <button type="button" id="fi-btn-selection" class="fi-type-btn" onclick="fiSetType('selection')" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">⚖️ System Selection</button>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="radio" name="fi-type-radio" value="view" onchange="fiSetType('view')" style="margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">🔍 capSpire View</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:1px">Internal capSpire assessment</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="radio" name="fi-type-radio" value="market" onchange="fiSetType('market')" style="margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">📊 Market Insight</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:1px">Intelligence gathered from clients and projects</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="radio" name="fi-type-radio" value="selection" onchange="fiSetType('selection')" style="margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">⚖️ System Selection</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:1px">Insight from system selection processes</div>
+            </div>
+          </label>
         </div>
       </div>
 
@@ -1442,6 +1460,7 @@ async function initFi() {
   const errEl=document.getElementById('fi-err'); if(errEl) errEl.textContent='';
   // Reset type
   document.getElementById('fi-type-val').value='';
+  document.querySelectorAll('input[name="fi-type-radio"]').forEach(r=>r.checked=false);
   document.querySelectorAll('.fi-type-btn').forEach(b=>{ b.style.borderColor='var(--border)'; b.style.background='#fff'; b.style.color=''; });
   document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
   // Reset title
@@ -1456,18 +1475,15 @@ async function initFi() {
 function fiSetType(type) {
   if(!type) return;
   document.getElementById('fi-type-val').value = type;
-  // Highlight active button
-  document.querySelectorAll('.fi-type-btn').forEach(b=>{
-    b.style.borderColor='var(--border)';b.style.background='#fff';b.style.color='';b.style.fontWeight='500';
-  });
-  const activeBtn=document.getElementById('fi-btn-'+type);
-  if(activeBtn){activeBtn.style.borderColor='var(--accent)';activeBtn.style.background='#eff6ff';activeBtn.style.color='var(--accent)';activeBtn.style.fontWeight='700';}
+  // Sync radio button
+  const radio = document.querySelector(`input[name="fi-type-radio"][value="${type}"]`);
+  if(radio) radio.checked = true;
   // Show relevant fields
   document.querySelectorAll('.fi-field').forEach(f=>f.style.display='none');
   document.querySelectorAll(`.fi-all, .fi-${type}`).forEach(f=>f.style.display='');
   // Update title
-  const titles = {view:'capSpire View of the Product', market:'Market Insight', selection:'System Selection Insight'};
-  const subs = {view:'Internal capSpire assessment — strengths, gaps and commodity coverage', market:'Intelligence gathered from clients and projects — market signals, system searches and evaluations', selection:'Insight from system selection processes'};
+  const titles = {view:'capSpire View of the Product', market:'Market Insight', selection:'System Selection'};
+  const subs = {view:'Internal capSpire assessment', market:'Intelligence gathered from clients and projects', selection:'Insight from system selection processes'};
   const title = document.getElementById('fi-title');
   const sub = document.getElementById('fi-sub');
   const bc = document.getElementById('fi-bc-title');
